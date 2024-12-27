@@ -1,11 +1,21 @@
 import { Toolbar } from "@/components/toolBar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { activeToolState } from "@/recoil/atoms/toolBarState"
-import { useCallback, useState, useRef, useEffect } from "react";
-import { Layer, Stage, Image as KonvaImage } from "react-konva";
+import React, { useCallback, useState, useRef, useEffect } from "react";
+import { Layer, Stage, Image as KonvaImage, Rect as KonvaRect } from "react-konva";
 import { useRecoilState } from "recoil"
 
-export default function Board() {
+const downloadURI = (uri: string | undefined, name: string) => {
+    const link = document.createElement("a");
+    link.download = name;
+    link.href = uri || "";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link)
+}
+
+// eslint-disable-next-line no-empty-pattern
+export const Board = React.memo(function Board({ }) {
     const [activeTool, setActiveTool] = useRecoilState(activeToolState);
     const [image, setImage] = useState<HTMLImageElement>();
     const fileRef = useRef<HTMLInputElement>(null);
@@ -22,9 +32,11 @@ export default function Board() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const handleDownload = () => {
-        console.log("hi")
-    }
+    const handleDownload = useCallback(() => {
+        const dataURI = stageRef?.current?.toDataURL({ devicePixelRatio })
+        downloadURI(dataURI, 'SketchSync-image.png');
+    }, []);
+
     const handleUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files?.[0]) {
             const imageUrl = URL.createObjectURL(e.target.files?.[0]);
@@ -65,6 +77,14 @@ export default function Board() {
             </TooltipProvider>
             <Stage width={dimensions.width} height={dimensions.height} ref={stageRef}>
                 <Layer>
+                    <KonvaRect
+                        x={0}
+                        y={0}
+                        height={window.innerHeight / 2}
+                        width={window.innerHeight / 2}
+                        fill="white"
+                        id="bg" />
+
                     {
                         image && (
                             <KonvaImage image={image}
@@ -82,4 +102,4 @@ export default function Board() {
 
         </div>
     )
-}
+});

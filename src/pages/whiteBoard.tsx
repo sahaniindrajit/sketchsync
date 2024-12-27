@@ -1,25 +1,10 @@
-import { Toolbar } from "@/components/toolBar"
-import { TooltipProvider } from "@/components/ui/tooltip"
-import { activeToolState } from "@/recoil/atoms/toolBarState"
-import { useRecoilState } from "recoil"
+import Board from "../components/board"
 
-function handleDownload() {
-    console.log("hii")
-}
+export default function WhiteBoard() {
 
-function WhiteBoard() {
-    const [activeTool, setActiveTool] = useRecoilState(activeToolState)
     return (
         <div>
-            <TooltipProvider>
-                <Toolbar
-                    selectedTool={activeTool}
-                    onToolSelect={setActiveTool}
-                    onDownload={handleDownload}
-                />
-            </TooltipProvider>
+            <Board />
         </div>
     )
 }
-
-export default WhiteBoard

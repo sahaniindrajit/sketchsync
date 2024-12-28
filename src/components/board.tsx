@@ -39,7 +39,7 @@ export const Board = React.memo(function Board({ }) {
     const stageRef = useRef<any>(null)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transformerRef = useRef<any>(null);
-
+    const isDraggable = activeTool === 'select'
 
     const handleDownload = useCallback(() => {
         const dataURI = stageRef?.current?.toDataURL({ devicePixelRatio })
@@ -210,6 +210,7 @@ export const Board = React.memo(function Board({ }) {
                                     height={window.innerHeight / 2}
                                     width={window.innerHeight / 2}
                                     onClick={onShapeClick}
+                                    draggable={isDraggable}
                                 />
                             )
                         }
@@ -223,6 +224,7 @@ export const Board = React.memo(function Board({ }) {
                                     stroke={arrow.strokeColor.strokeColor}
                                     strokeWidth={arrow.strokeWidth.strokeWidth}
                                     onClick={onShapeClick}
+                                    draggable={isDraggable}
                                 />
                             ))
                         }
@@ -239,6 +241,7 @@ export const Board = React.memo(function Board({ }) {
                                     x={rect.x}
                                     y={rect.y}
                                     onClick={onShapeClick}
+                                    draggable={isDraggable}
                                 />
                             ))
                         }
@@ -254,6 +257,7 @@ export const Board = React.memo(function Board({ }) {
                                     x={circle.x}
                                     y={circle.y}
                                     onClick={onShapeClick}
+                                    draggable={isDraggable}
                                 />
                             ))
                         }
@@ -268,6 +272,7 @@ export const Board = React.memo(function Board({ }) {
                                     lineCap="round"
                                     lineJoin="round"
                                     onClick={onShapeClick}
+                                    draggable={isDraggable}
                                 />
                             ))
                         }

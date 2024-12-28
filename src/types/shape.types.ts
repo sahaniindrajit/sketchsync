@@ -8,12 +8,16 @@ export type Shape = {
 export type Rectangle = Shape & {
     width: number;
     height: number;
+    strokeWidth: { strokeWidth: number }
+    strokeColor: { strokeColor: string }
     x: number;
     y: number;
 };
 
 export type Circle = Shape & {
     radius: number;
+    strokeWidth: { strokeWidth: number }
+    strokeColor: { strokeColor: string }
     x: number;
     y: number;
 };

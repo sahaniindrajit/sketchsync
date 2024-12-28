@@ -1,10 +1,10 @@
 import { Toolbar } from "@/components/toolBar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { activeToolState, fillColorState, strokeColorState, strokeWidthState } from "@/recoil/atoms/toolBarState"
-import { Arrow } from "@/types/shape.types";
+import { Arrow, Rectangle, Circle } from "@/types/shape.types";
 import { KonvaEventObject } from "konva/lib/Node";
 import React, { useCallback, useState, useRef } from "react";
-import { Layer, Stage, Image as KonvaImage, Rect as KonvaRect, Arrow as KonvaArrow } from "react-konva";
+import { Layer, Stage, Image as KonvaImage, Rect as KonvaRect, Arrow as KonvaArrow, Circle as KonvaCircle } from "react-konva";
 import { useRecoilState } from "recoil"
 import DrawingSettings from "./drawingSetting";
 
@@ -28,6 +28,8 @@ export const Board = React.memo(function Board({ }) {
     const [image, setImage] = useState<HTMLImageElement>();
     const [isEmpty, setIsEmpty] = useState(true);
     const [arrow, setArrow] = useState<Arrow>();
+    const [rect, setRect] = useState<Rectangle>();
+    const [circle, setCircle] = useState<Circle>()
     const fileRef = useRef<HTMLInputElement>(null);
     const isPaintRef = useRef(false)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -67,6 +69,11 @@ export const Board = React.memo(function Board({ }) {
 
             case 'arrow':
                 setArrow({ id: '1', color: { fillColor }, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, points: [x, y, x, y] })
+                break;
+            case 'rectangle':
+                setRect({ id: '1', color: { fillColor }, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, height: 0, width: 0, x, y })
+                break;
+
         }
     }, [activeTool, fillColor, strokeColor, strokeWidth]);
     const onStageMouseUp = useCallback(() => {
@@ -83,6 +90,10 @@ export const Board = React.memo(function Board({ }) {
 
             case 'arrow':
                 setArrow((prevArrow) => ({ ...prevArrow, points: [prevArrow?.points[0] || 0, prevArrow?.points[1] || 0, x, y] } as Arrow))
+                break;
+            case 'rectangle':
+                setRect((prevRect) => ({ ...prevRect, height: y - (prevRect?.y || 0), width: x - (prevRect?.x || 0) } as Rectangle));
+                break;
         }
     }, [activeTool]);
 
@@ -118,7 +129,7 @@ export const Board = React.memo(function Board({ }) {
                 {isEmpty && (
                     <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none z-10">
                         <div className="text-center">
-                            <div className="text-2xl font-bold mb-2">Welcome to Drawing App</div>
+                            <div className="text-2xl font-bold mb-2">Welcome to SketchSync</div>
                             <div className="text-sm">Pick a tool & start drawing!</div>
                         </div>
                     </div>
@@ -165,6 +176,21 @@ export const Board = React.memo(function Board({ }) {
                                 />
                             )
                         }
+                        {
+                            rect && (
+                                <KonvaRect
+                                    key={rect.id}
+                                    id={rect.id}
+                                    fill={rect.color.fillColor}
+                                    stroke={rect.strokeColor.strokeColor}
+                                    strokeWidth={rect.strokeWidth.strokeWidth}
+                                    height={rect.height}
+                                    width={rect.width}
+                                    x={rect.x}
+                                    y={rect.y} />
+                            )
+                        }
+
                     </Layer>
 
                 </Stage>

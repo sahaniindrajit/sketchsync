@@ -58,7 +58,7 @@ export const Board = React.memo(function Board({ }) {
     const onStageMouseDown = useCallback((e: KonvaEventObject<MouseEvent>) => {
         if (activeTool === 'select') return;
         isPaintRef.current = true;
-        const stage = stageRef.current;
+        const stage = stageRef?.current;
         const pos = stage?.getPointerPosition();
         const x = pos?.x || 0
         const y = pos?.y || 0
@@ -69,8 +69,22 @@ export const Board = React.memo(function Board({ }) {
                 setArrow({ id: '1', color: { fillColor }, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, points: [x, y, x, y] })
         }
     }, [activeTool, fillColor, strokeColor, strokeWidth]);
-    const onStageMouseUp = useCallback(() => { }, []);
-    const onStageMouseMove = useCallback(() => { }, []);
+    const onStageMouseUp = useCallback(() => {
+        isPaintRef.current = false;
+    }, []);
+    const onStageMouseMove = useCallback(() => {
+        if (activeTool === 'select' || !isPaintRef.current) return;
+        const stage = stageRef?.current;
+        const pos = stage?.getPointerPosition();
+        const x = pos?.x || 0
+        const y = pos?.y || 0
+
+        switch (activeTool) {
+
+            case 'arrow':
+                setArrow((prevArrow) => ({ ...prevArrow, points: [prevArrow?.points[0] || 0, prevArrow?.points[1] || 0, x, y] } as Arrow))
+        }
+    }, [activeTool]);
 
 
 

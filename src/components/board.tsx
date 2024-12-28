@@ -4,10 +4,10 @@ import { activeToolState, fillColorState, strokeColorState, strokeWidthState } f
 import { Arrow, Rectangle, Circle, Scribble } from "@/types/shape.types";
 import { KonvaEventObject } from "konva/lib/Node";
 import { v4 as uuidv4 } from "uuid";
-import React, { useCallback, useState, useRef } from "react";
+import React, { useCallback, useState, useRef, useEffect } from "react";
 import { Layer, Stage, Image as KonvaImage, Rect as KonvaRect, Arrow as KonvaArrow, Circle as KonvaCircle, Line as KonvaScribble, Transformer } from "react-konva";
 import { useRecoilState } from "recoil"
-import DrawingSettings from "./drawingSetting";
+import { DrawingSettings } from "./drawingSetting";
 
 const downloadURI = (uri: string | undefined, name: string) => {
     const link = document.createElement("a");
@@ -158,7 +158,6 @@ export const Board = React.memo(function Board({ }) {
     const onBgClick = useCallback(() => {
         transformerRef?.current?.nodes([])
     }, [])
-
 
     return (
         <>

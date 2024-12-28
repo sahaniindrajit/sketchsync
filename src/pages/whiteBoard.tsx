@@ -1,10 +1,11 @@
+import React from "react"
 import { Board } from "../components/board"
 
-export default function WhiteBoard() {
+export const WhiteBoard = React.memo(function WhiteBoard() {
 
     return (
         <div>
             <Board />
         </div>
     )
-}
+})

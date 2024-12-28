@@ -1,6 +1,7 @@
 import { Square, Circle, ArrowRight, Pencil, Type, Image, Hand, Eraser, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import React from 'react'
 
 const tools = [
     { id: 'select', icon: Hand, label: 'Select' },
@@ -23,7 +24,7 @@ interface ToolbarProps {
     fileInputRef: React.RefObject<HTMLInputElement>
 }
 
-export function Toolbar({ selectedTool, onToolSelect, handleUpload, handleUploadButtonClick, handelDownload, fileInputRef }: ToolbarProps) {
+export const Toolbar = React.memo(function Toolbar({ selectedTool, onToolSelect, handleUpload, handleUploadButtonClick, handelDownload, fileInputRef }: ToolbarProps) {
     return (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 flex items-center gap-1 p-1 bg-white border rounded-lg shadow-sm z-10">
             {tools.map((tool) => (
@@ -85,5 +86,5 @@ export function Toolbar({ selectedTool, onToolSelect, handleUpload, handleUpload
             ))}
         </div>
     )
-}
+})
 

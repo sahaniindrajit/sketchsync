@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Slider } from '@/components/ui/slider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,7 +25,7 @@ const colors = [
 ]
 const shades = ['#FFF5E6', '#FFE6CC', '#FFD699', '#FFC266', '#FFAD33']
 
-export default function DrawingSettings({
+export const DrawingSettings = React.memo(function DrawingSettings({
     strokeColor,
     backgroundColor,
     strokeWidth,
@@ -159,5 +159,4 @@ export default function DrawingSettings({
             )}
         </div>
     )
-}
-
+})

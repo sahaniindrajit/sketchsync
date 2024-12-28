@@ -71,8 +71,12 @@ export const Board = React.memo(function Board({ }) {
                 setArrow({ id: '1', color: { fillColor }, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, points: [x, y, x, y] })
                 break;
             case 'rectangle':
-                setRect({ id: '1', color: { fillColor }, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, height: 0, width: 0, x, y })
+                setRect({ id: '2', color: { fillColor }, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, height: 1, width: 1, x, y })
                 break;
+            case 'circle':
+                setCircle({ id: '3', color: { fillColor }, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, radius: 1, x, y })
+                break;
+
 
         }
     }, [activeTool, fillColor, strokeColor, strokeWidth]);
@@ -94,6 +98,8 @@ export const Board = React.memo(function Board({ }) {
             case 'rectangle':
                 setRect((prevRect) => ({ ...prevRect, height: y - (prevRect?.y || 0), width: x - (prevRect?.x || 0) } as Rectangle));
                 break;
+            case 'circle':
+                setCircle((prevCircle) => ({ ...prevCircle, radius: ((x - (prevCircle?.x || 1)) ** 2 + (y - (prevCircle?.y || 1)) ** 2) ** 0.5 } as Circle))
         }
     }, [activeTool]);
 
@@ -188,6 +194,20 @@ export const Board = React.memo(function Board({ }) {
                                     width={rect.width}
                                     x={rect.x}
                                     y={rect.y} />
+                            )
+                        }
+                        {
+                            circle && (
+                                <KonvaCircle
+                                    key={circle.id}
+                                    id={circle.id}
+                                    fill={circle.color.fillColor}
+                                    stroke={circle.strokeColor.strokeColor}
+                                    strokeWidth={circle.strokeWidth.strokeWidth}
+                                    radius={circle.radius}
+                                    x={circle.x}
+                                    y={circle.y}
+                                />
                             )
                         }
 

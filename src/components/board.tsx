@@ -6,6 +6,7 @@ import { KonvaEventObject } from "konva/lib/Node";
 import React, { useCallback, useState, useRef } from "react";
 import { Layer, Stage, Image as KonvaImage, Rect as KonvaRect, Arrow as KonvaArrow } from "react-konva";
 import { useRecoilState } from "recoil"
+import DrawingSettings from "./drawingSetting";
 
 const downloadURI = (uri: string | undefined, name: string) => {
     const link = document.createElement("a");
@@ -25,6 +26,7 @@ export const Board = React.memo(function Board({ }) {
     //const [x, setX] = useState(0);
     //const [y, setY] = useState(0);
     const [image, setImage] = useState<HTMLImageElement>();
+    const [isEmpty, setIsEmpty] = useState(true);
     const [arrow, setArrow] = useState<Arrow>();
     const fileRef = useRef<HTMLInputElement>(null);
     const isPaintRef = useRef(false)
@@ -60,6 +62,7 @@ export const Board = React.memo(function Board({ }) {
         const pos = stage?.getPointerPosition();
         const x = pos?.x || 0
         const y = pos?.y || 0
+        setIsEmpty(false)
         switch (activeTool) {
 
             case 'arrow':
@@ -74,7 +77,6 @@ export const Board = React.memo(function Board({ }) {
     return (
         <>
             <div>
-
                 <TooltipProvider>
                     <Toolbar
                         selectedTool={activeTool}
@@ -88,6 +90,26 @@ export const Board = React.memo(function Board({ }) {
                         {activeTool}
                     </h1>
                 </TooltipProvider>
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                    <DrawingSettings
+                        strokeColor={strokeColor}
+                        backgroundColor={fillColor}
+                        strokeWidth={strokeWidth}
+                        onStrokeColorChange={setStrokeColor}
+                        onBackgroundColorChange={setFillColor}
+                        onStrokeWidthChange={setStrokeWidth}
+                    />
+                </div>
+
+                {isEmpty && (
+                    <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none z-10">
+                        <div className="text-center">
+                            <div className="text-2xl font-bold mb-2">Welcome to Drawing App</div>
+                            <div className="text-sm">Pick a tool & start drawing!</div>
+                        </div>
+                    </div>
+                )}
+
 
                 <Stage
                     width={window.innerWidth}

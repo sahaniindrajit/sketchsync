@@ -146,6 +146,10 @@ export const Board = React.memo(function Board({ }) {
         transformerRef?.current?.node(currentTarget)
     }, [activeTool])
 
+    const onBgClick = useCallback((e: KonvaEventObject<MouseEvent>) => {
+        transformerRef?.current?.nodes([])
+    }, [])
+
 
 
     return (
@@ -160,9 +164,6 @@ export const Board = React.memo(function Board({ }) {
                         handelDownload={handleDownload}
                         fileInputRef={fileRef}
                     />
-                    <h1>
-                        {activeTool}
-                    </h1>
                 </TooltipProvider>
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
                     <DrawingSettings
@@ -201,6 +202,7 @@ export const Board = React.memo(function Board({ }) {
                             width={window.innerHeight}
                             fill="white"
                             id="bg"
+                            onClick={onBgClick}
                         />
                         {
                             image && (

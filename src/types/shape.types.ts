@@ -1,6 +1,5 @@
 export type Shape = {
     id: string;
-    color: { fillColor: string };
     x?: number;
     y?: number;
 };
@@ -8,6 +7,7 @@ export type Shape = {
 export type Rectangle = Shape & {
     width: number;
     height: number;
+    color: { fillColor: string };
     strokeWidth: { strokeWidth: number }
     strokeColor: { strokeColor: string }
     x: number;
@@ -16,6 +16,7 @@ export type Rectangle = Shape & {
 
 export type Circle = Shape & {
     radius: number;
+    color: { fillColor: string };
     strokeWidth: { strokeWidth: number }
     strokeColor: { strokeColor: string }
     x: number;
@@ -24,10 +25,13 @@ export type Circle = Shape & {
 
 export type Scribble = Shape & {
     points: number[];
+    strokeWidth: { strokeWidth: number }
+    strokeColor: { strokeColor: string }
 };
 
 export type Arrow = Shape & {
     points: [number, number, number, number];
     strokeWidth: { strokeWidth: number }
     strokeColor: { strokeColor: string }
+    color: { fillColor: string };
 };

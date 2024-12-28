@@ -1,10 +1,10 @@
 import { Toolbar } from "@/components/toolBar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { activeToolState, fillColorState, strokeColorState, strokeWidthState } from "@/recoil/atoms/toolBarState"
-import { Arrow, Rectangle, Circle } from "@/types/shape.types";
+import { Arrow, Rectangle, Circle, Scribble } from "@/types/shape.types";
 import { KonvaEventObject } from "konva/lib/Node";
 import React, { useCallback, useState, useRef } from "react";
-import { Layer, Stage, Image as KonvaImage, Rect as KonvaRect, Arrow as KonvaArrow, Circle as KonvaCircle } from "react-konva";
+import { Layer, Stage, Image as KonvaImage, Rect as KonvaRect, Arrow as KonvaArrow, Circle as KonvaCircle, Line as KonvaScribble } from "react-konva";
 import { useRecoilState } from "recoil"
 import DrawingSettings from "./drawingSetting";
 
@@ -29,7 +29,8 @@ export const Board = React.memo(function Board({ }) {
     const [isEmpty, setIsEmpty] = useState(true);
     const [arrow, setArrow] = useState<Arrow>();
     const [rect, setRect] = useState<Rectangle>();
-    const [circle, setCircle] = useState<Circle>()
+    const [circle, setCircle] = useState<Circle>();
+    const [scribble, setScribble] = useState<Scribble>()
     const fileRef = useRef<HTMLInputElement>(null);
     const isPaintRef = useRef(false)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -76,6 +77,9 @@ export const Board = React.memo(function Board({ }) {
             case 'circle':
                 setCircle({ id: '3', color: { fillColor }, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, radius: 1, x, y })
                 break;
+            case 'pencil':
+                setScribble({ id: '4', strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, points: [x, y] })
+                break;
 
 
         }
@@ -100,6 +104,10 @@ export const Board = React.memo(function Board({ }) {
                 break;
             case 'circle':
                 setCircle((prevCircle) => ({ ...prevCircle, radius: ((x - (prevCircle?.x || 1)) ** 2 + (y - (prevCircle?.y || 1)) ** 2) ** 0.5 } as Circle))
+                break;
+            case 'pencil':
+                setScribble((prevScribble) => ({ ...prevScribble, points: [...(prevScribble?.points ?? []), x, y] } as Scribble))
+                break;
         }
     }, [activeTool]);
 
@@ -210,6 +218,19 @@ export const Board = React.memo(function Board({ }) {
                                 />
                             )
                         }
+                        {
+                            scribble && (
+                                <KonvaScribble
+                                    key={scribble.id}
+                                    id={scribble.id}
+                                    stroke={scribble.strokeColor.strokeColor}
+                                    strokeWidth={scribble.strokeWidth.strokeWidth}
+                                    points={scribble.points}
+                                    lineCap="round"
+                                    lineJoin="round" />
+                            )
+                        }
+
 
                     </Layer>
 

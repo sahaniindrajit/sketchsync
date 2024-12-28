@@ -5,7 +5,7 @@ import { Arrow, Rectangle, Circle, Scribble } from "@/types/shape.types";
 import { KonvaEventObject } from "konva/lib/Node";
 import { v4 as uuidv4 } from "uuid";
 import React, { useCallback, useState, useRef } from "react";
-import { Layer, Stage, Image as KonvaImage, Rect as KonvaRect, Arrow as KonvaArrow, Circle as KonvaCircle, Line as KonvaScribble } from "react-konva";
+import { Layer, Stage, Image as KonvaImage, Rect as KonvaRect, Arrow as KonvaArrow, Circle as KonvaCircle, Line as KonvaScribble, Transformer } from "react-konva";
 import { useRecoilState } from "recoil"
 import DrawingSettings from "./drawingSetting";
 
@@ -37,6 +37,8 @@ export const Board = React.memo(function Board({ }) {
     const currentShapeRef = useRef<string>();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const stageRef = useRef<any>(null)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const transformerRef = useRef<any>(null);
 
 
     const handleDownload = useCallback(() => {
@@ -138,6 +140,12 @@ export const Board = React.memo(function Board({ }) {
         }
     }, [activeTool]);
 
+    const onShapeClick = useCallback((e: KonvaEventObject<MouseEvent>) => {
+        if (activeTool !== 'select') return;
+        const currentTarget = e.currentTarget;
+        transformerRef?.current?.node(currentTarget)
+    }, [activeTool])
+
 
 
     return (
@@ -200,9 +208,9 @@ export const Board = React.memo(function Board({ }) {
                                     x={0}
                                     y={0}
                                     height={window.innerHeight / 2}
-                                    width={window.innerHeight / 2}>
-
-                                </KonvaImage>
+                                    width={window.innerHeight / 2}
+                                    onClick={onShapeClick}
+                                />
                             )
                         }
                         {
@@ -214,6 +222,7 @@ export const Board = React.memo(function Board({ }) {
                                     fill={arrow.color.fillColor}
                                     stroke={arrow.strokeColor.strokeColor}
                                     strokeWidth={arrow.strokeWidth.strokeWidth}
+                                    onClick={onShapeClick}
                                 />
                             ))
                         }
@@ -229,6 +238,7 @@ export const Board = React.memo(function Board({ }) {
                                     width={rect.width}
                                     x={rect.x}
                                     y={rect.y}
+                                    onClick={onShapeClick}
                                 />
                             ))
                         }
@@ -243,6 +253,7 @@ export const Board = React.memo(function Board({ }) {
                                     radius={circle.radius}
                                     x={circle.x}
                                     y={circle.y}
+                                    onClick={onShapeClick}
                                 />
                             ))
                         }
@@ -256,11 +267,12 @@ export const Board = React.memo(function Board({ }) {
                                     points={scribble.points}
                                     lineCap="round"
                                     lineJoin="round"
+                                    onClick={onShapeClick}
                                 />
                             ))
                         }
 
-
+                        <Transformer ref={transformerRef} />
                     </Layer>
 
                 </Stage>

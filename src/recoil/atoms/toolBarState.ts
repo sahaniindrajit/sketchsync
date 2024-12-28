@@ -14,3 +14,8 @@ export const strokeWidthState = atom<number>({
     key: 'strokeWidthState',
     default: 2,
 });
+
+export const fillColorState = atom<string>({
+    key: 'fillColorState',
+    default: '#000000',
+});

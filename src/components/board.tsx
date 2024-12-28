@@ -3,6 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { activeToolState, fillColorState, strokeColorState, strokeWidthState } from "@/recoil/atoms/toolBarState"
 import { Arrow, Rectangle, Circle, Scribble } from "@/types/shape.types";
 import { KonvaEventObject } from "konva/lib/Node";
+import { v4 as uuidv4 } from "uuid";
 import React, { useCallback, useState, useRef } from "react";
 import { Layer, Stage, Image as KonvaImage, Rect as KonvaRect, Arrow as KonvaArrow, Circle as KonvaCircle, Line as KonvaScribble } from "react-konva";
 import { useRecoilState } from "recoil"
@@ -27,12 +28,13 @@ export const Board = React.memo(function Board({ }) {
     //const [y, setY] = useState(0);
     const [image, setImage] = useState<HTMLImageElement>();
     const [isEmpty, setIsEmpty] = useState(true);
-    const [arrow, setArrow] = useState<Arrow>();
-    const [rect, setRect] = useState<Rectangle>();
-    const [circle, setCircle] = useState<Circle>();
-    const [scribble, setScribble] = useState<Scribble>()
+    const [arrow, setArrow] = useState<Arrow[]>([]);
+    const [rect, setRect] = useState<Rectangle[]>([]);
+    const [circle, setCircle] = useState<Circle[]>([]);
+    const [scribble, setScribble] = useState<Scribble[]>([])
     const fileRef = useRef<HTMLInputElement>(null);
-    const isPaintRef = useRef(false)
+    const isPaintRef = useRef(false);
+    const currentShapeRef = useRef<string>();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const stageRef = useRef<any>(null)
 
@@ -65,20 +67,22 @@ export const Board = React.memo(function Board({ }) {
         const pos = stage?.getPointerPosition();
         const x = pos?.x || 0
         const y = pos?.y || 0
+        const id = uuidv4();
+        currentShapeRef.current = id;
         setIsEmpty(false)
         switch (activeTool) {
 
             case 'arrow':
-                setArrow({ id: '1', color: { fillColor }, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, points: [x, y, x, y] })
+                setArrow((prevArrows) => [...prevArrows, { id: id, color: { fillColor }, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, points: [x, y, x, y] }])
                 break;
             case 'rectangle':
-                setRect({ id: '2', color: { fillColor }, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, height: 1, width: 1, x, y })
+                setRect((prevRects) => [...prevRects, { id: id, color: { fillColor }, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, height: 1, width: 1, x, y }])
                 break;
             case 'circle':
-                setCircle({ id: '3', color: { fillColor }, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, radius: 1, x, y })
+                setCircle((prevCircles) => [...prevCircles, { id: id, color: { fillColor }, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, radius: 1, x, y }])
                 break;
             case 'pencil':
-                setScribble({ id: '4', strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, points: [x, y] })
+                setScribble((prevScribbles) => [...prevScribbles, { id: id, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, points: [x, y] }])
                 break;
 
 
@@ -90,6 +94,7 @@ export const Board = React.memo(function Board({ }) {
     const onStageMouseMove = useCallback(() => {
         if (activeTool === 'select' || !isPaintRef.current) return;
         const stage = stageRef?.current;
+        const id = currentShapeRef.current;
         const pos = stage?.getPointerPosition();
         const x = pos?.x || 0
         const y = pos?.y || 0
@@ -97,16 +102,38 @@ export const Board = React.memo(function Board({ }) {
         switch (activeTool) {
 
             case 'arrow':
-                setArrow((prevArrow) => ({ ...prevArrow, points: [prevArrow?.points[0] || 0, prevArrow?.points[1] || 0, x, y] } as Arrow))
+                setArrow((prevArrows) =>
+                    prevArrows.map((prevArrow) =>
+                        prevArrow.id === id ?
+                            { ...prevArrow, points: [prevArrow?.points[0] || 0, prevArrow?.points[1] || 0, x, y] }
+                            : prevArrow
+
+                    )
+                )
                 break;
             case 'rectangle':
-                setRect((prevRect) => ({ ...prevRect, height: y - (prevRect?.y || 0), width: x - (prevRect?.x || 0) } as Rectangle));
+                setRect((preRects) =>
+                    preRects.map((prevRect) =>
+                        prevRect.id === id ?
+                            { ...prevRect, height: y - (prevRect?.y || 0), width: x - (prevRect?.x || 0) }
+                            : prevRect
+                    ))
                 break;
             case 'circle':
-                setCircle((prevCircle) => ({ ...prevCircle, radius: ((x - (prevCircle?.x || 1)) ** 2 + (y - (prevCircle?.y || 1)) ** 2) ** 0.5 } as Circle))
+                setCircle((prevCircles) =>
+                    prevCircles.map((prevCircle) =>
+                        prevCircle.id === id ?
+                            { ...prevCircle, radius: ((x - (prevCircle?.x || 1)) ** 2 + (y - (prevCircle?.y || 1)) ** 2) ** 0.5 }
+                            : prevCircle
+                    ))
                 break;
             case 'pencil':
-                setScribble((prevScribble) => ({ ...prevScribble, points: [...(prevScribble?.points ?? []), x, y] } as Scribble))
+                setScribble((prevScribbles) =>
+                    prevScribbles.map((prevScribble) =>
+                        prevScribble.id === id ?
+                            { ...prevScribble, points: [...(prevScribble?.points ?? []), x, y] }
+                            : prevScribble
+                    ))
                 break;
         }
     }, [activeTool]);
@@ -179,7 +206,7 @@ export const Board = React.memo(function Board({ }) {
                             )
                         }
                         {
-                            arrow && (
+                            arrow.map((arrow) => (
                                 <KonvaArrow
                                     key={arrow.id}
                                     id={arrow.id}
@@ -188,10 +215,10 @@ export const Board = React.memo(function Board({ }) {
                                     stroke={arrow.strokeColor.strokeColor}
                                     strokeWidth={arrow.strokeWidth.strokeWidth}
                                 />
-                            )
+                            ))
                         }
                         {
-                            rect && (
+                            rect.map((rect) => (
                                 <KonvaRect
                                     key={rect.id}
                                     id={rect.id}
@@ -201,11 +228,12 @@ export const Board = React.memo(function Board({ }) {
                                     height={rect.height}
                                     width={rect.width}
                                     x={rect.x}
-                                    y={rect.y} />
-                            )
+                                    y={rect.y}
+                                />
+                            ))
                         }
                         {
-                            circle && (
+                            circle.map((circle) => (
                                 <KonvaCircle
                                     key={circle.id}
                                     id={circle.id}
@@ -216,10 +244,10 @@ export const Board = React.memo(function Board({ }) {
                                     x={circle.x}
                                     y={circle.y}
                                 />
-                            )
+                            ))
                         }
                         {
-                            scribble && (
+                            scribble.map((scribble) => (
                                 <KonvaScribble
                                     key={scribble.id}
                                     id={scribble.id}
@@ -227,8 +255,9 @@ export const Board = React.memo(function Board({ }) {
                                     strokeWidth={scribble.strokeWidth.strokeWidth}
                                     points={scribble.points}
                                     lineCap="round"
-                                    lineJoin="round" />
-                            )
+                                    lineJoin="round"
+                                />
+                            ))
                         }
 
 

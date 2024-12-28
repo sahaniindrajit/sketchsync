@@ -39,6 +39,7 @@ export const Board = React.memo(function Board({ }) {
     const stageRef = useRef<any>(null)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transformerRef = useRef<any>(null);
+
     const isDraggable = activeTool === 'select'
 
     const handleDownload = useCallback(() => {
@@ -62,7 +63,7 @@ export const Board = React.memo(function Board({ }) {
         fileRef?.current?.click();
     }, []);
 
-    const onStageMouseDown = useCallback((e: KonvaEventObject<MouseEvent>) => {
+    const onStageMouseDown = useCallback(() => {
         if (activeTool === 'select') return;
         isPaintRef.current = true;
         const stage = stageRef?.current;
@@ -72,8 +73,15 @@ export const Board = React.memo(function Board({ }) {
         const id = uuidv4();
         currentShapeRef.current = id;
         setIsEmpty(false)
-        switch (activeTool) {
 
+        switch (activeTool) {
+            case 'eraser':
+                setArrow([]);
+                setCircle([]);
+                setRect([]);
+                setScribble([]);
+                setImage(undefined);
+                break;
             case 'arrow':
                 setArrow((prevArrows) => [...prevArrows, { id: id, color: { fillColor }, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, points: [x, y, x, y] }])
                 break;
@@ -92,6 +100,7 @@ export const Board = React.memo(function Board({ }) {
     }, [activeTool, fillColor, strokeColor, strokeWidth]);
     const onStageMouseUp = useCallback(() => {
         isPaintRef.current = false;
+
     }, []);
     const onStageMouseMove = useCallback(() => {
         if (activeTool === 'select' || !isPaintRef.current) return;
@@ -146,10 +155,9 @@ export const Board = React.memo(function Board({ }) {
         transformerRef?.current?.node(currentTarget)
     }, [activeTool])
 
-    const onBgClick = useCallback((e: KonvaEventObject<MouseEvent>) => {
+    const onBgClick = useCallback(() => {
         transformerRef?.current?.nodes([])
     }, [])
-
 
 
     return (
@@ -260,6 +268,9 @@ export const Board = React.memo(function Board({ }) {
                                     y={circle.y}
                                     onClick={onShapeClick}
                                     draggable={isDraggable}
+                                    globalCompositeOperation={
+                                        activeTool === 'eraser' ? 'destination-out' : 'source-over'
+                                    }
                                 />
                             ))
                         }
@@ -271,8 +282,12 @@ export const Board = React.memo(function Board({ }) {
                                     stroke={scribble.strokeColor.strokeColor}
                                     strokeWidth={scribble.strokeWidth.strokeWidth}
                                     points={scribble.points}
+                                    tension={0.5}
                                     lineCap="round"
                                     lineJoin="round"
+                                    globalCompositeOperation={
+                                        activeTool === 'eraser' ? 'destination-out' : 'source-over'
+                                    }
                                     onClick={onShapeClick}
                                     draggable={isDraggable}
                                 />

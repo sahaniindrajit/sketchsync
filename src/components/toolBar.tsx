@@ -21,10 +21,11 @@ interface ToolbarProps {
     handleUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
     handleUploadButtonClick: () => void
     handelDownload: () => void
+    handleEraser: () => void
     fileInputRef: React.RefObject<HTMLInputElement>
 }
 
-export const Toolbar = React.memo(function Toolbar({ selectedTool, onToolSelect, handleUpload, handleUploadButtonClick, handelDownload, fileInputRef }: ToolbarProps) {
+export const Toolbar = React.memo(function Toolbar({ selectedTool, onToolSelect, handleUpload, handleUploadButtonClick, handleEraser, handelDownload, fileInputRef }: ToolbarProps) {
     return (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 flex items-center gap-1 p-1 bg-white border rounded-lg shadow-sm z-10">
             {tools.map((tool) => (
@@ -67,7 +68,23 @@ export const Toolbar = React.memo(function Toolbar({ selectedTool, onToolSelect,
                                     <span className="sr-only">{tool.label}</span>
                                 </Button>
                             </>
-                        )) ||
+                        )) || ((tool.id === 'eraser') && (
+                            <>
+                                <Button
+                                    variant={selectedTool === tool.id ? "secondary" : "ghost"}
+                                    size="icon"
+                                    onClick={() => {
+                                        onToolSelect(tool.id);
+                                        handleEraser()
+                                    }}
+                                    className="w-9 h-9"
+                                >
+                                    <tool.icon className="h-5 w-5" />
+                                    <span className="sr-only">{tool.label}</span>
+                                </Button>
+                            </>
+                        ))
+                            ||
                             <Button
                                 variant={selectedTool === tool.id ? "secondary" : "ghost"}
                                 size="icon"

@@ -8,6 +8,7 @@ import React, { useCallback, useState, useRef, useEffect } from "react";
 import { Layer, Stage, Image as KonvaImage, Rect as KonvaRect, Arrow as KonvaArrow, Circle as KonvaCircle, Line as KonvaScribble, Transformer } from "react-konva";
 import { useRecoilState } from "recoil"
 import { DrawingSettings } from "./drawingSetting";
+import { TopBar } from "./topBar";
 
 const downloadURI = (uri: string | undefined, name: string) => {
     const link = document.createElement("a");
@@ -16,6 +17,9 @@ const downloadURI = (uri: string | undefined, name: string) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link)
+}
+const handleLiveCollab = () => {
+    console.log("Live collab")
 }
 
 const saveToLocalStorage = (data: localStorageData) => {
@@ -106,13 +110,6 @@ export const Board = React.memo(function Board({ }) {
         setIsEmpty(false)
 
         switch (activeTool) {
-            case 'eraser':
-                setArrow([]);
-                setCircle([]);
-                setRect([]);
-                setScribble([]);
-                setImage(undefined);
-                break;
             case 'arrow':
                 setArrow((prevArrows) => [...prevArrows, { id: id, color: { fillColor }, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, points: [x, y, x, y] }])
                 break;
@@ -188,6 +185,13 @@ export const Board = React.memo(function Board({ }) {
     const onBgClick = useCallback(() => {
         transformerRef?.current?.nodes([])
     }, [])
+    const handleEraser = useCallback(() => {
+        setRect([]);
+        setCircle([]);
+        setScribble([]);
+        setArrow([]);
+        setImage(undefined);
+    }, []);
 
     useEffect(() => {
         const boardData = {
@@ -213,6 +217,11 @@ export const Board = React.memo(function Board({ }) {
     return (
         <>
             <div>
+                <div className="z-10">
+                    <TopBar handleExport={handleDownload} handleLiveCollab={handleLiveCollab} handleReset={handleEraser} />
+
+                </div>
+
                 <TooltipProvider>
                     <Toolbar
                         selectedTool={activeTool}
@@ -220,6 +229,7 @@ export const Board = React.memo(function Board({ }) {
                         handleUpload={handleUpload}
                         handleUploadButtonClick={onUploadButtonClick}
                         handelDownload={handleDownload}
+                        handleEraser={handleEraser}
                         fileInputRef={fileRef}
                     />
                 </TooltipProvider>

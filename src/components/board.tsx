@@ -1,7 +1,7 @@
 import { Toolbar } from "@/components/toolBar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { activeToolState, fillColorState, strokeColorState, strokeWidthState } from "@/recoil/atoms/toolBarState"
-import { Arrow, Rectangle, Circle, Scribble } from "@/types/shape.types";
+import { Arrow, Rectangle, Circle, Scribble, localStorageData } from "@/types/shape.types";
 import { KonvaEventObject } from "konva/lib/Node";
 import { v4 as uuidv4 } from "uuid";
 import React, { useCallback, useState, useRef, useEffect } from "react";
@@ -18,18 +18,51 @@ const downloadURI = (uri: string | undefined, name: string) => {
     document.body.removeChild(link)
 }
 
+const saveToLocalStorage = (data: localStorageData) => {
+    try {
+        localStorage.setItem("whiteboardData", JSON.stringify(data));
+    } catch (error) {
+        console.error("Error saving to localStorage", error);
+    }
+};
+
+const loadFromLocalStorage = () => {
+    try {
+        const savedData = localStorage.getItem("whiteboardData");
+        if (savedData) {
+            return JSON.parse(savedData);
+        }
+    } catch (error) {
+        console.error("Error reading from localStorage", error);
+        return null;
+    }
+};
+
 // eslint-disable-next-line no-empty-pattern
 export const Board = React.memo(function Board({ }) {
+    const savedData = loadFromLocalStorage();
     const [activeTool, setActiveTool] = useRecoilState(activeToolState);
     const [strokeColor, setStrokeColor] = useRecoilState(strokeColorState);
     const [strokeWidth, setStrokeWidth] = useRecoilState(strokeWidthState);
     const [fillColor, setFillColor] = useRecoilState(fillColorState);
     const [image, setImage] = useState<HTMLImageElement>();
     const [isEmpty, setIsEmpty] = useState(true);
-    const [arrow, setArrow] = useState<Arrow[]>([]);
-    const [rect, setRect] = useState<Rectangle[]>([]);
-    const [circle, setCircle] = useState<Circle[]>([]);
-    const [scribble, setScribble] = useState<Scribble[]>([])
+    const [arrow, setArrow] = useState<Arrow[]>(() => {
+        return savedData?.arrow || [];
+    });
+
+    const [rect, setRect] = useState<Rectangle[]>(() => {
+        const savedData = loadFromLocalStorage();
+        return savedData?.rect || [];
+    });
+
+    const [circle, setCircle] = useState<Circle[]>(() => {
+        return savedData?.circle || [];
+    });
+
+    const [scribble, setScribble] = useState<Scribble[]>(() => {
+        return savedData?.scribble || [];
+    });
     const fileRef = useRef<HTMLInputElement>(null);
     const isPaintRef = useRef(false);
     const currentShapeRef = useRef<string>();
@@ -39,7 +72,6 @@ export const Board = React.memo(function Board({ }) {
     const transformerRef = useRef<any>(null);
 
     const isDraggable = activeTool === 'select'
-
 
     const handleDownload = useCallback(() => {
         const dataURI = stageRef?.current?.toDataURL({ devicePixelRatio })
@@ -93,7 +125,6 @@ export const Board = React.memo(function Board({ }) {
             case 'pencil':
                 setScribble((prevScribbles) => [...prevScribbles, { id: id, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, points: [x, y] }])
                 break;
-
 
         }
     }, [activeTool, fillColor, strokeColor, strokeWidth]);
@@ -157,6 +188,27 @@ export const Board = React.memo(function Board({ }) {
     const onBgClick = useCallback(() => {
         transformerRef?.current?.nodes([])
     }, [])
+
+    useEffect(() => {
+        const boardData = {
+            arrow,
+            rect,
+            circle,
+            scribble,
+        };
+        saveToLocalStorage(boardData);
+    }, [arrow, rect, circle, scribble]);
+
+    useEffect(() => {
+        const savedData = loadFromLocalStorage();
+        if (savedData) {
+            setArrow(savedData.arrow);
+            setRect(savedData.rect);
+            setCircle(savedData.circle);
+            setScribble(savedData.scribble);
+        }
+    }, []);
+
 
     return (
         <>

@@ -35,3 +35,11 @@ export type Arrow = Shape & {
     strokeColor: { strokeColor: string }
     color: { fillColor: string };
 };
+
+export type localStorageData = {
+    arrow: Arrow[];
+    rect: Rectangle[];
+    circle: Circle[];
+    scribble: Scribble[];
+
+}

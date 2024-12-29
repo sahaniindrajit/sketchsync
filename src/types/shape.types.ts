@@ -43,3 +43,8 @@ export type localStorageData = {
     scribble: Scribble[];
 
 }
+
+export type text = Shape & {
+
+    text: string
+}

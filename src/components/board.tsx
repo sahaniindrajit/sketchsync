@@ -1,11 +1,11 @@
 import { Toolbar } from "@/components/toolBar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { activeToolState, fillColorState, strokeColorState, strokeWidthState } from "@/recoil/atoms/toolBarState"
-import { Arrow, Rectangle, Circle, Scribble, localStorageData } from "@/types/shape.types";
+import { Arrow, Rectangle, Circle, Scribble, localStorageData, text } from "@/types/shape.types";
 import { KonvaEventObject } from "konva/lib/Node";
 import { v4 as uuidv4 } from "uuid";
 import React, { useCallback, useState, useRef, useEffect } from "react";
-import { Layer, Stage, Image as KonvaImage, Rect as KonvaRect, Arrow as KonvaArrow, Circle as KonvaCircle, Line as KonvaScribble, Transformer } from "react-konva";
+import { Layer, Stage, Image as KonvaImage, Rect as KonvaRect, Arrow as KonvaArrow, Circle as KonvaCircle, Line as KonvaScribble, Text as KonvaText, Transformer } from "react-konva";
 import { useRecoilState } from "recoil"
 import { DrawingSettings } from "./drawingSetting";
 import { TopBar } from "./topBar";
@@ -54,9 +54,10 @@ export const Board = React.memo(function Board({ }) {
     const [arrow, setArrow] = useState<Arrow[]>(() => {
         return savedData?.arrow || [];
     });
-
+    const [text, setText] = useState<text[]>(() => {
+        return savedData?.text || [];
+    });
     const [rect, setRect] = useState<Rectangle[]>(() => {
-        const savedData = loadFromLocalStorage();
         return savedData?.rect || [];
     });
 
@@ -98,6 +99,22 @@ export const Board = React.memo(function Board({ }) {
         fileRef?.current?.click();
     }, []);
 
+    const handleAddText = () => {
+        if (activeTool === 'select') return;
+        isPaintRef.current = true;
+        const stage = stageRef.current;
+        const pointerPosition = stage.getPointerPosition();
+        const newText = prompt("Enter your text:");
+        const id = uuidv4();
+        if (newText) {
+            setText([
+                ...text,
+                { id: id, x: pointerPosition.x, y: pointerPosition.y, text: newText }
+            ]);
+        }
+    };
+
+
     const onStageMouseDown = useCallback(() => {
         if (activeTool === 'select') return;
         isPaintRef.current = true;
@@ -107,9 +124,11 @@ export const Board = React.memo(function Board({ }) {
         const y = pos?.y || 0
         const id = uuidv4();
         currentShapeRef.current = id;
+
         setIsEmpty(false)
 
         switch (activeTool) {
+
             case 'arrow':
                 setArrow((prevArrows) => [...prevArrows, { id: id, color: { fillColor }, strokeColor: { strokeColor }, strokeWidth: { strokeWidth }, points: [x, y, x, y] }])
                 break;
@@ -190,6 +209,7 @@ export const Board = React.memo(function Board({ }) {
         setCircle([]);
         setScribble([]);
         setArrow([]);
+        setText([])
         setImage(undefined);
     }, []);
 
@@ -199,9 +219,10 @@ export const Board = React.memo(function Board({ }) {
             rect,
             circle,
             scribble,
+            text
         };
         saveToLocalStorage(boardData);
-    }, [arrow, rect, circle, scribble]);
+    }, [arrow, rect, circle, text, scribble]);
 
     useEffect(() => {
         const savedData = loadFromLocalStorage();
@@ -210,6 +231,7 @@ export const Board = React.memo(function Board({ }) {
             setRect(savedData.rect);
             setCircle(savedData.circle);
             setScribble(savedData.scribble);
+            setText(savedData.text)
         }
     }, []);
 
@@ -258,6 +280,7 @@ export const Board = React.memo(function Board({ }) {
                     width={window.innerWidth}
                     height={window.innerHeight}
                     ref={stageRef}
+                    onClick={handleAddText}
                     onMouseDown={onStageMouseDown}
                     onMouseMove={onStageMouseMove}
                     onMouseUp={onStageMouseUp}
@@ -266,8 +289,8 @@ export const Board = React.memo(function Board({ }) {
                         <KonvaRect
                             x={0}
                             y={0}
+                            width={window.innerWidth}
                             height={window.innerHeight}
-                            width={window.innerHeight}
                             fill="white"
                             id="bg"
                             onClick={onBgClick}
@@ -353,6 +376,20 @@ export const Board = React.memo(function Board({ }) {
                                 />
                             ))
                         }
+                        {text.map((text) => (
+                            <KonvaText
+                                key={text.id}
+                                id={text.id}
+                                x={text.x}
+                                y={text.y}
+                                text={text.text}
+                                fontSize={20}
+                                fontFamily="Arial"
+                                fill="black"
+                                onClick={onShapeClick}
+                                draggable={isDraggable}
+                            />
+                        ))}
 
                         <Transformer ref={transformerRef} />
                     </Layer>

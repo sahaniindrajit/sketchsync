@@ -116,7 +116,6 @@ export const Board = React.memo(function Board({ }) {
 
 
     const onStageMouseDown = useCallback(() => {
-        if (activeTool === 'select') return;
         isPaintRef.current = true;
         const stage = stageRef?.current;
         const pos = stage?.getPointerPosition();
@@ -280,7 +279,11 @@ export const Board = React.memo(function Board({ }) {
                     width={window.innerWidth}
                     height={window.innerHeight}
                     ref={stageRef}
-                    onClick={handleAddText}
+                    onClick={() => {
+                        if (activeTool === 'text') {
+                            handleAddText()
+                        }
+                    }}
                     onMouseDown={onStageMouseDown}
                     onMouseMove={onStageMouseMove}
                     onMouseUp={onStageMouseUp}

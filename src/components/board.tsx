@@ -24,8 +24,6 @@ export const Board = React.memo(function Board({ }) {
     const [strokeColor, setStrokeColor] = useRecoilState(strokeColorState);
     const [strokeWidth, setStrokeWidth] = useRecoilState(strokeWidthState);
     const [fillColor, setFillColor] = useRecoilState(fillColorState);
-    //const [x, setX] = useState(0);
-    //const [y, setY] = useState(0);
     const [image, setImage] = useState<HTMLImageElement>();
     const [isEmpty, setIsEmpty] = useState(true);
     const [arrow, setArrow] = useState<Arrow[]>([]);
@@ -41,6 +39,7 @@ export const Board = React.memo(function Board({ }) {
     const transformerRef = useRef<any>(null);
 
     const isDraggable = activeTool === 'select'
+
 
     const handleDownload = useCallback(() => {
         const dataURI = stageRef?.current?.toDataURL({ devicePixelRatio })

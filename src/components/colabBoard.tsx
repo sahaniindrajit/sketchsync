@@ -10,9 +10,7 @@ import { Layer, Stage, Image as KonvaImage, Rect as KonvaRect, Arrow as KonvaArr
 import { useRecoilState } from "recoil"
 import { DrawingSettings } from "./drawingSetting";
 import { TopBar } from "./topBar";
-import io from "socket.io-client";
 
-const socket = io("http://localhost:3000");
 
 const downloadURI = (uri: string | undefined, name: string) => {
     const link = document.createElement("a");
@@ -96,14 +94,7 @@ function ColabBoard() {
 
     const isDraggable = activeTool === 'select'
 
-    useEffect(() => {
-        socket.emit("join-room", roomId);
 
-        return () => {
-            socket.off("draw");
-            socket.off("join-room");
-        };
-    })
 
     const handleDownload = useCallback(() => {
         const dataURI = stageRef?.current?.toDataURL({ devicePixelRatio })

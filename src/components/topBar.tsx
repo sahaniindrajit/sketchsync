@@ -7,11 +7,10 @@ import { AppMenu } from './menu'
 
 interface MenuProps {
     handleExport: () => void
-    handleLiveCollab: () => void
     handleReset: () => void
 }
 
-export function TopBar({ handleExport, handleLiveCollab, handleReset }: MenuProps) {
+export function TopBar({ handleExport, handleReset }: MenuProps) {
     const [showMenu, setShowMenu] = useState(false)
     const menuRef = useRef<HTMLDivElement>(null)
     const buttonRef = useRef<HTMLButtonElement>(null)
@@ -44,7 +43,7 @@ export function TopBar({ handleExport, handleLiveCollab, handleReset }: MenuProp
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Menu</span>
             </Button>
-            {showMenu && <AppMenu handleExport={handleExport} handleLiveCollab={handleLiveCollab} handleReset={handleReset} onClose={() => setShowMenu(false)} />}
+            {showMenu && <AppMenu handleExport={handleExport} handleReset={handleReset} onClose={() => setShowMenu(false)} />}
         </div>
     )
 }

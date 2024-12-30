@@ -18,9 +18,7 @@ const downloadURI = (uri: string | undefined, name: string) => {
     link.click();
     document.body.removeChild(link)
 }
-const handleLiveCollab = () => {
-    console.log("Live collab")
-}
+
 
 const saveToLocalStorage = (data: localStorageData) => {
     try {
@@ -239,7 +237,7 @@ export const Board = React.memo(function Board({ }) {
         <>
             <div>
                 <div className="z-10">
-                    <TopBar handleExport={handleDownload} handleLiveCollab={handleLiveCollab} handleReset={handleEraser} />
+                    <TopBar handleExport={handleDownload} handleReset={handleEraser} />
 
                 </div>
 

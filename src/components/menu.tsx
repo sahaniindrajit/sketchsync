@@ -2,16 +2,17 @@
 
 import React from 'react'
 import { ImageIcon, Users, HelpCircle, Trash2, Github, Twitter, Briefcase } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { v4 as uuidv4 } from 'uuid';
 
 interface MenuProps {
     onClose: () => void
     handleExport: () => void
-    handleLiveCollab: () => void
     handleReset: () => void
 
 }
 
-export const AppMenu = React.memo<MenuProps>(function AppMenu({ handleExport, handleLiveCollab, handleReset }) {
+export const AppMenu = React.memo<MenuProps>(function AppMenu({ handleExport, handleReset }) {
 
 
     const handleHelp = () => {
@@ -26,6 +27,12 @@ export const AppMenu = React.memo<MenuProps>(function AppMenu({ handleExport, ha
         window.open('https://x.com/sahani_indrajit', '_blank');
     };
 
+    const handleLiveCollab = () => {
+        const roomId = uuidv4();
+        navigate(`/live?roomId=${roomId}`)
+
+    }
+
     const handelPortfolio = () => {
         window.open('https://www.indrajitsahani.com/', '_blank');
     }
@@ -39,6 +46,7 @@ export const AppMenu = React.memo<MenuProps>(function AppMenu({ handleExport, ha
         { icon: Twitter, label: 'Follow us', onClick: handleTwitter },
         { icon: Briefcase, label: 'Developer Portfolio', highlight: true, onClick: handelPortfolio }
     ];
+    const navigate = useNavigate();
 
     return (
         <div

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useLocation, useNavigate } from "react-router-dom"
 import { Toolbar } from "@/components/toolBar"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -10,7 +11,9 @@ import { Layer, Stage, Image as KonvaImage, Rect as KonvaRect, Arrow as KonvaArr
 import { useRecoilState } from "recoil"
 import { DrawingSettings } from "./drawingSetting";
 import { TopBar } from "./topBar";
+import io from "socket.io-client";
 
+const socket = io('http://localhost:3000');
 
 const downloadURI = (uri: string | undefined, name: string) => {
     const link = document.createElement("a");
@@ -52,7 +55,7 @@ function ColabBoard() {
     const roomId = getRoomId();
     useEffect(() => {
         if (roomId) {
-            console.log(roomId)
+            socket.emit('join-room', roomId)
 
         }
         else {
@@ -87,14 +90,18 @@ function ColabBoard() {
     const fileRef = useRef<HTMLInputElement>(null);
     const isPaintRef = useRef(false);
     const currentShapeRef = useRef<string>();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const stageRef = useRef<any>(null)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transformerRef = useRef<any>(null);
 
     const isDraggable = activeTool === 'select'
 
-
+    const emitData = (action: string, data: any, roomId: string | null) => {
+        socket.emit('draw', {
+            action,
+            data,
+            roomId,
+        });
+    };
 
     const handleDownload = useCallback(() => {
         const dataURI = stageRef?.current?.toDataURL({ devicePixelRatio })
@@ -170,47 +177,65 @@ function ColabBoard() {
         const stage = stageRef?.current;
         const id = currentShapeRef.current;
         const pos = stage?.getPointerPosition();
-        const x = pos?.x || 0
-        const y = pos?.y || 0
+        const x = pos?.x || 0;
+        const y = pos?.y || 0;
+
+        let updatedState;
 
         switch (activeTool) {
-
             case 'arrow':
                 setArrow((prevArrows) =>
-                    prevArrows.map((prevArrow) =>
-                        prevArrow.id === id ?
-                            { ...prevArrow, points: [prevArrow?.points[0] || 0, prevArrow?.points[1] || 0, x, y] }
-                            : prevArrow
-
-                    )
-                )
+                    prevArrows.map((prevArrow) => {
+                        if (prevArrow.id === id) {
+                            updatedState = { ...prevArrow, points: [prevArrow?.points[0] || 0, prevArrow?.points[1] || 0, x, y] };
+                            emitData('updateArrow', updatedState, roomId);
+                            return updatedState;
+                        }
+                        return prevArrow;
+                    })
+                );
                 break;
             case 'rectangle':
                 setRect((preRects) =>
-                    preRects.map((prevRect) =>
-                        prevRect.id === id ?
-                            { ...prevRect, height: y - (prevRect?.y || 0), width: x - (prevRect?.x || 0) }
-                            : prevRect
-                    ))
+                    preRects.map((prevRect) => {
+                        if (prevRect.id === id) {
+                            updatedState = { ...prevRect, height: y - (prevRect?.y || 0), width: x - (prevRect?.x || 0) };
+                            emitData('updateRectangle', updatedState, roomId);
+                            return updatedState;
+                        }
+                        return prevRect;
+                    })
+                );
                 break;
             case 'circle':
                 setCircle((prevCircles) =>
-                    prevCircles.map((prevCircle) =>
-                        prevCircle.id === id ?
-                            { ...prevCircle, radius: ((x - (prevCircle?.x || 1)) ** 2 + (y - (prevCircle?.y || 1)) ** 2) ** 0.5 }
-                            : prevCircle
-                    ))
+                    prevCircles.map((prevCircle) => {
+                        if (prevCircle.id === id) {
+                            updatedState = { ...prevCircle, radius: ((x - (prevCircle?.x || 1)) ** 2 + (y - (prevCircle?.y || 1)) ** 2) ** 0.5 };
+                            emitData('updateCircle', updatedState, roomId);
+                            return updatedState;
+                        }
+                        return prevCircle;
+                    })
+                );
                 break;
             case 'pencil':
                 setScribble((prevScribbles) =>
-                    prevScribbles.map((prevScribble) =>
-                        prevScribble.id === id ?
-                            { ...prevScribble, points: [...(prevScribble?.points ?? []), x, y] }
-                            : prevScribble
-                    ))
+                    prevScribbles.map((prevScribble) => {
+                        if (prevScribble.id === id) {
+                            updatedState = { ...prevScribble, points: [...(prevScribble?.points ?? []), x, y] };
+                            emitData('updatePencil', updatedState, roomId);
+
+                            return updatedState;
+                        }
+                        return prevScribble;
+                    })
+                );
                 break;
         }
-    }, [activeTool]);
+
+
+    }, [activeTool, roomId]);
 
     const onShapeClick = useCallback((e: KonvaEventObject<MouseEvent>) => {
         if (activeTool !== 'select') return;
@@ -250,6 +275,32 @@ function ColabBoard() {
             setScribble(savedData.scribble);
             setText(savedData.text)
         }
+    }, []);
+
+    useEffect(() => {
+        const drawListener = (data: any) => {
+            console.log('Received data:', data);
+
+            if (data.data.action === 'updateArrow') {
+                setArrow((prevArrows) => [...prevArrows, data.data.data]);
+            }
+            if (data.data.action === 'updateRectangle') {
+                setRect((prevArrows) => [...prevArrows, data.data.data]);
+            }
+            if (data.data.action === 'updateCircle') {
+                setCircle((prevArrows) => [...prevArrows, data.data.data]);
+            }
+            if (data.data.action === 'updatePencil') {
+
+                setScribble((prevArrows) => [...prevArrows, data.data.data]);
+            }
+        };
+
+        socket.on('draw', drawListener);
+
+        return () => {
+            socket.off('draw', drawListener);
+        };
     }, []);
 
 

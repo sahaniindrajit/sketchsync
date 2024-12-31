@@ -30,7 +30,7 @@ export type Scribble = Shape & {
 };
 
 export type Arrow = Shape & {
-    points: [number, number, number, number];
+    points: [number, number, number, number] | number[];
     strokeWidth: { strokeWidth: number }
     strokeColor: { strokeColor: string }
     color: { fillColor: string };

@@ -12,8 +12,9 @@ import { useRecoilState } from "recoil"
 import { DrawingSettings } from "./drawingSetting";
 import { TopBar } from "./topBar";
 import io from "socket.io-client";
+import LiveCollabPopUp from "./liveColabPopUp";
 
-const socket = io('http://localhost:3000');
+const socket = io('https://sketchsync-backend-bkjk.onrender.com');
 
 const downloadURI = (uri: string | undefined, name: string) => {
     const link = document.createElement("a");
@@ -347,6 +348,9 @@ function ColabBoard() {
 
     return (
         <>
+            <div>
+                <LiveCollabPopUp />
+            </div>
             <div>
                 <div className="z-10">
                     <TopBar handleExport={handleDownload} handleReset={handleEraser} />

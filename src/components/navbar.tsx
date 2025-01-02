@@ -5,6 +5,11 @@ export default function Navbar() {
                 <div className="flex h-16">
                     <div className="flex">
                         <div className="flex-shrink-0 flex items-center">
+                            <img
+                                src="/apple-touch-icon.png"
+                                alt="SketchSync Interface"
+                                className=" h-10 w-10  rounded-lg mx-2 shadow-2xl"
+                            />
                             <span className="text-2xl font-bold text-purple-600">SketchSync</span>
                         </div>
 

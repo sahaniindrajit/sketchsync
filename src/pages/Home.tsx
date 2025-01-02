@@ -2,8 +2,11 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight, Brush, Users, MessageSquare, Share2, FileImage, Zap } from 'lucide-react'
 import Navbar from "../components/navbar"
 import Footer from "../components/footer"
+import { useNavigate } from "react-router-dom"
+import Safari from "../components/ui/safari";
 
 export default function Home() {
+    const navigate = useNavigate()
     return (
         <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
             <Navbar />
@@ -21,23 +24,23 @@ export default function Home() {
                             A dynamic and intuitive whiteboard collaboration app that lets teams sketch, brainstorm, and share ideas in real time.
                         </p>
                         <div className="flex justify-center gap-4">
-                            <Button size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                            <Button size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" onClick={() => navigate('/board')}>
                                 Get Started
                                 <ArrowRight className="ml-2 h-5 w-5" />
                             </Button>
-                            <Button size="lg" variant="outline">
-                                Learn More
-                            </Button>
+
                         </div>
                     </div>
                     <div className="mt-16 relative">
                         <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 shadow-lg transform skew-y-6 sm:skew-y-0 sm:-rotate-3 sm:rounded-3xl"></div>
                         <div className="relative bg-white shadow-lg sm:rounded-3xl">
-                            <img
-                                src="/placeholder.svg?height=600&width=1200"
-                                alt="SketchSync Interface"
-                                className="w-full rounded-lg shadow-2xl"
-                            />
+                            <div className="relative">
+                                <Safari
+                                    url="magicui.design"
+                                    className="size-full"
+                                    videoSrc="https://videos.pexels.com/video-files/27180348/12091515_2560_1440_50fps.mp4"
+                                />
+                            </div>
                         </div>
                     </div>
                 </section>

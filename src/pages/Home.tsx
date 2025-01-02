@@ -36,9 +36,9 @@ export default function Home() {
                         <div className="relative bg-white shadow-lg sm:rounded-3xl">
                             <div className="relative">
                                 <Safari
-                                    url="magicui.design"
+                                    url="https://sketchsync.onrender.com"
                                     className="size-full"
-                                    videoSrc="https://videos.pexels.com/video-files/27180348/12091515_2560_1440_50fps.mp4"
+                                    videoSrc="https://utfs.io/f/799t8sfip0HkKLdv68siMOmqvkaoXpjZVHRFfTB3gChYr76t"
                                 />
                             </div>
                         </div>

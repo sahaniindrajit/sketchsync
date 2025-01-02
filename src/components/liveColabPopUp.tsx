@@ -1,5 +1,4 @@
 'use client'
-
 import { X, Copy } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -13,7 +12,7 @@ export default function LiveCollabPopUp() {
     const { search } = location;
 
     const handleCopyLink = () => {
-        navigator.clipboard.writeText(`https://sketchsync-sigma.vercel.app/live${search}`)
+        navigator.clipboard.writeText(`https://sketchsync.onrender.com/live${search}`)
     }
 
     const onClose = () => {

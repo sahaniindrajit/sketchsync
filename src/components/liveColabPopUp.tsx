@@ -13,7 +13,7 @@ export default function LiveCollabPopUp() {
     const { search } = location;
 
     const handleCopyLink = () => {
-        navigator.clipboard.writeText(`live${search}`)
+        navigator.clipboard.writeText(`https://sketchsync-sigma.vercel.app/live${search}`)
     }
 
     const onClose = () => {

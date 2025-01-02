@@ -279,20 +279,61 @@ function ColabBoard() {
 
     useEffect(() => {
         const drawListener = (data: any) => {
-            console.log('Received data:', data);
-
             if (data.data.action === 'updateArrow') {
-                setArrow((prevArrows) => [...prevArrows, data.data.data]);
+                setArrow((prevArrows) => {
+                    const exists = prevArrows.some((prevArrow) => prevArrow.id === data.data.data.id);
+                    if (exists) {
+                        return prevArrows.map((prevArrow) =>
+                            prevArrow.id === data.data.data.id
+                                ? { ...prevArrow, points: data.data.data.points }
+                                : prevArrow
+                        );
+                    }
+                    return [...prevArrows, data.data.data];
+                });
             }
             if (data.data.action === 'updateRectangle') {
-                setRect((prevArrows) => [...prevArrows, data.data.data]);
+                setRect((prevRects) => {
+                    const exists = prevRects.some((prevRect) => prevRect.id === data.data.data.id);
+                    if (exists) {
+                        return prevRects.map((prevRect) =>
+                            prevRect.id === data.data.data.id
+                                ? { ...prevRect, height: data.data.data.height, width: data.data.data.width }
+                                : prevRect
+                        );
+                    }
+                    return [...prevRects, data.data.data];
+                });
             }
             if (data.data.action === 'updateCircle') {
-                setCircle((prevArrows) => [...prevArrows, data.data.data]);
+                setCircle((prevCircles) => {
+                    const exists = prevCircles.some((prevCircle) => prevCircle.id === data.data.data.id);
+                    if (exists) {
+                        return prevCircles.map((prevCircle) =>
+                            prevCircle.id === data.data.data.id
+                                ? { ...prevCircle, radius: data.data.data.radius }
+                                : prevCircle
+                        );
+                    }
+                    return [...prevCircles, data.data.data];
+                });
             }
             if (data.data.action === 'updatePencil') {
+                setScribble((prevScribbles) => {
+                    const exists = prevScribbles.some(
+                        (prevScribble) => prevScribble.id === data.data.data.id
+                    );
+                    if (exists) {
+                        return prevScribbles.map((prevScribble) =>
+                            prevScribble.id === data.data.data.id
+                                ? { ...prevScribble, points: data.data.data.points }
+                                : prevScribble
+                        );
+                    } else {
+                        return [...prevScribbles, data.data.data];
+                    }
+                });
 
-                setScribble((prevArrows) => [...prevArrows, data.data.data]);
             }
         };
 

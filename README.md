@@ -1,75 +1,65 @@
-
 ## SketchSync
 
-SketchSync is a dynamic and intuitive whiteboard collaboration app that lets teams sketch, brainstorm, and share ideas in real time. Designed for creativity and seamless syncing, SketchSync enhances productivity with smooth drawing tools and live collaboration features.
+SketchSync is a collaborative online whiteboard. Sketch, diagram and brainstorm together in real time, and connect your AI assistant so it can draw with you: flowcharts, labelled diagrams, step-by-step math, or comments on what you sketched.
 
 [Checkout backend source code](https://github.com/sahaniindrajit/sketchsync-Backend)
 
 ## Features
 
-- **Smooth and intuitive drawing:** SketchSync's advanced drawing engine provides a smooth and natural drawing experience, allowing users to easily sketch their ideas.
-- **Real-time collaboration:** Teams can collaborate in real time, with changes being instantly synced across all connected devices.
-- **Multiple drawing tools:** Choose from a variety of drawing tools, including brushes, pens, shapes, and text boxes, to suit your project's needs.
-- **Live commenting:** Add comments and annotations to sketches, allowing for effective communication and feedback.
-- **Seamless file sharing:** Easily share your sketches with others via email, link, or social media.
-- **Export to image or PDF:** Export your sketches in high-quality image or PDF formats for presentations or documentation.
+- **Drawing tools:** rectangles, ellipses, diamonds, arrows and lines that stick to shapes, freehand pencil, text, LaTeX math, images and an eraser. Includes select, move, resize and rotate, multi-select, pan and zoom.
+- **Real-time collaboration:** share a board link and everyone edits live. Edits made offline are kept and synced when you reconnect.
+- **Connect your AI (MCP):** every board has an MCP server URL. Add it to Claude, Claude Code, Cursor, VS Code or any MCP client. The AI can read the board, see a rendered image of it (including hand drawings), add and edit shapes, create auto-laid-out flowcharts and write worked solutions with real math.
+- **Export:** download the board as a PNG.
+- Works on desktop and mobile. Boards are cached locally and survive reloads and server restarts.
 
-## Installation
+## Getting started
 
-1. **Clone the repository**
-```
-https://github.com/sahaniindrajit/sketchSync.git
-```
-
-2. **Install dependencies**
-```
+```bash
 npm install
+cp .env.example .env.local   # point VITE_BACKEND_URL at your backend (defaults to the hosted one)
+npm run dev                  # http://localhost:5173
 ```
 
-3. **Launch the development server**
-```
-npm run dev
+Run the [backend](https://github.com/sahaniindrajit/sketchsync-Backend) next to it (`npm run dev` in `sketchsync-Backend`, port 3000).
+
+### Connect an AI to a board
+
+Open a board, click **AI** (top right) and follow the steps for your client, for example:
+
+```bash
+claude mcp add --transport http sketchsync https://<backend>/mcp/<boardId>
 ```
 
-## Usage
+Then ask: *"Draw a flowchart of our signup process"* or *"Solve 2x² − 8x + 6 = 0 step by step on the board"*.
 
-1. **Ensure all dependencies are installed**
-```
-npm install
-```
+## Scripts
 
-2. **Run the development server**
-```
-npm run dev
-```
+| Script | What it does |
+|---|---|
+| `npm run dev` | Vite dev server |
+| `npm run build` | Type-check and build to `dist/` |
+| `npm test` | Unit tests plus sync integration tests against the real backend (needs `../sketchsync-Backend`) |
+| `npm run e2e` | Playwright end-to-end tests (starts the backend and frontend). `E2E_PROD=1 npm run e2e` runs against production builds |
+| `npm run sync-protocol` | Copy the shared protocol from `../sketchsync-Backend/src/shared` |
+| `npm run protocol:check` | Fail if `src/shared` is out of date (use in CI) |
 
-3. **Access the application**
-Open your web browser and go to `http://localhost:5173`.
+First-time e2e setup: `npx playwright install chromium`.
 
-4. **Start collaborating**
-Follow the on-screen prompts or refer to the documentation for specific features.
+## Project structure
+
+```
+src/
+  board/          Board canvas (Konva), store (zustand), RoomSync (realtime sync), persistence, text/math editor
+  board/shapes/   Konva renderers per shape type (math via MathJax, lazy-loaded)
+  components/     toolbar, style panel, menu, share / Connect AI dialogs, status and AI activity
+  pages/          landing page and board routes (/board, /board/:id, legacy /live?roomId=)
+  shared/         GENERATED copy of the backend's protocol, geometry and reducer; don't edit here
+e2e/              Playwright tests
+test/             integration tests that run the real backend
+```
 
 ## Contribution Guidelines
 
-We welcome contributions from the community! To contribute to SketchSync:
-
-1. **Fork the repository**
-```
-git clone https://github.com/sahaniindrajit/sketchsync.git
-git checkout -b feature-branch-name
-```
-
-2. **Make your changes**
-
-3. **Commit your changes**
-```
-git commit -m "Add some feature"
-```
-
-4. **Push to the branch**
-```
-git push origin feature-branch-name
-```
-
-5. **Create a pull request**
-Create a pull request with a detailed description of your changes.
+1. Fork the repository and create a branch: `git checkout -b feature-branch-name`
+2. Make your changes. Run `npm test` and `npm run e2e`.
+3. Commit, push, and open a pull request with a description of your changes.

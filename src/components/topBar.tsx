@@ -1,50 +1,33 @@
-'use client'
+import { Menu } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { AppMenu, type MenuActions } from './menu';
 
-import { useState, useEffect, useRef } from 'react'
-import { Menu } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { AppMenu } from './menu'
-
-interface MenuProps {
-    handleExport: () => void
-    handleReset: () => void
-}
-
-export function TopBar({ handleExport, handleReset }: MenuProps) {
-    const [showMenu, setShowMenu] = useState(false)
-    const menuRef = useRef<HTMLDivElement>(null)
-    const buttonRef = useRef<HTMLButtonElement>(null)
+export function TopBar({ actions }: { actions: MenuActions }) {
+    const [showMenu, setShowMenu] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node) &&
-                buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
-                setShowMenu(false)
-            }
+        if (!showMenu) return;
+        function handleClickOutside(event: PointerEvent) {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) setShowMenu(false);
         }
-
-        document.addEventListener('mousedown', handleClickOutside)
-        return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [])
-
-    const toggleMenu = () => {
-        setShowMenu(!showMenu)
-    }
+        document.addEventListener('pointerdown', handleClickOutside);
+        return () => document.removeEventListener('pointerdown', handleClickOutside);
+    }, [showMenu]);
 
     return (
-        <div className="fixed top-4 left-4 z-50">
+        <div className="fixed left-4 top-4 z-50" ref={containerRef}>
             <Button
-                ref={buttonRef}
                 variant="outline"
                 size="icon"
-                className="w-10 h-10 rounded-full bg-white shadow-md hover:bg-gray-100"
-                onClick={toggleMenu}
+                aria-label="Menu"
+                className="h-10 w-10 rounded-full bg-white shadow-md hover:bg-gray-100"
+                onClick={() => setShowMenu((v) => !v)}
             >
                 <Menu className="h-5 w-5" />
-                <span className="sr-only">Menu</span>
             </Button>
-            {showMenu && <AppMenu handleExport={handleExport} handleReset={handleReset} onClose={() => setShowMenu(false)} />}
+            {showMenu && <AppMenu actions={actions} onClose={() => setShowMenu(false)} />}
         </div>
-    )
+    );
 }
-

@@ -7,6 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "sync-protocol": "node scripts/sync-protocol.mjs",
+    "protocol:check": "node scripts/sync-protocol.mjs --check",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -16,20 +20,22 @@
     "@radix-ui/react-tooltip": "^1.1.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "konva": "^8.3.13",
+    "konva": "^9.3.22",
     "lucide-react": "^0.469.0",
+    "mathjax-full": "^3.2.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-konva": "^18.2.5",
-    "recoil": "^0.7.7",
+    "react-konva": "^18.2.16",
     "socket.io-client": "^4.8.1",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "uuid": "^11.0.3"
+    "uuid": "^11.0.3",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
-    "@types/lodash.throttle": "^4.1.9",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
@@ -39,11 +45,13 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.16",
     "globals": "^15.14.0",
+    "jsdom": "^30.0.1",
     "postcss": "^8.4.49",
     "react-router-dom": "^7.1.1",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.6.2",
     "typescript-eslint": "^8.18.2",
-    "vite": "^6.0.5"
+    "vite": "^6.0.5",
+    "vitest": "^3.2.7"
   }
 }

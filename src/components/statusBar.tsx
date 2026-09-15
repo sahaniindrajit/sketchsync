@@ -15,15 +15,21 @@ export function ConnectionBadge({ onShare, onConnectAi }: { onShare: () => void;
     const [dot, text] = styles[connection];
     return (
         <div className="fixed right-4 top-4 z-10 flex items-center gap-2">
-            <div className="hidden items-center gap-2 rounded-full border bg-white px-3 py-1.5 text-xs text-gray-600 shadow-sm sm:flex" data-testid="connection-status" data-status={connection}>
-                <span className={`h-2 w-2 rounded-full ${dot}`} />
-                <span className="max-w-[16rem] truncate">{text}</span>
+            <div className="flex items-center gap-1 rounded-full border bg-white p-1 shadow-sm">
+                <span className="hidden items-center gap-2 pl-2 pr-1 text-xs text-gray-600 sm:flex" data-testid="connection-status" data-status={connection}>
+                    <span className={`h-2 w-2 rounded-full ${dot}`} />
+                    <span className="max-w-[14rem] truncate">{text}</span>
+                </span>
+                <button
+                    className="flex h-7 items-center gap-1 rounded-full px-2 text-xs text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    onClick={onConnectAi}
+                    aria-label="Connect your AI"
+                >
+                    <Bot className="h-4 w-4" />
+                    <span className="hidden sm:inline">AI</span>
+                </button>
             </div>
-            <Button size="sm" variant="outline" className="h-9 bg-white" onClick={onConnectAi} aria-label="Connect your AI">
-                <Bot className="h-4 w-4 sm:mr-1" />
-                <span className="hidden sm:inline">AI</span>
-            </Button>
-            <Button size="sm" className="h-9 bg-indigo-500 hover:bg-indigo-600" onClick={onShare}>
+            <Button size="sm" className="h-9 rounded-full bg-indigo-500 px-4 hover:bg-indigo-600" onClick={onShare}>
                 <Share2 className="mr-1 h-4 w-4" />
                 Share
             </Button>

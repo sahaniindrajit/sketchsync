@@ -80,10 +80,6 @@ function MultiplayerDemo() {
                     <span className="mt-3 rounded-md bg-[#1971c2] px-1.5 py-0.5 text-[10.5px] font-semibold text-white">Maya</span>
                 </motion.div>
             </div>
-            <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 font-mono text-[10.5px] text-muted-foreground">
-                <span className="h-1.5 w-1.5 rounded-full bg-success" />
-                op #{1204 + i} · applied in order
-            </div>
         </div>
     );
 }
@@ -138,10 +134,10 @@ function LayoutDemo() {
     const laid = i === 1;
     // Node centres: scattered, then laid out left-to-right with a branch.
     const nodes = [
-        { a: [40, 95], b: [36, 60], fill: false },
-        { a: [150, 25], b: [132, 60], fill: true },
-        { a: [95, 150], b: [228, 28], fill: false },
-        { a: [230, 120], b: [228, 92], fill: false },
+        { a: [40, 95], b: [36, 60], fill: false, label: 'Idea' },
+        { a: [150, 25], b: [132, 60], fill: true, label: 'Plan' },
+        { a: [95, 150], b: [228, 28], fill: false, label: 'Build' },
+        { a: [230, 120], b: [228, 92], fill: false, label: 'Ship' },
     ];
     const edges = [
         [0, 1],
@@ -157,18 +153,12 @@ function LayoutDemo() {
                     <motion.line key={k} initial={false} animate={{ x1: p(a)[0], y1: p(a)[1], x2: p(b)[0], y2: p(b)[1] }} transition={spring} stroke="currentColor" strokeWidth="1.6" strokeDasharray={laid ? '0' : '3 4'} opacity={laid ? 1 : 0.4} />
                 ))}
                 {nodes.map((n, k) => (
-                    <motion.rect
-                        key={k}
-                        initial={false}
-                        animate={{ x: p(k)[0] - 30, y: p(k)[1] - 14 }}
-                        transition={{ ...spring, delay: k * 0.04 }}
-                        width="60"
-                        height="28"
-                        rx="7"
-                        className={n.fill ? 'fill-[#a5d8ff] dark:fill-[#4d6a80]' : 'fill-card'}
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                    />
+                    <motion.g key={k} initial={false} animate={{ x: p(k)[0] - 30, y: p(k)[1] - 14 }} transition={{ ...spring, delay: k * 0.04 }}>
+                        <rect width="60" height="28" rx="7" className={n.fill ? 'fill-[#f6dccf] dark:fill-[#3a2a24]' : 'fill-card'} stroke="currentColor" strokeWidth="1.8" />
+                        <text x="30" y="18.5" textAnchor="middle" fontSize="11.5" fill="currentColor" fontFamily="Inter, sans-serif">
+                            {n.label}
+                        </text>
+                    </motion.g>
                 ))}
             </svg>
         </div>
@@ -266,7 +256,7 @@ function SeesSketchDemo() {
 export function Bento() {
     return (
         <section id="features" className="scroll-mt-24">
-            <SectionHeading eyebrow="What's on the board" title="A board your AI can read, not just write.">
+            <SectionHeading title="A board your AI can read, not just write.">
                 Everything below is in the app today. No sign-up, nothing to install.
             </SectionHeading>
             <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -283,7 +273,7 @@ export function Bento() {
                     <LayoutDemo />
                 </Cell>
             </div>
-            <Reveal className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-[14px] text-muted-foreground">
+            <Reveal className="mt-4 grid gap-x-6 gap-y-2 rounded-2xl border border-border bg-card px-5 py-4 text-[14px] text-muted-foreground sm:grid-cols-3">
                 {[
                     { icon: WifiOff, text: 'Works offline, syncs when you reconnect' },
                     { icon: ImagePlus, text: 'Drop images in, export PNG out' },

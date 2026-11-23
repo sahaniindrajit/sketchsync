@@ -9,7 +9,7 @@ export default function NotFound() {
     return (
         <div className="flex min-h-screen flex-col bg-background">
             <Navbar />
-            <main className="mx-auto flex w-full max-w-6xl flex-1 items-center px-[max(16px,env(safe-area-inset-left))] py-20">
+            <main className="mx-auto flex min-h-[calc(100vh-80px)] w-full max-w-6xl flex-1 items-center px-[max(16px,env(safe-area-inset-left))] py-16">
                 <div className="grid w-full items-center gap-12 md:grid-cols-[1fr_1.1fr]">
                     <div className="max-w-[480px]">
                         <p className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted-foreground">Error 404</p>

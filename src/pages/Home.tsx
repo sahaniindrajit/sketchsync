@@ -1,4 +1,4 @@
-import { ArrowRight, Code2, Github, MousePointer2, Sparkles, SquareTerminal, Star, Wind, Zap } from 'lucide-react';
+import { ArrowRight, Code2, Github, MousePointer2, Sparkles, SquareTerminal, Wind, Zap } from 'lucide-react';
 import { AnimatePresence, motion, useInView, useReducedMotion } from 'motion/react';
 import { displayFill, useTheme } from '@/lib/theme';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -9,6 +9,7 @@ import { Bento } from '@/components/landing/Bento';
 import { HeroBoard } from '@/components/landing/HeroBoard';
 import { McpSection } from '@/components/landing/McpSection';
 import { Reveal } from '@/components/landing/Reveal';
+import { Frame, Note } from '@/components/landing/Canvas';
 import { Shortcuts } from '@/components/landing/Shortcuts';
 
 const HEADLINE = ['The', 'whiteboard', 'your', 'AI', 'can', 'draw', 'on.'];
@@ -25,7 +26,7 @@ function Hero() {
     const reduced = useReducedMotion();
     return (
         <section className="relative">
-            <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))] pb-7 pt-8 sm:pt-10">
+            <div className="relative mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))] pb-7 pt-8 sm:pt-10">
                 <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -36,6 +37,9 @@ function Hero() {
                     <span className="hidden sm:inline">Realtime whiteboard · </span>MCP server built in
                 </motion.p>
 
+                <Note author="Maya" color="yellow" rotate={3} arrow="down-left" className="absolute right-[max(16px,env(safe-area-inset-left))] top-[150px] hidden xl:block">
+                    No sign-up. Open a board and invite your AI.
+                </Note>
                 <h1 className="mt-4 max-w-[16ch] text-balance text-[clamp(40px,6.2vw,76px)] font-semibold leading-[0.95] tracking-display" aria-label={HEADLINE.join(' ')}>
                     {HEADLINE.map((w, i) => (
                         <motion.span
@@ -114,27 +118,12 @@ function Hero() {
     );
 }
 
-/** Live star count from GitHub; shows nothing if GitHub can't be reached. */
-function useStars() {
-    const [stars, setStars] = useState<number | null>(null);
-    useEffect(() => {
-        const ctrl = new AbortController();
-        fetch('https://api.github.com/repos/sahaniindrajit/sketchsync', { signal: ctrl.signal })
-            .then((r) => (r.ok ? r.json() : null))
-            .then((d) => typeof d?.stargazers_count === 'number' && setStars(d.stargazers_count))
-            .catch(() => {});
-        return () => ctrl.abort();
-    }, []);
-    return stars;
-}
-
 function WorksWith() {
-    const stars = useStars();
     return (
-        <section className="mx-auto mt-12 max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
+        <section className="mx-auto mt-10 max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
             <Reveal className="flex flex-col gap-4 border-y border-border/70 py-6 md:flex-row md:items-center md:gap-10">
                 <p className="shrink-0 font-mono text-[11.5px] uppercase tracking-[0.08em] text-muted-foreground">Draws with any MCP client</p>
-                <ul className="flex flex-1 flex-wrap gap-x-7 gap-y-3">
+                <ul className="flex flex-1 flex-wrap gap-x-6 gap-y-3 xl:flex-nowrap">
                     {CLIENTS.map((c) => (
                         <li key={c.name} className="flex items-center gap-2.5 whitespace-nowrap text-[16px] font-semibold tracking-tightish text-foreground/75">
                             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-foreground/70" aria-hidden>
@@ -152,11 +141,6 @@ function WorksWith() {
                 >
                     <Github className="h-4 w-4" strokeWidth={1.75} />
                     Open source
-                    {stars !== null && (
-                        <span className="flex items-center gap-1 border-l border-border pl-2 tabular-nums text-muted-foreground">
-                            <Star className="h-3.5 w-3.5 fill-current" /> {stars.toLocaleString()}
-                        </span>
-                    )}
                 </a>
             </Reveal>
         </section>
@@ -195,7 +179,6 @@ const SKETCHES: Mark[][] = [
         { text: '∫ x² dx', x: 120, y: 70, size: 28 },
         { d: 'M40 92 H 300' },
         { text: '= x³ ⁄ 3 + C', x: 150, y: 140, size: 26 },
-        { d: 'M86 158 C 140 168, 200 166, 236 156', fill: undefined },
         { text: 'power rule: xⁿ → xⁿ⁺¹ ⁄ (n+1)', x: 180, y: 196, size: 13 },
     ],
     [
@@ -335,11 +318,10 @@ function Cta() {
     const onDemo = useCallback((index: number, progress: number) => setDemo({ index, progress }), []);
     return (
         <section className="dot-grid relative overflow-hidden border-y border-border bg-card dark:bg-[hsl(228_9%_9%)]">
-            <div className="pointer-events-none absolute -left-40 top-0 h-[30rem] w-[40rem] rounded-full bg-[radial-gradient(closest-side,hsl(var(--claude)/0.14),transparent)]" />
-            <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-[max(16px,env(safe-area-inset-left))] py-24 sm:py-32 lg:grid-cols-[1.05fr_1fr]">
+            <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-[max(16px,env(safe-area-inset-left))] py-24 sm:py-28 lg:grid-cols-[1fr_1fr]">
                 <Reveal className="space-y-6">
-                    <h2 className="max-w-[14ch] text-balance text-[clamp(36px,6vw,72px)] font-semibold leading-[0.96] tracking-[-0.045em]">Start a board. Invite a teammate. Or an AI.</h2>
-                    <p className="max-w-md text-[17px] leading-relaxed text-muted-foreground">One click, no account. Tell your AI what to draw and watch it land on the board.</p>
+                    <h2 className="max-w-[13ch] text-balance text-[clamp(36px,5vw,60px)] font-semibold leading-[0.98] tracking-[-0.045em]">Invite a teammate. Or an AI.</h2>
+                    <p className="max-w-md text-[17px] leading-relaxed text-muted-foreground">Start a board in one click, no account. Tell your AI what to draw and watch it land.</p>
                     <PromptBox onDemo={onDemo} />
                 </Reveal>
                 <Reveal delay={0.1}>
@@ -350,26 +332,50 @@ function Cta() {
     );
 }
 
+/** Space between sections, where collaborators leave notes. */
+function Gutter({ children }: { children: React.ReactNode }) {
+    return <div className="mx-auto flex min-h-[96px] max-w-6xl flex-col justify-center px-[max(16px,env(safe-area-inset-left))] py-10 sm:min-h-[200px]">{children}</div>;
+}
+
 export default function Home() {
     useEffect(() => {
         document.title = 'SketchSync · The whiteboard your AI can draw on';
     }, []);
     return (
         <div className="min-h-screen overflow-x-clip bg-background">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-[720px] dot-grid opacity-70 [mask-image:linear-gradient(to_bottom,#000,transparent)]" />
+            {/* The whole page is one board. */}
+            <div className="dot-grid pointer-events-none absolute inset-0 opacity-60" />
             <Navbar />
-            <main className="relative space-y-24 sm:space-y-32">
-                <div>
-                    <Hero />
-                    <WorksWith />
-                </div>
+            <main className="relative">
+                <Hero />
+                <WorksWith />
+                <Gutter>
+                    <Note author="Maya" color="blue" rotate={-2} arrow="down" className="ml-[8%]">
+                        How does Claude get onto our board?
+                    </Note>
+                </Gutter>
                 <McpSection />
+                <Gutter>
+                    <Note author="Claude" color="clay" rotate={2} arrow="down-left" ai className="ml-auto mr-[10%]">
+                        I can read what you sketch, too. Draw something rough and ask me about it.
+                    </Note>
+                </Gutter>
                 <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
-                    <Bento />
+                    <Frame name="What's on the board">
+                        <Bento />
+                    </Frame>
                 </div>
+                <Gutter>
+                    <Note author="Maya" color="yellow" rotate={-3} arrow="down-right" className="ml-[4%]">
+                        And it's quick with a keyboard.
+                    </Note>
+                </Gutter>
                 <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
-                    <Shortcuts />
+                    <Frame name="Keyboard">
+                        <Shortcuts />
+                    </Frame>
                 </div>
+                <div className="h-24 sm:h-32" />
                 <Cta />
             </main>
             <Footer />

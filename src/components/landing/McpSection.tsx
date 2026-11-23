@@ -5,6 +5,7 @@ import { BACKEND_URL } from '@/config';
 import { CopyButton } from '@/components/shareDialog';
 import { cn } from '@/lib/utils';
 import { Reveal } from './Reveal';
+import { Frame } from './Canvas';
 
 const URL = `${BACKEND_URL}/mcp/<board-id>`;
 
@@ -140,24 +141,15 @@ export function McpSection() {
     return (
         <section id="mcp" className="scroll-mt-16 bg-[hsl(228_12%_7%)] text-white dark:bg-[radial-gradient(60rem_24rem_at_20%_0%,hsl(var(--claude)/0.12),transparent),linear-gradient(180deg,hsl(228_14%_14%),hsl(228_12%_11%))] dark:[border-block:1px_solid_hsl(0_0%_100%/0.1)]">
             <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))] py-24 sm:py-32">
-                <Reveal className="grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-end">
-                    <div className="max-w-2xl space-y-4">
-                        <p className="font-mono text-[12px] uppercase tracking-[0.08em] text-white/50">Model Context Protocol</p>
-                        <h2 className="text-balance text-[clamp(32px,5vw,56px)] font-semibold leading-[1.02] tracking-[-0.04em]">One URL, and your AI can draw.</h2>
-                        <p className="text-pretty text-[17px] leading-relaxed text-white/65">
-                            Every board has its own MCP endpoint. Paste it into Claude, Cursor or VS Code and the assistant can read the board, see your sketches, and draw shapes, flowcharts and LaTeX while you watch.
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                        {TOOLS.map((t) => (
-                            <code key={t} className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 font-mono text-[12px] text-white/75">
-                                {t}
-                            </code>
-                        ))}
-                    </div>
+                <Reveal className="grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:items-end">
+                    <h2 className="max-w-xl text-balance text-[clamp(32px,5vw,56px)] font-semibold leading-[1.02] tracking-[-0.04em]">One URL, and your AI can draw.</h2>
+                    <p className="max-w-lg text-pretty text-[17px] leading-relaxed text-white/65">
+                        Every board has its own MCP endpoint. Paste it into Claude, Cursor or VS Code, and the assistant gets {TOOLS.length} tools to read the board, see your sketches, and draw shapes, flowcharts and LaTeX while you watch.
+                    </p>
                 </Reveal>
 
-                <Reveal delay={0.05} className="mt-12 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 md:grid-cols-[1.1fr_1fr]">
+                <Frame name="Connect your AI" dark className="mt-16 !p-3">
+                <Reveal delay={0.05} className="grid gap-3 md:grid-cols-[1.1fr_1fr]">
                     <div ref={ref} className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[hsl(228_10%_5%)]">
                         <div
                             className="flex items-center gap-1 overflow-x-auto border-b border-white/10 p-2 pr-8 [mask-image:linear-gradient(90deg,#000_85%,transparent)] [scrollbar-width:none] md:pr-2 md:[mask-image:none]"
@@ -219,6 +211,7 @@ export function McpSection() {
                     </div>
                     <MiniBoard n={n} />
                 </Reveal>
+                </Frame>
             </div>
         </section>
     );

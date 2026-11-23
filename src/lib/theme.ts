@@ -87,9 +87,16 @@ const PEN_FOR_PASTEL: Record<string, string> = {
  * Display colour for shape fills on the dark board: a translucent tint of the same hue, so
  * pastels read as colour instead of glare or mud. Stored colours never change.
  */
+const DARK_FILLS: Record<string, string> = {
+    '#f6dccf': '#3a2a24',
+    '#dbe7f5': '#1f2a3a',
+    '#f1eee8': '#26272b',
+};
+
 export function displayFill(color: string, theme: ResolvedTheme): string {
     if (theme !== 'dark' || !color || color === 'transparent') return color;
     const key = color.toLowerCase();
+    if (DARK_FILLS[key]) return DARK_FILLS[key];
     const hex = (PEN_FOR_PASTEL[key] ?? key).replace('#', '');
     const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex.slice(0, 6);
     if (!/^[0-9a-fA-F]{6}$/.test(full)) return color;

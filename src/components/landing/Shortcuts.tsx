@@ -121,7 +121,7 @@ export function Shortcuts() {
 
     return (
         <section ref={sectionRef}>
-            <SectionHeading small eyebrow="Keyboard first" title="Every tool is one key away.">
+            <SectionHeading small title="Every tool is one key away.">
                 Press a key, or click one, and it draws here. The same keys work on the board, and <span className="whitespace-nowrap"><span className="kbd">⌘</span> <span className="kbd">K</span></span> finds everything else.
             </SectionHeading>
             <Reveal className="mt-10 grid items-center gap-8 md:grid-cols-[1fr_1.2fr]">

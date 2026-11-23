@@ -16,10 +16,10 @@ export function Reveal({ children, className, delay = 0 }: { children: React.Rea
     );
 }
 
-export function SectionHeading({ eyebrow, title, children, className, center, small }: { eyebrow: string; title: React.ReactNode; children?: React.ReactNode; className?: string; center?: boolean; small?: boolean }) {
+export function SectionHeading({ eyebrow, title, children, className, center, small }: { eyebrow?: string; title: React.ReactNode; children?: React.ReactNode; className?: string; center?: boolean; small?: boolean }) {
     return (
         <Reveal className={cn('max-w-2xl space-y-4', center && 'mx-auto text-center', className)}>
-            <p className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted-foreground">{eyebrow}</p>
+            {eyebrow && <p className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted-foreground">{eyebrow}</p>}
             <h2 className={cn('text-balance font-semibold tracking-[-0.04em]', small ? 'text-[length:clamp(26px,3.4vw,38px)]' : 'text-[length:clamp(32px,5vw,56px)]', 'leading-[1.02]')}>{title}</h2>
             {children && <p className="text-pretty text-[17px] leading-relaxed text-muted-foreground">{children}</p>}
         </Reveal>

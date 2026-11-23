@@ -18,7 +18,7 @@ export default function Navbar() {
             <motion.nav
                 className={cn(
                     'mx-auto mt-3 flex h-14 max-w-6xl items-center justify-between rounded-2xl border px-3 transition-[background-color,border-color,box-shadow] duration-300 sm:px-4',
-                    scrolled ? 'border-border/80 bg-[hsl(var(--background)/0.86)] shadow-chrome backdrop-blur-xl backdrop-saturate-150' : 'border-transparent',
+                    scrolled ? 'border-border/80 bg-[hsl(var(--background)/0.94)] shadow-chrome backdrop-blur-xl backdrop-saturate-150' : 'border-transparent',
                 )}
             >
                 <Link to="/" aria-label="SketchSync home" className="flex items-center">

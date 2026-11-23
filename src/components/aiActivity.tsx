@@ -46,27 +46,38 @@ export function AiActivityToast({ onJump }: { onJump: (box: Box) => void }) {
     const active = visible && now - activity!.at < ACTIVE_MS;
     const count = activity?.shapeIds.length ?? 0;
     return (
-        <div className="pointer-events-none fixed bottom-[calc(max(12px,env(safe-area-inset-bottom))+120px)] left-1/2 z-40 -translate-x-1/2 lg:bottom-[calc(max(12px,env(safe-area-inset-bottom))+68px)]">
+        <div className="pointer-events-none fixed left-1/2 top-[calc(max(12px,env(safe-area-inset-top))+56px)] z-40 -translate-x-1/2 lg:top-[max(14px,env(safe-area-inset-top))]">
             <AnimatePresence>
                 {visible && (
                     <motion.div
                         role="status"
                         data-testid="ai-activity"
-                        initial={{ opacity: 0, y: 12, scale: 0.95 }}
+                        layout
+                        initial={{ opacity: 0, y: -12, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 8, scale: 0.97, transition: { duration: 0.15 } }}
+                        exit={{ opacity: 0, y: -8, scale: 0.97, transition: { duration: 0.15 } }}
+                        transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.1 }}
                         className="chrome pointer-events-auto flex items-center gap-2.5 whitespace-nowrap rounded-full py-1.5 pl-1.5 pr-1.5 text-[13px] text-muted-foreground"
                     >
                         <span className={cn('flex h-7 w-7 items-center justify-center rounded-full bg-claude text-white', active && 'animate-ping2')}>
                             <Sparkles className="h-3.5 w-3.5" strokeWidth={2} />
                         </span>
-                        <span>
-                            <b className="font-semibold text-foreground">{activity!.name}</b>{' '}
-                            <span className={cn(active && 'text-shimmer')}>
-                                {active ? 'is editing the board…' : `edited ${count} ${count === 1 ? 'shape' : 'shapes'}`}
-                            </span>
-                        </span>
-                        <button
+                        <motion.span layout="position" className="flex items-center gap-1">
+                            <b className="font-semibold text-foreground">{activity!.name}</b>
+                            <AnimatePresence mode="popLayout" initial={false}>
+                                <motion.span
+                                    key={active ? 'on' : 'off'}
+                                    initial={{ opacity: 0, y: 4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -4 }}
+                                    className={cn(active && 'text-shimmer')}
+                                >
+                                    {active ? 'is editing the board…' : `edited ${count} ${count === 1 ? 'shape' : 'shapes'}`}
+                                </motion.span>
+                            </AnimatePresence>
+                        </motion.span>
+                        <motion.button
+                            layout="position"
                             type="button"
                             className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-transform active:scale-95"
                             onClick={() => {
@@ -76,7 +87,7 @@ export function AiActivityToast({ onJump }: { onJump: (box: Box) => void }) {
                         >
                             <Crosshair className="h-3.5 w-3.5" />
                             Show me
-                        </button>
+                        </motion.button>
                     </motion.div>
                 )}
             </AnimatePresence>

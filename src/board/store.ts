@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { applyOp } from '@/shared/ops';
+import { redo, resetHistory, undo } from './history';
 import { DEFAULTS, type Op, type Shape } from '@/shared/protocol';
 
 export type Tool = 'select' | 'hand' | 'rect' | 'ellipse' | 'diamond' | 'arrow' | 'line' | 'pencil' | 'text' | 'math' | 'eraser';
@@ -95,8 +96,13 @@ export function setShapes(shapes: Map<string, Shape>) {
 }
 
 export function resetBoardState(roomId: string | null, shapes: Map<string, Shape>) {
+    resetHistory();
     useBoard.setState({ ...initialDefaults, roomId, shapes, selectedIds: [], viewport: { x: 0, y: 0, scale: 1 } });
 }
+
+/** Undo/redo the local user's last change. */
+export const undoLast = () => undo((op) => useBoard.getState().dispatch(op), () => useBoard.getState().shapes);
+export const redoLast = () => redo((op) => useBoard.getState().dispatch(op), () => useBoard.getState().shapes);
 
 if (import.meta.env.DEV || import.meta.env.MODE === 'test') {
     // Handy for debugging and used by the Playwright end-to-end tests.

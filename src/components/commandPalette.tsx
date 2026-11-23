@@ -1,9 +1,8 @@
 import { Command } from 'cmdk';
-import { ArrowUpRight, Circle, Diamond, Eraser, FilePlus2, Hand, ImageDown, Link2, Maximize, Minus, Moon, MousePointer2, Pencil, Sigma, Sparkles, Square, Sun, Trash2, Type } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
-import { useEffect } from 'react';
+import { ArrowUpRight, Circle, Diamond, Eraser, FilePlus2, Hand, ImageDown, Link2, Maximize, Minus, Moon, MousePointer2, Pencil, Redo2, Sigma, Sparkles, Square, Sun, Trash2, Type, Undo2 } from 'lucide-react';
 import { Kbd } from '@/components/ui/kbd';
-import { useBoard, type Tool } from '@/board/store';
+import { redoLast, undoLast, useBoard, type Tool } from '@/board/store';
+import { MOD } from '@/lib/platform';
 import { useTheme } from '@/lib/theme';
 import type { MenuActions } from './menu';
 
@@ -30,12 +29,6 @@ export function CommandPalette({ open, onOpenChange, actions, onFit }: { open: b
     const theme = useTheme((s) => s.resolved);
     const toggleTheme = useTheme((s) => s.toggle);
 
-    useEffect(() => {
-        if (!open) return;
-        const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onOpenChange(false);
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, [open, onOpenChange]);
 
     const run = (fn: () => void) => () => {
         onOpenChange(false);
@@ -43,59 +36,57 @@ export function CommandPalette({ open, onOpenChange, actions, onFit }: { open: b
     };
 
     return (
-        <AnimatePresence>
-            {open && (
-                <div className="fixed inset-0 z-[80] flex items-start justify-center px-4 pt-[14vh]">
-                    <motion.div className="absolute inset-0 bg-[hsl(225_15%_6%/0.22)] backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.12 } }} onPointerDown={() => onOpenChange(false)} />
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.97, y: -8 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.98, y: -4, transition: { duration: 0.12 } }}
-                        transition={{ type: 'spring', visualDuration: 0.25, bounce: 0.15 }}
-                        className="relative w-full max-w-[520px] overflow-hidden rounded-2xl border border-border bg-popover shadow-lift"
-                    >
-                        <Command label="Command palette" loop>
-                            <div className="flex items-center gap-2 border-b border-border px-4">
-                                <Command.Input autoFocus placeholder="Search tools and actions…" className="h-12 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground" />
-                                <Kbd>esc</Kbd>
-                            </div>
-                            <Command.List className="max-h-[min(380px,60vh)] overflow-y-auto overscroll-contain p-1.5">
-                                <Command.Empty className="px-3 py-8 text-center text-sm text-muted-foreground">No matching commands.</Command.Empty>
-                                <Command.Group heading="Board" className={groupClass}>
-                                    <Command.Item className={itemClass} onSelect={run(actions.onConnectAi)} keywords={['mcp', 'claude', 'cursor', 'agent']}>
-                                        <Sparkles className="text-claude" /> <span className="flex-1">Connect your AI…</span>
-                                    </Command.Item>
-                                    <Command.Item className={itemClass} onSelect={run(actions.onShare)} keywords={['invite', 'link', 'collaborate']}>
-                                        <Link2 /> <span className="flex-1">Share board link…</span>
-                                    </Command.Item>
-                                    <Command.Item className={itemClass} onSelect={run(actions.onExport)} keywords={['download', 'png', 'image']}>
-                                        <ImageDown /> <span className="flex-1">Export as PNG</span>
-                                    </Command.Item>
-                                    <Command.Item className={itemClass} onSelect={run(onFit)} keywords={['zoom', 'fit']}>
-                                        <Maximize /> <span className="flex-1">Zoom to fit</span> <Kbd>⇧1</Kbd>
-                                    </Command.Item>
-                                    <Command.Item className={itemClass} onSelect={run(toggleTheme)} keywords={['theme', 'dark', 'light']}>
-                                        {theme === 'dark' ? <Sun /> : <Moon />} <span className="flex-1">{theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}</span> <Kbd>⇧D</Kbd>
-                                    </Command.Item>
-                                    <Command.Item className={itemClass} onSelect={run(actions.onNewBoard)}>
-                                        <FilePlus2 /> <span className="flex-1">New board</span>
-                                    </Command.Item>
-                                    <Command.Item className={itemClass} onSelect={run(actions.onReset)} keywords={['clear', 'delete']}>
-                                        <Trash2 /> <span className="flex-1">Reset the canvas</span>
-                                    </Command.Item>
-                                </Command.Group>
-                                <Command.Group heading="Tools" className={groupClass}>
-                                    {tools.map((t) => (
-                                        <Command.Item key={t.id} className={itemClass} onSelect={run(() => setTool(t.id))}>
-                                            <t.icon /> <span className="flex-1">{t.label}</span> <Kbd>{t.key}</Kbd>
-                                        </Command.Item>
-                                    ))}
-                                </Command.Group>
-                            </Command.List>
-                        </Command>
-                    </motion.div>
-                </div>
-            )}
-        </AnimatePresence>
+        <Command.Dialog
+            open={open}
+            onOpenChange={onOpenChange}
+            label="Command palette"
+            loop
+            overlayClassName="fixed inset-0 z-[80] bg-[hsl(225_15%_6%/0.22)] backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=closed]:duration-100"
+            contentClassName="fixed inset-x-0 top-[14vh] z-[81] mx-auto w-[calc(100vw-2rem)] max-w-[520px] overflow-hidden rounded-2xl border border-border bg-popover shadow-lift outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-[0.97] data-[state=closed]:zoom-out-[0.98] data-[state=open]:slide-in-from-top-2 data-[state=open]:duration-200 data-[state=closed]:duration-100"
+        >
+            <div className="flex items-center gap-2 border-b border-border px-4">
+                <Command.Input autoFocus placeholder="Search tools and actions…" className="h-12 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground" />
+                <Kbd>esc</Kbd>
+            </div>
+            <Command.List className="max-h-[min(380px,60vh)] overflow-y-auto overscroll-contain p-1.5 transition-[height] duration-150">
+                <Command.Empty className="px-3 py-8 text-center text-sm text-muted-foreground">No matching commands.</Command.Empty>
+                <Command.Group heading="Board" className={groupClass}>
+                    <Command.Item className={itemClass} onSelect={run(actions.onConnectAi)} keywords={['mcp', 'claude', 'cursor', 'agent']}>
+                        <Sparkles className="text-claude" /> <span className="flex-1">Connect your AI…</span>
+                    </Command.Item>
+                    <Command.Item className={itemClass} onSelect={run(actions.onShare)} keywords={['invite', 'link', 'collaborate']}>
+                        <Link2 /> <span className="flex-1">Share board link…</span>
+                    </Command.Item>
+                    <Command.Item className={itemClass} onSelect={run(actions.onExport)} keywords={['download', 'png', 'image']}>
+                        <ImageDown /> <span className="flex-1">Export as PNG</span>
+                    </Command.Item>
+                    <Command.Item className={itemClass} onSelect={run(undoLast)} keywords={['back', 'revert']}>
+                        <Undo2 /> <span className="flex-1">Undo</span> <Kbd>{MOD}</Kbd><Kbd>Z</Kbd>
+                    </Command.Item>
+                    <Command.Item className={itemClass} onSelect={run(redoLast)}>
+                        <Redo2 /> <span className="flex-1">Redo</span> <Kbd>{MOD}</Kbd><Kbd>⇧</Kbd><Kbd>Z</Kbd>
+                    </Command.Item>
+                    <Command.Item className={itemClass} onSelect={run(onFit)} keywords={['zoom', 'fit']}>
+                        <Maximize /> <span className="flex-1">Zoom to fit</span> <Kbd>⇧1</Kbd>
+                    </Command.Item>
+                    <Command.Item className={itemClass} onSelect={run(toggleTheme)} keywords={['theme', 'dark', 'light']}>
+                        {theme === 'dark' ? <Sun /> : <Moon />} <span className="flex-1">{theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}</span> <Kbd>⇧D</Kbd>
+                    </Command.Item>
+                    <Command.Item className={itemClass} onSelect={run(actions.onNewBoard)}>
+                        <FilePlus2 /> <span className="flex-1">New board</span>
+                    </Command.Item>
+                    <Command.Item className={itemClass} onSelect={run(actions.onReset)} keywords={['clear', 'delete']}>
+                        <Trash2 /> <span className="flex-1">Reset the canvas</span>
+                    </Command.Item>
+                </Command.Group>
+                <Command.Group heading="Tools" className={groupClass}>
+                    {tools.map((t) => (
+                        <Command.Item key={t.id} className={itemClass} onSelect={run(() => setTool(t.id))}>
+                            <t.icon /> <span className="flex-1">{t.label}</span> <Kbd>{t.key}</Kbd>
+                        </Command.Item>
+                    ))}
+                </Command.Group>
+            </Command.List>
+        </Command.Dialog>
     );
 }

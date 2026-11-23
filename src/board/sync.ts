@@ -17,6 +17,7 @@ import {
 import { canMerge, isUrgent, mergeOps } from './opQueue';
 import { adoptOrphanPending, holdTabLock, loadBoard, saveBoard, savePending } from './persistence';
 import { setShapes, useBoard } from './store';
+import { recordOp } from './history';
 
 const FLUSH_INTERVAL_MS = 40;
 const SAVE_DEBOUNCE_MS = 400;
@@ -142,6 +143,7 @@ export class RoomSync {
 
     /** Applies an op locally right away and queues it for the server. */
     dispatch(op: Op) {
+        recordOp(op, useBoard.getState().shapes);
         for (const part of splitOp(op)) {
             const last = this.pending[this.pending.length - 1];
             if (last && !last.dispatched && canMerge(last.op, part)) last.op = mergeOps(last.op, part);

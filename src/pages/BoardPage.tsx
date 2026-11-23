@@ -19,6 +19,8 @@ import { TopBar } from '@/components/topBar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/components/404';
 import { isValidRoomId } from '@/shared/protocol';
+import { getShapeBounds, unionBoxes } from '@/shared/geometry';
+import { browserMeasurer } from '@/board/measure';
 
 const downloadDataUrl = (dataUrl: string, name: string) => {
     const link = document.createElement('a');
@@ -98,9 +100,35 @@ function BoardScreen({ roomId }: { roomId: string }) {
 
     const onFit = useCallback(() => handle.current?.zoomToFit(), []);
 
+    // Opening a board whose drawing is entirely off-screen: bring it into view once.
+    useEffect(() => {
+        let done = false;
+        const check = () => {
+            const { shapes, viewport } = useBoard.getState();
+            if (done || !shapes.size || !handle.current) return;
+            done = true;
+            const box = unionBoxes(Array.from(shapes.values()).map((s) => getShapeBounds(s, (id) => shapes.get(id), browserMeasurer)));
+            if (!box) return;
+            const left = box.x * viewport.scale + viewport.x;
+            const top = box.y * viewport.scale + viewport.y;
+            const right = left + box.width * viewport.scale;
+            const bottom = top + box.height * viewport.scale;
+            if (right < 0 || bottom < 0 || left > window.innerWidth || top > window.innerHeight) handle.current.zoomToFit();
+        };
+        const t = setTimeout(check, 400);
+        const unsub = useBoard.subscribe((s, prev) => {
+            if (s.connection === 'online' && prev.connection !== 'online') setTimeout(check, 50);
+        });
+        return () => {
+            clearTimeout(t);
+            unsub();
+        };
+    }, [roomId]);
+
     const actions = useMemo(
         () => ({
             onExport: onDownload,
+            onFit,
             onShare: () => setShare('collaborate'),
             onConnectAi: () => setShare('ai'),
             onNewBoard: () => navigate(`/board/${createBoard()}`),
@@ -110,7 +138,7 @@ function BoardScreen({ roomId }: { roomId: string }) {
                 }
             },
         }),
-        [navigate, onDownload],
+        [navigate, onDownload, onFit],
     );
 
     return (
@@ -166,7 +194,7 @@ function EmptyState() {
                 <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
                     Pick a tool and start drawing. Share the link to sketch together, or connect an AI to draw with you.
                 </p>
-                <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[12px] text-muted-foreground">
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[12px] text-muted-foreground [@media(hover:none)]:hidden">
                     {hints.map(([k, label]) => (
                         <span key={k} className="flex items-center gap-1.5">
                             <Kbd>{k}</Kbd>

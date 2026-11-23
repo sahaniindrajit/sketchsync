@@ -24,9 +24,11 @@ export default function Footer() {
                     ))}
                 </nav>
             </div>
-            <div className="mx-auto flex max-w-6xl items-center justify-between border-t border-border/60 px-[max(16px,env(safe-area-inset-left))] py-5 font-mono text-[11.5px] text-muted-foreground">
-                <span>© {new Date().getFullYear()} SketchSync</span>
-                <span>Open source · ISC</span>
+            <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
+                <div className="flex items-center justify-between border-t border-border/60 py-5 font-mono text-[11.5px] text-muted-foreground">
+                    <span>© {new Date().getFullYear()} SketchSync</span>
+                    <span>Open source · ISC</span>
+                </div>
             </div>
         </footer>
     );

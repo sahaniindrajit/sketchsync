@@ -1,10 +1,11 @@
-import { Maximize, Minus, Plus, Share2, Sparkles } from 'lucide-react';
+import { Maximize, Minus, Plus, Redo2, Share2, Sparkles, Undo2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Kbd } from '@/components/ui/kbd';
 import { MOD } from '@/lib/platform';
-import { useBoard } from '@/board/store';
+import { redoLast, undoLast, useBoard } from '@/board/store';
+import { useHistory } from '@/board/history';
 import { cn } from '@/lib/utils';
 import { useAiActivityClock } from './aiActivity';
 
@@ -22,12 +23,14 @@ export function ConnectionBadge({ onShare, onConnectAi }: { onShare: () => void;
         >
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <button
+                    <motion.button
+                        layout
                         type="button"
                         onClick={onConnectAi}
                         aria-label="Connect your AI"
+                        transition={{ type: 'spring', visualDuration: 0.3, bounce: 0 }}
                         className={cn(
-                            'chrome flex h-11 items-center gap-2 rounded-xl pl-2.5 pr-3 text-[13px] text-muted-foreground transition-colors hover:text-foreground',
+                            'chrome flex h-11 items-center gap-2 rounded-xl pl-2.5 pr-3 text-[13px] font-medium text-foreground/80 transition-colors hover:text-foreground',
                             working && 'border-claude/40',
                         )}
                     >
@@ -36,6 +39,7 @@ export function ConnectionBadge({ onShare, onConnectAi }: { onShare: () => void;
                         </span>
                         <AnimatePresence mode="popLayout" initial={false}>
                             <motion.span
+                                layout="position"
                                 key={working ? 'working' : 'idle'}
                                 initial={{ opacity: 0, y: 6 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -45,7 +49,7 @@ export function ConnectionBadge({ onShare, onConnectAi }: { onShare: () => void;
                                 {working ? `${activity!.name} is drawing` : 'Connect AI'}
                             </motion.span>
                         </AnimatePresence>
-                    </button>
+                    </motion.button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Let Claude, Cursor or any MCP client draw here</TooltipContent>
             </Tooltip>
@@ -74,7 +78,7 @@ export function ConnectionStatus() {
     const [dot, text] = styles[connection];
     return (
         <div
-            className="chrome fixed bottom-[calc(max(12px,env(safe-area-inset-bottom))+64px)] right-[max(12px,env(safe-area-inset-right))] z-10 flex h-9 items-center gap-2 rounded-xl px-3 text-xs text-muted-foreground lg:bottom-[max(12px,env(safe-area-inset-bottom))]"
+            className="chrome fixed bottom-[calc(max(12px,env(safe-area-inset-bottom))+64px)] right-[max(12px,env(safe-area-inset-right))] z-10 flex h-9 items-center gap-2 rounded-xl px-3 text-xs text-muted-foreground xl:bottom-[max(12px,env(safe-area-inset-bottom))]"
             data-testid="connection-status"
             data-status={connection}
             role="status"
@@ -114,7 +118,7 @@ function RollingNumber({ value, suffix }: { value: number; suffix?: string }) {
     );
 }
 
-function ZoomButton({ label, hint, onClick, children }: { label: string; hint?: React.ReactNode; onClick: () => void; children: React.ReactNode }) {
+function ZoomButton({ label, hint, onClick, children, disabled }: { label: string; hint?: React.ReactNode; onClick: () => void; children: React.ReactNode; disabled?: boolean }) {
     return (
         <Tooltip>
             <TooltipTrigger asChild>
@@ -122,7 +126,8 @@ function ZoomButton({ label, hint, onClick, children }: { label: string; hint?: 
                     type="button"
                     aria-label={label}
                     onClick={onClick}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground active:scale-95"
+                    disabled={disabled}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground active:scale-95 disabled:pointer-events-none disabled:opacity-35"
                 >
                     {children}
                 </button>
@@ -137,6 +142,8 @@ function ZoomButton({ label, hint, onClick, children }: { label: string; hint?: 
 
 export function ZoomControls({ onFit }: { onFit: () => void }) {
     const viewport = useBoard((s) => s.viewport);
+    const canUndo = useHistory((s) => s.undo.length > 0);
+    const canRedo = useHistory((s) => s.redo.length > 0);
     const zoom = (factor: number | null) => {
         const state = useBoard.getState();
         const vp = state.viewport;
@@ -146,7 +153,14 @@ export function ZoomControls({ onFit }: { onFit: () => void }) {
         state.setViewport({ scale, x: cx - ((cx - vp.x) / vp.scale) * scale, y: cy - ((cy - vp.y) / vp.scale) * scale });
     };
     return (
-        <div className="chrome fixed bottom-[calc(max(12px,env(safe-area-inset-bottom))+64px)] left-[max(12px,env(safe-area-inset-left))] z-10 flex items-center gap-0.5 rounded-xl p-0.5 lg:bottom-[max(12px,env(safe-area-inset-bottom))]">
+        <div className="chrome fixed bottom-[calc(max(12px,env(safe-area-inset-bottom))+64px)] left-[max(12px,env(safe-area-inset-left))] z-10 flex items-center gap-0.5 rounded-xl p-0.5 xl:bottom-[max(12px,env(safe-area-inset-bottom))]">
+            <ZoomButton label="Undo" hint={<><Kbd>{MOD}</Kbd><Kbd>Z</Kbd></>} onClick={undoLast} disabled={!canUndo}>
+                <Undo2 className="h-4 w-4" strokeWidth={1.75} />
+            </ZoomButton>
+            <ZoomButton label="Redo" hint={<><Kbd>{MOD}</Kbd><Kbd>⇧</Kbd><Kbd>Z</Kbd></>} onClick={redoLast} disabled={!canRedo}>
+                <Redo2 className="h-4 w-4" strokeWidth={1.75} />
+            </ZoomButton>
+            <div className="mx-0.5 h-4 w-px bg-border" />
             <ZoomButton label="Zoom out" hint={<><Kbd>{MOD}</Kbd><Kbd>−</Kbd></>} onClick={() => zoom(1 / 1.2)}>
                 <Minus className="h-4 w-4" strokeWidth={1.75} />
             </ZoomButton>
@@ -180,15 +194,15 @@ export function NoticeToast() {
         return () => clearTimeout(t);
     }, [notice]);
     return (
-        <div className="pointer-events-none fixed left-1/2 top-[calc(max(12px,env(safe-area-inset-top))+56px)] z-50 -translate-x-1/2 lg:top-[max(16px,env(safe-area-inset-top))]">
+        <div className="pointer-events-none fixed bottom-[calc(max(12px,env(safe-area-inset-bottom))+120px)] left-1/2 z-50 -translate-x-1/2 xl:bottom-[calc(max(12px,env(safe-area-inset-bottom))+72px)]">
             <AnimatePresence>
                 {notice && (
                     <motion.div
                         key={notice.at}
                         role="status"
-                        initial={{ opacity: 0, y: -10, scale: 0.96 }}
+                        initial={{ opacity: 0, y: 10, scale: 0.96 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -6, scale: 0.98, transition: { duration: 0.14 } }}
+                        exit={{ opacity: 0, y: 6, scale: 0.98, transition: { duration: 0.14 } }}
                         className={cn(
                             'pointer-events-auto flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-xl px-3.5 py-2 text-[13px] shadow-lift',
                             notice.kind === 'error' ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground',

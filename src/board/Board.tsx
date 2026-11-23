@@ -7,7 +7,7 @@ import type { EllipseShape, FreehandShape, ImageShape, LineShape, RectShape, Dia
 import { browserMeasurer } from './measure';
 import { fileToImageData, makeShape } from './shapeFactory';
 import { ShapeNode } from './shapes/ShapeNode';
-import { useBoard, type Tool } from './store';
+import { redoLast, undoLast, useBoard, type Tool } from './store';
 import { TextEditor } from './TextEditor';
 import { useAiActivityClock } from '@/components/aiActivity';
 import { useTheme } from '@/lib/theme';
@@ -614,6 +614,12 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
             }
             if (e.key === 'Escape') {
                 state.setSelection([]);
+                return;
+            }
+            if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'z' || e.key.toLowerCase() === 'y')) {
+                e.preventDefault();
+                if (e.key.toLowerCase() === 'y' || e.shiftKey) redoLast();
+                else undoLast();
                 return;
             }
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {

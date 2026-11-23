@@ -36,10 +36,10 @@ export function Shortcuts() {
 
     return (
         <section>
-            <SectionHeading eyebrow="Keyboard first" title="Every tool is one key away.">
+            <SectionHeading center eyebrow="Keyboard first" title="Every tool is one key away.">
                 Try them here. The same keys work on the board, and <span className="kbd">⌘</span> <span className="kbd">K</span> finds everything else.
             </SectionHeading>
-            <Reveal className="mt-10 flex flex-wrap gap-2.5">
+            <Reveal className="mx-auto mt-10 flex max-w-4xl flex-wrap justify-center gap-3">
                 {KEYS.map(([k, label]) => {
                     const on = pressed === k;
                     return (
@@ -48,7 +48,7 @@ export function Shortcuts() {
                                 animate={{ y: on ? 3 : 0, scale: on ? 0.96 : 1 }}
                                 transition={{ type: 'spring', visualDuration: 0.12, bounce: 0.4 }}
                                 className={cn(
-                                    'flex h-14 w-14 items-center justify-center rounded-xl border bg-card font-mono text-[17px] font-medium shadow-[0_3px_0_hsl(var(--border))] transition-colors duration-100',
+                                    'flex h-16 w-16 items-center justify-center rounded-xl border bg-card text-[19px] font-medium shadow-[0_3px_0_hsl(var(--border))] transition-colors duration-100',
                                     on ? 'border-accent text-accent shadow-[0_0px_0_hsl(var(--border)),0_0_0_4px_hsl(var(--accent)/0.15)]' : 'border-border text-foreground',
                                 )}
                             >

@@ -1,5 +1,6 @@
-import { motion, useReducedMotion } from 'motion/react';
-import { useState } from 'react';
+import { Check } from 'lucide-react';
+import { AnimatePresence, motion, useInView, useReducedMotion } from 'motion/react';
+import { useEffect, useRef, useState } from 'react';
 import { BACKEND_URL } from '@/config';
 import { CopyButton } from '@/components/shareDialog';
 import { cn } from '@/lib/utils';
@@ -16,7 +17,7 @@ const SETUPS = [
 
 const TOOLS = ['get_board', 'get_board_image', 'add_shapes', 'update_shapes', 'delete_shapes', 'create_flowchart', 'add_math', 'write_solution', 'clear_board'];
 
-function Beam({ d, delay, reduced }: { d: string; delay: number; reduced: boolean | null }) {
+function Beam({ d, delay, reduced }: { d: string; delay: number; reduced: boolean }) {
     return (
         <g>
             <path d={d} fill="none" className="stroke-border" strokeWidth="1.5" />
@@ -37,10 +38,12 @@ function Beam({ d, delay, reduced }: { d: string; delay: number; reduced: boolea
 }
 
 function Diagram() {
-    const reduced = useReducedMotion();
+    const ref = useRef<SVGSVGElement>(null);
+    const inView = useInView(ref, { amount: 0.2 });
+    const reduced = !!useReducedMotion() || !inView;
     const clients = ['Claude', 'Cursor', 'VS Code'];
     return (
-        <svg viewBox="0 0 560 300" className="h-auto w-full text-foreground" role="img" aria-label="Claude, Cursor and VS Code connect to the board's MCP endpoint, which edits the live board">
+        <svg ref={ref} viewBox="0 0 560 300" className="h-auto w-full text-foreground" role="img" aria-label="Claude, Cursor and VS Code connect to the board's MCP endpoint, which edits the live board">
             <defs>
                 <linearGradient id="beam" x1="0" x2="1">
                     <stop offset="0" stopColor="hsl(var(--claude))" stopOpacity="0" />
@@ -127,7 +130,7 @@ export function McpSection() {
                         <span>{setup.file}</span>
                         <CopyButton value={setup.code.replace(/\\\n\s+/g, '')} label="Copy snippet" dense className="text-white/60 hover:bg-white/10 hover:text-white" />
                     </div>
-                    <motion.pre key={setup.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="min-h-[190px] flex-1 overflow-x-auto px-5 pb-6 pt-2 font-mono text-[12.5px] leading-[1.75]">
+                    <motion.pre key={setup.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="overflow-x-auto px-5 pb-5 pt-2 font-mono text-[12.5px] leading-[1.75]">
                         <code>
                             {setup.code.split('\n').map((line, i) => (
                                 <div key={i}>
@@ -137,9 +140,7 @@ export function McpSection() {
                             ))}
                         </code>
                     </motion.pre>
-                    <div className="border-t border-white/10 px-5 py-3 text-[12.5px] text-white/50">
-                        Then ask: <span className="text-white/90">“Draw a flowchart of our signup flow.”</span>
-                    </div>
+                    <Session />
                 </Reveal>
             </div>
         </section>
@@ -161,4 +162,57 @@ function colorize(line: string) {
         if (p.startsWith('claude ')) return <span key={i}><span className="text-[#f0b49a]">claude</span>{p.slice(6)}</span>;
         return <span key={i}>{p}</span>;
     });
+}
+
+const SESSION = [
+    { tool: 'get_board', out: 'empty board' },
+    { tool: 'create_flowchart', out: '5 nodes · 5 edges, auto-laid out' },
+    { tool: 'get_board_image', out: 'looks right' },
+];
+
+/** A short replay of the assistant using the board, played once when scrolled into view. */
+function Session() {
+    const ref = useRef<HTMLDivElement>(null);
+    const inView = useInView(ref, { once: true, amount: 0.5 });
+    const reduced = useReducedMotion();
+    const [n, setN] = useState(reduced ? SESSION.length + 1 : 0);
+    useEffect(() => {
+        if (!inView || reduced) return;
+        const timers = Array.from({ length: SESSION.length + 1 }, (_, i) => setTimeout(() => setN(i + 1), 500 + i * 650));
+        return () => timers.forEach(clearTimeout);
+    }, [inView, reduced]);
+    return (
+        <div ref={ref} className="flex-1 space-y-3 border-t border-white/10 px-5 py-5 text-[13px]">
+            <div className="flex items-start gap-2.5">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-[10px] font-semibold text-white">Y</span>
+                <p className="text-white/90">Draw a flowchart of our signup flow.</p>
+            </div>
+            <div className="space-y-1.5 pl-[30px] font-mono text-[12px]">
+                <AnimatePresence initial={false}>
+                    {SESSION.slice(0, n).map((step, i) => (
+                        <motion.div key={step.tool} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2">
+                            {i === n - 1 && n <= SESSION.length ? (
+                                <span className="h-3.5 w-3.5 animate-spin rounded-full border-[1.5px] border-[#f0b49a] border-t-transparent" />
+                            ) : (
+                                <Check className="h-3.5 w-3.5 text-[#8ce99a]" strokeWidth={2.5} />
+                            )}
+                            <span className="text-[#f0b49a]">sketchsync</span>
+                            <span className="text-white/80">{step.tool}</span>
+                            <span className="truncate text-white/40">{step.out}</span>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+            </div>
+            <AnimatePresence>
+                {n > SESSION.length && (
+                    <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-2.5">
+                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#d97757] text-white">
+                            <svg viewBox="0 0 16 16" className="h-2.5 w-2.5" fill="currentColor"><path d="M8 0l1.8 6.2L16 8l-6.2 1.8L8 16l-1.8-6.2L0 8l6.2-1.8z" /></svg>
+                        </span>
+                        <p className="text-white/90">Done. The flow is on your board, with the error branch on the left.</p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
 }

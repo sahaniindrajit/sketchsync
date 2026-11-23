@@ -34,7 +34,7 @@
     --secondary: 225 10% 95%;
     --secondary-foreground: 225 8% 8%;
     --muted: 225 10% 95%;
-    --muted-foreground: 225 6% 44%;
+    --muted-foreground: 225 6% 38%;
     --accent: 209 77% 43%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
@@ -106,7 +106,7 @@
     @apply border border-border/80 bg-[hsl(var(--chrome)/0.88)] shadow-chrome backdrop-blur-xl;
   }
   .kbd {
-    @apply inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[5px] border border-b-2 border-border bg-card px-1 font-mono text-[10.5px] font-medium leading-none text-muted-foreground;
+    @apply inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[5px] border border-b-2 border-border bg-card px-1 font-sans text-[11px] font-medium leading-none text-muted-foreground;
   }
   .dot-grid {
     background-image: radial-gradient(hsl(var(--dot) / 0.13) 1px, transparent 1.2px);
@@ -150,10 +150,18 @@
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: conic-gradient(from var(--angle), transparent 0 62%, hsl(var(--claude)) 80%, hsl(var(--accent)) 92%, transparent 100%);
+  background: conic-gradient(from var(--angle), transparent 0 70%, hsl(var(--claude) / 0.9) 84%, hsl(var(--accent)) 94%, transparent 100%);
+  opacity: 0.9;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   animation: border-spin 7s linear infinite;
   pointer-events: none;
+}
+
+/* Infinite decorative animations stop while their section is off-screen. */
+.paused,
+.paused *,
+.paused::before {
+  animation-play-state: paused !important;
 }

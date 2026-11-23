@@ -70,3 +70,31 @@ test('dark mode toggles from the keyboard and the menu, and persists', async ({ 
     await page.getByRole('menuitem', { name: start ? 'Dark mode' : 'Light mode' }).click();
     expect(await isDark()).toBe(start);
 });
+
+test('undo and redo the local user’s changes', async ({ page }) => {
+    await openNewBoard(page);
+    await selectTool(page, 'rect');
+    await drag(page, [400, 300], [520, 380]);
+    await selectTool(page, 'ellipse');
+    await drag(page, [600, 300], [700, 380]);
+    await waitForShapes(page, (l) => l.length === 2);
+
+    // Moving a shape is one undo step, however many updates the drag sent.
+    await selectTool(page, 'select');
+    await drag(page, [460, 301], [560, 451], 20);
+    await waitForShapes(page, (l) => l.some((s) => s.type === 'rect' && Math.round(s.x) === 500));
+    await page.keyboard.press('Control+z');
+    await waitForShapes(page, (l) => l.some((s) => s.type === 'rect' && Math.round(s.x) === 400));
+
+    await page.keyboard.press('Control+z');
+    await waitForShapes(page, (l) => l.length === 1 && l[0].type === 'rect');
+    await page.getByLabel('Redo').click();
+    await waitForShapes(page, (l) => l.length === 2);
+
+    // Deleting and undoing restores the shape.
+    await page.keyboard.press('Control+a');
+    await page.keyboard.press('Delete');
+    await waitForShapes(page, (l) => l.length === 0);
+    await page.getByLabel('Undo').click();
+    await waitForShapes(page, (l) => l.length === 2);
+});

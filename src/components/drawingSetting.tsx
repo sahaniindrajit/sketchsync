@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { useBoard, type BoardState, type Tool } from '@/board/store';
 import type { Shape, ShapePatch } from '@/shared/protocol';
 import { cn } from '@/lib/utils';
-import { displayInk, useTheme } from '@/lib/theme';
+import { displayFill, displayInk, useTheme } from '@/lib/theme';
 
 const strokeColors = ['#1e1e1e', '#e03131', '#2f9e44', '#1971c2', '#f08c00', '#9c36b5'];
 const fillColors = ['transparent', '#ffc9c9', '#b2f2bb', '#a5d8ff', '#ffec99', '#eebefa'];
@@ -89,7 +89,7 @@ const checker = {
 function Swatch({ color, active, onClick, label, group }: { color: string; active: boolean; onClick: () => void; label: string; group: string }) {
     const theme = useTheme((s) => s.resolved);
     // Show ink the way the board will draw it in this theme.
-    const shown = group === 'stroke' ? displayInk(color, theme) : color;
+    const shown = group === 'stroke' ? displayInk(color, theme) : group === 'fill' ? displayFill(color, theme) : color;
     return (
         <button
             type="button"

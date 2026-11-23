@@ -7,17 +7,18 @@ import Navbar from '@/components/navbar';
 import { Bento } from '@/components/landing/Bento';
 import { HeroBoard } from '@/components/landing/HeroBoard';
 import { McpSection } from '@/components/landing/McpSection';
-import { Reveal } from '@/components/landing/Reveal';
+import { Reveal, usePauseOffscreen } from '@/components/landing/Reveal';
+import { cn } from '@/lib/utils';
 import { Shortcuts } from '@/components/landing/Shortcuts';
 import { LogoMark } from '@/components/logo';
 
 const HEADLINE = ['The', 'whiteboard', 'your', 'AI', 'can', 'draw', 'on.'];
-const CLIENTS = ['Claude', 'Claude Code', 'Cursor', 'VS Code', 'Windsurf', 'Zed', 'Any MCP client'];
+const CLIENTS = ['Claude', 'Claude Code', 'Cursor', 'VS Code', 'Windsurf', 'Zed'];
 
 function Hero() {
     return (
         <section className="relative">
-            <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))] pb-10 pt-14 sm:pt-20">
+            <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))] pb-8 pt-14 sm:pt-20">
                 <motion.a
                     href="#mcp"
                     initial={{ opacity: 0, y: 8 }}
@@ -41,7 +42,16 @@ function Hero() {
                             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                             transition={{ type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.08 + i * 0.06 }}
                         >
-                            {w === 'AI' ? <span className="text-claude">AI</span> : w === 'on.' ? <>on<span className="text-muted-foreground/50">.</span></> : w}
+                            {w === 'AI' ? (
+                                <span className="text-claude">AI</span>
+                            ) : w === 'on.' ? (
+                                <>
+                                    on
+                                    <span className="ml-[0.06em] inline-block h-[0.78em] w-[0.07em] translate-y-[0.04em] animate-blink rounded-full bg-claude" />
+                                </>
+                            ) : (
+                                w
+                            )}
                         </motion.span>
                     ))}
                 </h1>
@@ -92,28 +102,27 @@ function Hero() {
 }
 
 function WorksWith() {
-    const row = [...CLIENTS, ...CLIENTS];
     return (
-        <section className="mx-auto mt-20 max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
-            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-8">
-                <p className="shrink-0 font-mono text-[11.5px] uppercase tracking-[0.08em] text-muted-foreground">Draws with</p>
-                <div className="relative w-full overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_10%,#000_90%,transparent)]">
-                    <div className="flex w-max animate-marquee gap-4 hover:[animation-play-state:paused]">
-                        {row.map((c, i) => (
-                            <span key={i} className="whitespace-nowrap px-4 text-[18px] font-medium tracking-tightish text-muted-foreground/80" aria-hidden={i >= CLIENTS.length}>
-                                {c}
-                            </span>
-                        ))}
-                    </div>
-                </div>
-            </div>
+        <section className="mx-auto mt-12 max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
+            <Reveal className="flex flex-col gap-4 border-y border-border/70 py-6 md:flex-row md:items-center md:gap-10">
+                <p className="shrink-0 font-mono text-[11.5px] uppercase tracking-[0.08em] text-muted-foreground">Draws with any MCP client</p>
+                <ul className="grid flex-1 grid-cols-3 gap-x-6 gap-y-3 sm:grid-cols-6">
+                    {CLIENTS.map((c) => (
+                        <li key={c} className="flex items-center gap-2 whitespace-nowrap text-[16px] font-medium tracking-tightish text-foreground/70">
+                            <span className="h-1.5 w-1.5 rounded-full bg-claude/70" aria-hidden />
+                            {c}
+                        </li>
+                    ))}
+                </ul>
+            </Reveal>
         </section>
     );
 }
 
 function Cta() {
+    const [ref, paused] = usePauseOffscreen<HTMLElement>();
     return (
-        <section className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
+        <section ref={ref} className={cn('mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]', paused)}>
             <Reveal>
                 <div className="border-beam relative overflow-hidden rounded-3xl border border-border bg-card">
                     <div className="dot-grid absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_at_center,#000,transparent_75%)]" />

@@ -1,11 +1,29 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { Check, Copy, Link2, Sparkles, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { boardUrl } from '@/config';
 import { cn } from '@/lib/utils';
 
 export type ShareTab = 'collaborate' | 'ai';
+
+/** Animates its height to fit whatever it contains. */
+function AutoHeight({ children }: { children: React.ReactNode }) {
+    const ref = useRef<HTMLDivElement>(null);
+    const [height, setHeight] = useState<number | 'auto'>('auto');
+    useLayoutEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const ro = new ResizeObserver(() => setHeight(el.offsetHeight));
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+    return (
+        <motion.div initial={false} animate={{ height }} transition={{ type: 'spring', visualDuration: 0.3, bounce: 0 }} className="relative overflow-hidden">
+            <div ref={ref}>{children}</div>
+        </motion.div>
+    );
+}
 
 export function CopyButton({ value, label, dense, className }: { value: string; label: string; dense?: boolean; className?: string }) {
     const [copied, setCopied] = useState(false);
@@ -60,7 +78,7 @@ export function CopyField({ value, label, testId, dense, copyLabel = 'Copy', ico
                 value={value}
                 readOnly
                 aria-label={label}
-                className={cn('min-w-0 flex-1 bg-transparent px-1.5 font-mono text-foreground outline-none', dense ? 'h-7 text-[11px]' : 'h-8 text-xs')}
+                className={cn('min-w-0 flex-1 bg-transparent px-1.5 font-mono text-foreground outline-none [mask-image:linear-gradient(90deg,#000_82%,transparent)] focus:[mask-image:none]', dense ? 'h-7 text-[11px]' : 'h-8 text-xs')}
                 onFocus={(e) => e.target.select()}
                 data-testid={testId}
                 spellCheck={false}
@@ -117,12 +135,13 @@ export function ShareDialog({ roomId, tab, onTab, onClose, aiPanel }: { roomId: 
                                     <X className="h-4 w-4" />
                                 </Dialog.Close>
                             </div>
-                            <AnimatePresence mode="wait" initial={false}>
+                            <AutoHeight>
+                            <AnimatePresence mode="popLayout" initial={false}>
                                 <motion.div
                                     key={tab}
-                                    initial={{ opacity: 0, x: tab === 'ai' ? 12 : -12 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: tab === 'ai' ? -12 : 12, transition: { duration: 0.1 } }}
+                                    initial={{ opacity: 0, x: tab === 'ai' ? 16 : -16, filter: 'blur(2px)' }}
+                                    animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                                    exit={{ opacity: 0, x: tab === 'ai' ? -16 : 16, filter: 'blur(2px)', transition: { duration: 0.12 } }}
                                     transition={{ type: 'spring', visualDuration: 0.22, bounce: 0 }}
                                     className="p-5"
                                 >
@@ -139,6 +158,7 @@ export function ShareDialog({ roomId, tab, onTab, onClose, aiPanel }: { roomId: 
                                     )}
                                 </motion.div>
                             </AnimatePresence>
+                            </AutoHeight>
                         </motion.div>
                     </Dialog.Content>
                 </div>

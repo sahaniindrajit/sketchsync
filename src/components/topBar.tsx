@@ -13,6 +13,7 @@ import { AppMenu, type MenuActions } from './menu';
 export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand: () => void }) {
     const [showMenu, setShowMenu] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
     const roomId = useBoard((s) => s.roomId);
 
     useEffect(() => {
@@ -20,15 +21,8 @@ export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand
         function handleClickOutside(event: PointerEvent) {
             if (containerRef.current && !containerRef.current.contains(event.target as Node)) setShowMenu(false);
         }
-        function onKey(e: KeyboardEvent) {
-            if (e.key === 'Escape') setShowMenu(false);
-        }
         document.addEventListener('pointerdown', handleClickOutside);
-        document.addEventListener('keydown', onKey);
-        return () => {
-            document.removeEventListener('pointerdown', handleClickOutside);
-            document.removeEventListener('keydown', onKey);
-        };
+        return () => document.removeEventListener('pointerdown', handleClickOutside);
     }, [showMenu]);
 
     return (
@@ -40,8 +34,10 @@ export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand
         >
             <div className="chrome flex h-11 items-center gap-0.5 rounded-xl p-1">
                 <button
+                    ref={triggerRef}
                     type="button"
                     aria-label="Menu"
+                    aria-haspopup="menu"
                     aria-expanded={showMenu}
                     className={cn(
                         'flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
@@ -77,7 +73,15 @@ export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand
                     <TooltipContent side="bottom">Search tools & actions</TooltipContent>
                 </Tooltip>
             </div>
-            <AnimatePresence>{showMenu && <AppMenu actions={actions} onClose={() => setShowMenu(false)} />}</AnimatePresence>
+            <AnimatePresence>{showMenu && (
+                    <AppMenu
+                        actions={actions}
+                        onClose={(opts) => {
+                            setShowMenu(false);
+                            if (opts?.refocus) triggerRef.current?.focus();
+                        }}
+                    />
+                )}</AnimatePresence>
         </motion.div>
     );
 }

@@ -5,7 +5,7 @@ import { arrowHeadSize, diamondPoints, isDotStroke, polylineMidpoint, resolveLin
 import { DEFAULTS, type LineShape, type Shape, type TextLabel } from '@/shared/protocol';
 import { FONT_FAMILY, measureTextWidth } from '../measure';
 import { MathNode } from './MathNode';
-import { displayInk, useTheme } from '@/lib/theme';
+import { displayFill, displayInk, useTheme } from '@/lib/theme';
 
 export interface ShapeNodeProps {
     shape: Shape;
@@ -27,9 +27,10 @@ function useInked<T extends Shape>(shape: T, theme: 'light' | 'dark'): T {
     return React.useMemo(() => {
         if (theme === 'light') return shape;
         const strokeColor = displayInk(shape.strokeColor, theme);
+        const fillColor = displayFill(shape.fillColor, theme);
         const label = 'label' in shape && shape.label?.color ? { ...shape.label, color: displayInk(shape.label.color, theme) } : undefined;
-        if (strokeColor === shape.strokeColor && !label) return shape;
-        return { ...shape, strokeColor, ...(label ? { label } : {}) };
+        if (strokeColor === shape.strokeColor && fillColor === shape.fillColor && !label) return shape;
+        return { ...shape, strokeColor, fillColor, ...(label ? { label } : {}) };
     }, [shape, theme]);
 }
 

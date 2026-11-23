@@ -5,14 +5,16 @@ import { cn } from '@/lib/utils';
 import { Reveal, SectionHeading } from './Reveal';
 
 /** Card with a soft light that follows the pointer. */
-function Cell({ title, children, body, className, delay = 0 }: { title: string; body: string; children: React.ReactNode; className?: string; delay?: number }) {
+function Cell({ title, children, body, className, delay = 0, short }: { title: string; body: string; children: React.ReactNode; className?: string; delay?: number; short?: boolean }) {
     const ref = useRef<HTMLDivElement>(null);
+    const rect = useRef<DOMRect | null>(null);
     return (
         <Reveal delay={delay} className={cn('min-w-0', className)}>
             <div
                 ref={ref}
+                onPointerEnter={() => (rect.current = ref.current!.getBoundingClientRect())}
                 onPointerMove={(e) => {
-                    const r = ref.current!.getBoundingClientRect();
+                    const r = rect.current ?? ref.current!.getBoundingClientRect();
                     ref.current!.style.setProperty('--x', `${e.clientX - r.left}px`);
                     ref.current!.style.setProperty('--y', `${e.clientY - r.top}px`);
                 }}
@@ -22,7 +24,7 @@ function Cell({ title, children, body, className, delay = 0 }: { title: string; 
                     className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
                     style={{ background: 'radial-gradient(420px circle at var(--x) var(--y), hsl(var(--accent) / 0.07), transparent 60%)' }}
                 />
-                <div className="relative flex min-h-[190px] flex-1 items-center justify-center overflow-hidden border-b border-border/70 bg-background/60">{children}</div>
+                <div className={cn('relative flex flex-1 items-center justify-center overflow-hidden border-b border-border/70 bg-background/60', short ? 'min-h-[150px]' : 'min-h-[200px]')}>{children}</div>
                 <div className="relative space-y-1.5 p-5">
                     <h3 className="text-[15px] font-semibold tracking-tightish">{title}</h3>
                     <p className="text-[14px] leading-relaxed text-muted-foreground">{body}</p>
@@ -68,7 +70,7 @@ function MultiplayerDemo() {
                     <svg width="14" height="16" viewBox="0 0 14 20"><path d="M0 0 L0 17 L4.6 12.8 L7.6 19.5 L10.4 18.3 L7.5 11.8 L13.6 11.6 Z" fill="#2f9e44" stroke="white" strokeWidth="1.3" /></svg>
                     <span className="mt-3 rounded-md bg-[#2f9e44] px-1.5 py-0.5 text-[10.5px] font-semibold text-white">Arjun</span>
                 </motion.div>
-                <motion.div animate={{ x: 230 - pos[0] / 2, y: 90 - pos[1] / 2 }} transition={{ type: 'spring', visualDuration: 0.9, bounce: 0.1 }} className="absolute flex items-start gap-0.5">
+                <motion.div animate={{ x: [250, 20, 230, 10][i], y: [90, 95, 0, 10][i] }} transition={{ type: 'spring', visualDuration: 0.9, bounce: 0.1 }} className="absolute flex items-start gap-0.5">
                     <svg width="14" height="16" viewBox="0 0 14 20"><path d="M0 0 L0 17 L4.6 12.8 L7.6 19.5 L10.4 18.3 L7.5 11.8 L13.6 11.6 Z" fill="#1971c2" stroke="white" strokeWidth="1.3" /></svg>
                     <span className="mt-3 rounded-md bg-[#1971c2] px-1.5 py-0.5 text-[10.5px] font-semibold text-white">Maya</span>
                 </motion.div>
@@ -97,25 +99,43 @@ function MathDemo() {
 }
 
 function LayoutDemo() {
-    const [ref, i] = useLoop(2, 2200);
+    const [ref, i] = useLoop(2, 2400);
     const laid = i === 1;
+    // Node centres: scattered, then laid out left-to-right with a branch.
     const nodes = [
-        { a: [10, 80], b: [0, 0] },
-        { a: [130, 10], b: [100, 0] },
-        { a: [60, 130], b: [200, 0] },
-        { a: [180, 110], b: [100, 70] },
+        { a: [40, 95], b: [36, 60], fill: false },
+        { a: [150, 25], b: [132, 60], fill: true },
+        { a: [95, 150], b: [228, 28], fill: false },
+        { a: [230, 120], b: [228, 92], fill: false },
     ];
+    const edges = [
+        [0, 1],
+        [1, 2],
+        [1, 3],
+    ];
+    const p = (k: number) => (laid ? nodes[k].b : nodes[k].a);
+    const spring = { type: 'spring', visualDuration: 0.7, bounce: 0.15 } as const;
     return (
-        <div ref={ref} className="relative h-[110px] w-[270px]">
-            {nodes.map((n, k) => (
-                <motion.div
-                    key={k}
-                    animate={{ x: laid ? n.b[0] : n.a[0] * 0.8, y: laid ? n.b[1] + 10 : n.a[1] * 0.6, rotate: laid ? 0 : (k - 1.5) * 6 }}
-                    transition={{ type: 'spring', visualDuration: 0.7, bounce: 0.2, delay: k * 0.05 }}
-                    className={cn('absolute h-8 w-[70px] rounded-md border-2 border-foreground', k === 3 ? 'bg-[#a5d8ff]' : 'bg-card')}
-                />
-            ))}
-            <motion.div animate={{ opacity: laid ? 1 : 0 }} className="absolute left-0 top-[50px] h-[2px] w-[270px] bg-transparent" />
+        <div ref={ref} className="w-full px-4">
+            <svg viewBox="0 0 270 170" className="mx-auto h-[150px] w-full max-w-[300px] text-foreground" aria-hidden>
+                {edges.map(([a, b], k) => (
+                    <motion.line key={k} initial={false} animate={{ x1: p(a)[0] + 34, y1: p(a)[1], x2: p(b)[0] - 34, y2: p(b)[1] }} transition={spring} stroke="currentColor" strokeWidth="1.6" strokeDasharray={laid ? '0' : '3 4'} opacity={laid ? 1 : 0.4} />
+                ))}
+                {nodes.map((n, k) => (
+                    <motion.rect
+                        key={k}
+                        initial={false}
+                        animate={{ x: p(k)[0] - 30, y: p(k)[1] - 14 }}
+                        transition={{ ...spring, delay: k * 0.04 }}
+                        width="60"
+                        height="28"
+                        rx="7"
+                        className={n.fill ? 'fill-[#a5d8ff] dark:fill-[#4d6a80]' : 'fill-card'}
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                    />
+                ))}
+            </svg>
         </div>
     );
 }
@@ -170,7 +190,7 @@ function SeesSketchDemo() {
 export function Bento() {
     return (
         <section id="features" className="scroll-mt-24">
-            <SectionHeading eyebrow="What's on the board" title="A small, fast whiteboard that does the real work.">
+            <SectionHeading eyebrow="What's on the board" title="Built for people. Readable by models.">
                 Everything below is in the app today. No sign-up, nothing to install.
             </SectionHeading>
             <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -186,17 +206,17 @@ export function Bento() {
                 <Cell className="md:col-span-2" title="The AI can see what you sketch" body="Hand drawings are rendered to an image for the assistant, so it can read your scribbles and build on them." delay={0.1}>
                     <SeesSketchDemo />
                 </Cell>
-                <Cell title="Keeps working offline" body="Boards are cached in your browser. Edits made offline sync when you reconnect.">
+                <Cell short title="Keeps working offline" body="Boards are cached in your browser. Edits made offline sync when you reconnect.">
                     <OfflineDemo />
                 </Cell>
-                <Cell title="Images in, PNG out" body="Drop in screenshots and photos. Export the whole board as a crisp PNG." delay={0.05}>
+                <Cell short title="Images in, PNG out" body="Drop in screenshots and photos. Export the whole board as a crisp PNG." delay={0.05}>
                     <div className="flex items-center gap-3 text-muted-foreground">
                         <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-dashed border-border bg-card"><ImagePlus className="h-5 w-5" /></span>
                         <span className="font-mono text-xs">→</span>
                         <span className="flex h-12 items-center gap-2 rounded-xl bg-primary px-4 text-[13px] font-medium text-primary-foreground"><Download className="h-4 w-4" /> board.png</span>
                     </div>
                 </Cell>
-                <Cell title="Open source" body="Frontend and backend are on GitHub. Run your own server with one command." delay={0.1}>
+                <Cell short title="Open source" body="Frontend and backend are on GitHub. Run your own server with one command." delay={0.1}>
                     <div className="flex flex-col items-center gap-2">
                         <Github className="h-8 w-8 text-foreground" strokeWidth={1.5} />
                         <code className="rounded-md border border-border bg-card px-2 py-1 font-mono text-[11.5px] text-muted-foreground">npm run dev</code>

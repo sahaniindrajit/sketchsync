@@ -68,13 +68,15 @@ export function Shortcuts() {
         { id: 1, kind: 'R', x: 70, y: 60 },
         { id: 2, kind: 'A', x: 200, y: 55 },
         { id: 3, kind: 'O', x: 330, y: 65 },
+        { id: 4, kind: 'D', x: 100, y: 140 },
+        { id: 5, kind: 'T', x: 220, y: 140 },
     ]);
     const [selected, setSelected] = useState<number | null>(null);
     const itemsRef = useRef(items);
     itemsRef.current = items;
     const [pan, setPan] = useState(0);
-    const counter = useRef(3);
-    const nextId = useRef(4);
+    const counter = useRef(5);
+    const nextId = useRef(6);
 
     const act = useCallback((key: string) => {
         if (key === 'E') {

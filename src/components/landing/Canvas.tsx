@@ -56,7 +56,7 @@ export function Note({
     } as const;
     return (
         <motion.div
-            className={cn('pointer-events-none relative z-10 hidden w-max md:block', className)}
+            className={cn('pointer-events-none relative z-10 w-max max-md:scale-90', className)}
             initial={reduced ? false : { opacity: 0, y: 10, rotate: rotate - 4 }}
             whileInView={{ opacity: 1, y: 0, rotate }}
             viewport={{ once: true, amount: 0.8 }}

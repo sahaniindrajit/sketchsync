@@ -75,7 +75,7 @@ let still = false; // reduced motion: everything starts in its final state
 function drawn(on: boolean, order: number) {
     return {
         initial: still ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 0 },
-        animate: on ? { pathLength: 1, opacity: 1 } : ghost ? { pathLength: 1, opacity: 0.14 } : { pathLength: 0, opacity: 0 },
+        animate: on ? { pathLength: 1, opacity: 1 } : ghost ? { pathLength: 1, opacity: 0.3 } : { pathLength: 0, opacity: 0 },
         transition: on
             ? { pathLength: { duration: 0.65, ease: [0.65, 0, 0.35, 1] as const }, opacity: { duration: 0.05 } }
             : { duration: 0.3, delay: (12 - order) * 0.045 },
@@ -84,7 +84,7 @@ function drawn(on: boolean, order: number) {
 function faded(on: boolean, order: number, delay = 0) {
     return {
         initial: { opacity: still ? 1 : 0 },
-        animate: { opacity: on ? 1 : ghost ? 0.14 : 0 },
+        animate: { opacity: on ? 1 : ghost ? 0.3 : 0 },
         transition: on ? { duration: 0.35, delay } : { duration: 0.25, delay: (12 - order) * 0.045 },
     };
 }
@@ -233,7 +233,7 @@ export function HeroBoard({ className }: { className?: string }) {
                         strokeWidth="3"
                         strokeLinecap="round"
                         initial={{ pathLength: 0, opacity: 0 }}
-                        animate={s(7) ? { pathLength: 1, opacity: 1 } : ran ? { pathLength: 1, opacity: 0.14 } : { pathLength: 0, opacity: 0 }}
+                        animate={s(7) ? { pathLength: 1, opacity: 1 } : ran ? { pathLength: 1, opacity: 0.3 } : { pathLength: 0, opacity: 0 }}
                         transition={s(7) ? { pathLength: { duration: 1, ease: 'easeInOut', delay: 0.15 }, opacity: { duration: 0.05, delay: 0.15 } } : { duration: 0.3, delay: 0.1 }}
                     />
                     <motion.path d={L.pointer} fill="none" stroke={pen} strokeWidth="2.5" strokeLinecap="round" {...drawn(s(8), 9)} />

@@ -309,7 +309,7 @@ function PromptBox({ onDemo }: { onDemo: (index: number, progress: number) => vo
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </button>
             </div>
-            <p className="mt-4 text-balance text-[13.5px] text-muted-foreground">Opens a new board with the Connect your AI steps and your request ready to paste.</p>
+            <p className="mt-4 text-balance text-[13.5px] text-muted-foreground">You'll get a fresh board, the steps to connect your AI, and your request ready to paste.</p>
         </form>
     );
 }
@@ -319,7 +319,8 @@ function Cta() {
     const onDemo = useCallback((index: number, progress: number) => setDemo({ index, progress }), []);
     return (
         <section className="relative mx-auto max-w-6xl overflow-hidden px-[max(16px,env(safe-area-inset-left))]">
-            <div className="dot-grid relative overflow-hidden rounded-[28px] border border-border bg-card dark:bg-[hsl(228_9%_10%)]">
+            <Frame name="Start" className="!p-0">
+            <div className="dot-grid relative overflow-hidden rounded-[4px] bg-card dark:bg-[hsl(228_9%_10%)]">
             <div className="relative grid items-center gap-12 px-5 py-16 sm:px-12 sm:py-20 lg:grid-cols-[1fr_1fr]">
                 <Reveal className="space-y-6">
                     <h2 className="max-w-[13ch] text-balance text-[clamp(36px,5vw,60px)] font-semibold leading-[0.98] tracking-[-0.045em]">Invite a teammate. Or an AI.</h2>
@@ -331,6 +332,7 @@ function Cta() {
                 </Reveal>
             </div>
             </div>
+            </Frame>
         </section>
     );
 }

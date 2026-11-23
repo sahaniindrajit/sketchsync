@@ -45,7 +45,7 @@ export default function NotFound() {
                             </text>
                         </svg>
                         <motion.div
-                            className="absolute right-[3%] top-[52%] flex items-start gap-0.5"
+                            className="absolute right-[6%] top-[66%] flex items-start gap-0.5"
                             initial={reduced ? false : { opacity: 0, x: -30, y: 10 }}
                             animate={{ opacity: 1, x: 0, y: 0 }}
                             transition={{ delay: 1.2, type: 'spring', visualDuration: 0.6, bounce: 0.2 }}

@@ -199,7 +199,7 @@ function SeesSketchDemo() {
     const visits: [number, number][] = [[190, 10], ...LABELS.map((l) => [l.to[0] + 64, l.to[1] + 14] as [number, number])];
     return (
         <div ref={ref} className="flex w-full flex-col items-center justify-center gap-5 px-6 py-6 sm:flex-row sm:gap-8">
-            <svg viewBox="0 0 220 112" className="h-[132px] w-[260px] shrink-0 overflow-visible text-foreground" aria-hidden>
+            <svg viewBox="0 0 220 112" className="h-[170px] w-[330px] shrink-0 overflow-visible text-foreground" aria-hidden>
                 {stroke('M18 52 L60 16 L102 50', 0)}
                 {stroke('M26 48 C 25 70, 27 86, 26 98 C 50 99, 74 97, 96 99 C 95 80, 97 64, 95 47', 0.4)}
                 {stroke('M44 98 C 44 86, 44 78, 45 72 C 52 71, 58 72, 62 72 C 62 82, 62 90, 62 98', 0.9, '#e03131')}

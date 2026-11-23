@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { CopyButton } from '@/components/shareDialog';
 import { cn } from '@/lib/utils';
 import { Reveal } from './Reveal';
+import { Frame } from './Canvas';
 import { displayFill, useTheme } from '@/lib/theme';
 
 // Marketing copy always shows the hosted server, whatever backend this build talks to.
@@ -142,7 +143,8 @@ export function McpSection() {
     const { ref, n, replay } = useReplay();
     return (
         <section id="mcp" className="mx-auto max-w-6xl scroll-mt-16 px-[max(16px,env(safe-area-inset-left))]">
-            <div className="relative overflow-hidden rounded-[28px] bg-[hsl(228_12%_7%)] px-5 py-14 text-white shadow-lift ring-1 ring-black/5 sm:px-12 sm:py-20 dark:bg-[radial-gradient(60rem_24rem_at_15%_0%,hsl(var(--claude)/0.2),transparent),linear-gradient(180deg,hsl(228_16%_17%),hsl(228_14%_13%))] dark:ring-white/15">
+            <Frame name="Connect your AI" className="!border-0 !bg-transparent !p-0 !backdrop-blur-0">
+            <div className="relative overflow-hidden rounded-[6px] bg-[hsl(228_12%_7%)] px-5 py-14 text-white shadow-lift ring-1 ring-black/5 sm:px-12 sm:py-20 dark:bg-[radial-gradient(60rem_24rem_at_15%_0%,hsl(var(--claude)/0.2),transparent),linear-gradient(180deg,hsl(228_16%_17%),hsl(228_14%_13%))] dark:ring-white/15">
                 <div className="pointer-events-none absolute inset-0 [background-image:radial-gradient(hsl(0_0%_100%/0.07)_1px,transparent_1.2px)] [background-size:20px_20px]" />
                 <div className="relative">
                 <Reveal className="grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:items-end">
@@ -218,6 +220,7 @@ export function McpSection() {
                 </div>
                 </div>
             </div>
+            </Frame>
         </section>
     );
 }

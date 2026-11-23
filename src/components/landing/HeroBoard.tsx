@@ -71,9 +71,10 @@ const ink = 'currentColor';
 
 // After the first loop, undrawn shapes rest as a faint ghost so the board is never empty.
 let ghost = false;
+let still = false; // reduced motion: everything starts in its final state
 function drawn(on: boolean, order: number) {
     return {
-        initial: { pathLength: 0, opacity: 0 },
+        initial: still ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 0 },
         animate: on ? { pathLength: 1, opacity: 1 } : ghost ? { pathLength: 1, opacity: 0.14 } : { pathLength: 0, opacity: 0 },
         transition: on
             ? { pathLength: { duration: 0.65, ease: [0.65, 0, 0.35, 1] as const }, opacity: { duration: 0.05 } }
@@ -82,7 +83,7 @@ function drawn(on: boolean, order: number) {
 }
 function faded(on: boolean, order: number, delay = 0) {
     return {
-        initial: { opacity: 0 },
+        initial: { opacity: still ? 1 : 0 },
         animate: { opacity: on ? 1 : ghost ? 0.14 : 0 },
         transition: on ? { duration: 0.35, delay } : { duration: 0.25, delay: (12 - order) * 0.045 },
     };
@@ -184,6 +185,7 @@ export function HeroBoard({ className }: { className?: string }) {
     }, [inView, reduced, paused]);
 
     ghost = ran;
+    still = !!reduced;
     const s = (n: number) => step >= n;
     const aiWorking = step >= 1 && step < FINAL - 1;
     const meDrawing = step >= 7 && step < FINAL;

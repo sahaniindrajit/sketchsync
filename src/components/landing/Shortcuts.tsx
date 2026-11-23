@@ -31,11 +31,11 @@ function ShapeGlyph({ kind, theme }: { kind: Kind; theme: ResolvedTheme }) {
     const ink = { stroke: 'currentColor', strokeWidth: 2, fill: 'none', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
     switch (kind) {
         case 'R':
-            return <rect x={-38} y={-22} width={76} height={44} rx={8} {...ink} fill={displayFill(FILLS.R!, theme)} />;
+            return <path d="M-37 -21 C -12 -23, 14 -22, 38 -20 C 39 -6, 38 8, 37 22 C 12 23, -14 22, -38 21 C -39 6, -38 -8, -37 -21 Z" {...ink} fill={displayFill(FILLS.R!, theme)} />;
         case 'O':
-            return <ellipse rx={38} ry={24} {...ink} fill={displayFill(FILLS.O!, theme)} />;
+            return <path d="M-38 1 C -37 -16, -18 -25, 2 -24 C 22 -23, 39 -13, 38 2 C 37 17, 18 25, -2 24 C -22 23, -39 15, -38 1 Z" {...ink} fill={displayFill(FILLS.O!, theme)} />;
         case 'D':
-            return <path d="M0 -28 L40 0 L0 28 L-40 0 Z" {...ink} fill={displayFill(FILLS.D!, theme)} />;
+            return <path d="M1 -28 C 14 -19, 27 -10, 40 1 C 27 10, 14 19, -1 28 C -14 19, -27 9, -40 -1 C -27 -10, -13 -19, 1 -28 Z" {...ink} fill={displayFill(FILLS.D!, theme)} />;
         case 'A':
             return (
                 <g {...ink}>
@@ -194,6 +194,9 @@ export function Shortcuts() {
                             </AnimatePresence>
                         </motion.g>
                     </svg>
+                    <span className="absolute left-3 top-3 hidden items-center gap-1.5 text-[12px] text-muted-foreground [@media(hover:hover)]:flex">
+                        Try pressing <span className="kbd">R</span> <span className="kbd">O</span> <span className="kbd">E</span>
+                    </span>
                     <span className="absolute bottom-3 right-3 rounded-md border border-border bg-card px-2 py-1 font-mono text-[11px] text-muted-foreground">
                         {items.length} {items.length === 1 ? 'shape' : 'shapes'}
                     </span>

@@ -92,7 +92,7 @@ function MiniBoard({ n }: { n: number }) {
     const drawing = n >= 2;
     const checked = n >= 3;
     const ai = n >= 1 && n < DONE;
-    const cursor: [number, number][] = [[360, 250], [360, 250], [110, 150], [240, 150], [370, 95], [370, 206]];
+    const cursor: [number, number][] = [[320, 240], [320, 240], [110, 150], [240, 150], [330, 95], [330, 206]];
     const [cx, cy] = cursor[Math.min(n, cursor.length - 1)];
     return (
         <div className="relative h-full min-h-[320px] overflow-hidden rounded-xl border border-white/10 bg-[hsl(228_10%_11%)] [background-image:radial-gradient(hsl(0_0%_100%/0.09)_1px,transparent_1.2px)] [background-size:20px_20px]">
@@ -138,7 +138,7 @@ export function McpSection() {
     const setup = SETUPS.find((s) => s.id === tab)!;
     const { ref, n, replay } = useReplay();
     return (
-        <section id="mcp" className="scroll-mt-16 bg-[hsl(228_12%_7%)] text-white dark:bg-[linear-gradient(180deg,hsl(228_10%_12%),hsl(228_10%_9%))] dark:[border-block:1px_solid_hsl(0_0%_100%/0.1)]">
+        <section id="mcp" className="scroll-mt-16 bg-[hsl(228_12%_7%)] text-white dark:bg-[radial-gradient(60rem_24rem_at_20%_0%,hsl(var(--claude)/0.12),transparent),linear-gradient(180deg,hsl(228_14%_14%),hsl(228_12%_11%))] dark:[border-block:1px_solid_hsl(0_0%_100%/0.1)]">
             <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))] py-24 sm:py-32">
                 <Reveal className="grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-end">
                     <div className="max-w-2xl space-y-4">

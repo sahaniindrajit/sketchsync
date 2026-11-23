@@ -104,7 +104,7 @@ export function ConnectAiPanel({ roomId, ask }: { roomId: string; ask?: string }
                 </p>
                 <p className="flex items-start gap-1.5">
                     <ShieldAlert className="mt-px h-3.5 w-3.5 shrink-0 text-warning" />
-                    Anyone with this URL can edit the board. Keep this tab open so the AI can reach it.
+                    Anyone with this URL can edit the board. Boards live in server memory, so keep a tab open on it while the AI works.
                 </p>
             </div>
         </div>

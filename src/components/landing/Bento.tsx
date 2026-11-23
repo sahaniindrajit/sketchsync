@@ -41,7 +41,12 @@ function useLoop(length: number, ms: number) {
     const [i, setI] = useState(0);
     useEffect(() => {
         if (!inView || reduced) return;
-        const t = setInterval(() => setI((v) => (v + 1) % length), ms);
+        // Plays a few rounds, then rests (endless motion is tiring and hard to ignore).
+        let ticks = 0;
+        const t = setInterval(() => {
+            if (++ticks > length * 3) return clearInterval(t);
+            setI((v) => (v + 1) % length);
+        }, ms);
         return () => clearInterval(t);
     }, [inView, reduced, length, ms]);
     return [ref, i] as const;
@@ -70,7 +75,7 @@ function MultiplayerDemo() {
                     <svg width="14" height="16" viewBox="0 0 14 20"><path d="M0 0 L0 17 L4.6 12.8 L7.6 19.5 L10.4 18.3 L7.5 11.8 L13.6 11.6 Z" fill="#2f9e44" stroke="white" strokeWidth="1.3" /></svg>
                     <span className="mt-3 rounded-md bg-[#2f9e44] px-1.5 py-0.5 text-[10.5px] font-semibold text-white">Arjun</span>
                 </motion.div>
-                <motion.div animate={{ x: [250, 230, 10, 250][i], y: [100, 0, 100, 4][i] }} transition={{ type: 'spring', visualDuration: 0.9, bounce: 0.1 }} className="absolute flex items-start gap-0.5">
+                <motion.div animate={{ x: [250, 10, 20, 240][i], y: [100, 100, 95, 10][i] }} transition={{ type: 'spring', visualDuration: 0.9, bounce: 0.1 }} className="absolute flex items-start gap-0.5">
                     <svg width="14" height="16" viewBox="0 0 14 20"><path d="M0 0 L0 17 L4.6 12.8 L7.6 19.5 L10.4 18.3 L7.5 11.8 L13.6 11.6 Z" fill="#1971c2" stroke="white" strokeWidth="1.3" /></svg>
                     <span className="mt-3 rounded-md bg-[#1971c2] px-1.5 py-0.5 text-[10.5px] font-semibold text-white">Maya</span>
                 </motion.div>
@@ -83,8 +88,10 @@ function MultiplayerDemo() {
     );
 }
 
-const LATEX = 'e^{i\\pi} + 1 = 0';
+const LATEX = '\\int x^2 \\, dx';
+const MATH_FONT = { fontFamily: '"Latin Modern Math", "STIX Two Math", "Cambria Math", Georgia, serif' };
 
+/** LaTeX types in, then the AI writes a two-step worked solution under it. */
 function MathDemo() {
     const ref = useRef<HTMLDivElement>(null);
     const inView = useInView(ref, { once: true, amount: 0.6 });
@@ -96,25 +103,32 @@ function MathDemo() {
         return () => timers.forEach(clearTimeout);
     }, [inView, reduced]);
     const done = n >= LATEX.length;
+    const step = (i: number) => ({
+        initial: reduced ? false : { opacity: 0, y: 6 },
+        animate: done ? { opacity: 1, y: 0 } : undefined,
+        transition: { delay: reduced ? 0 : 0.3 + i * 0.6, type: 'spring' as const, visualDuration: 0.4, bounce: 0 },
+    });
     return (
-        <div ref={ref} className="flex flex-col items-center gap-4 px-6 text-foreground">
-            <code className="flex h-8 min-w-[190px] items-center rounded-lg border border-border bg-card px-3 font-mono text-[12.5px] text-muted-foreground">
+        <div ref={ref} className="w-full max-w-[280px] px-4">
+            <code className="flex h-8 items-center rounded-lg border border-border bg-card px-3 font-mono text-[12.5px] text-muted-foreground">
                 {LATEX.slice(0, n)}
                 {!done && <span className="ml-px inline-block h-4 w-[1.5px] animate-blink bg-foreground" />}
             </code>
-            <motion.div
-                initial={false}
-                animate={{ scale: done ? [1, 1.06, 1] : 1, opacity: done ? 1 : 0.55 }}
-                transition={{ duration: 0.45 }}
-                className="text-[34px] leading-none"
-                style={{ fontFamily: '"Latin Modern Math", "STIX Two Math", "Cambria Math", Georgia, serif' }}
-            >
-                <i>e</i>
-                <sup className="text-[0.6em]">
-                    <i>iπ</i>
-                </sup>{' '}
-                + 1 = 0
-            </motion.div>
+            <div className="mt-3 space-y-1.5 rounded-lg border border-dashed border-border bg-card/60 px-4 py-3">
+                <motion.div {...step(0)} className="text-[22px] leading-tight" style={MATH_FONT}>
+                    ∫ <i>x</i>
+                    <sup className="text-[0.6em]">2</sup> <i>dx</i>
+                </motion.div>
+                <motion.div {...step(1)} className="flex items-baseline justify-between gap-3">
+                    <span className="text-[22px] leading-tight" style={MATH_FONT}>
+                        = <i>x</i>
+                        <sup className="text-[0.6em]">3</sup>⁄3 + <i>C</i>
+                    </span>
+                    <span className="flex items-center gap-1 text-[11px] font-medium text-claude">
+                        <Sparkles className="h-3 w-3" /> power rule
+                    </span>
+                </motion.div>
+            </div>
         </div>
     );
 }

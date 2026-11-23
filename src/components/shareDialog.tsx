@@ -144,7 +144,7 @@ export function ShareDialog({ roomId, tab, onTab, onClose, aiPanel }: { roomId: 
                         aria-describedby={undefined}
                         onCloseAutoFocus={(e) => {
                             e.preventDefault();
-                            document.getElementById('share-button')?.focus();
+                            (document.getElementById('share-button') as (HTMLElement & { focus(o?: { focusVisible?: boolean }): void }) | null)?.focus({ focusVisible: false });
                         }}
                     >
                         <motion.div

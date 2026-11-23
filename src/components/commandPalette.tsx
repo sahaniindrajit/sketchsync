@@ -3,6 +3,7 @@ import { ArrowUpRight, Circle, Diamond, Eraser, FilePlus2, Hand, ImageDown, Link
 import { Kbd } from '@/components/ui/kbd';
 import { redoLast, undoAiBatch, undoLast, useBoard, type Tool } from '@/board/store';
 import { MOD } from '@/lib/platform';
+import { cn } from '@/lib/utils';
 import { useTheme } from '@/lib/theme';
 import type { MenuActions } from './menu';
 
@@ -89,7 +90,7 @@ export function CommandPalette({ open, onOpenChange, actions, onFit }: { open: b
                     <Command.Item className={itemClass} onSelect={run(actions.onNewBoard)}>
                         <FilePlus2 /> <span className="flex-1">New board</span>
                     </Command.Item>
-                    <Command.Item className={itemClass} onSelect={run(actions.onReset)} keywords={['clear', 'delete']}>
+                    <Command.Item className={cn(itemClass, 'text-destructive data-[selected=true]:bg-destructive/10 data-[selected=true]:text-destructive')} onSelect={run(actions.onReset)} keywords={['clear', 'delete']}>
                         <Trash2 /> <span className="flex-1">Reset the canvas</span>
                     </Command.Item>
                 </Command.Group>

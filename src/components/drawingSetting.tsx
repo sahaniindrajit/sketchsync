@@ -319,7 +319,7 @@ export const DrawingSettings = React.memo(function DrawingSettings() {
                             </button>
                         </div>
                         {keys.has('strokeColor') && (
-                            <Section title="Stroke">
+                            <Section title={keys.has('fillColor') || keys.has('strokeWidth') ? 'Stroke' : 'Color'}>
                                 <div className="grid grid-cols-7 gap-1.5">
                                     {strokeColors.map((c) => (
                                         <Swatch key={c} group="stroke" color={c} label={`Stroke ${c}`} active={strokeColor.toLowerCase() === c} onClick={() => applyStyle('strokeColor', c)} />

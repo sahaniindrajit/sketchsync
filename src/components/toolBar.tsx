@@ -24,9 +24,9 @@ const T: Record<string, ToolDef> = {
 };
 
 const desktopGroups: ToolDef[][] = [
-    [T.select, T.hand],
+    [T.select, T.hand, T.eraser],
     [T.pencil, T.rect, T.ellipse, T.diamond, T.arrow, T.line],
-    [T.text, T.math, T.eraser],
+    [T.text, T.math],
 ];
 const shapeTools = [T.rect, T.ellipse, T.diamond, T.arrow, T.line];
 

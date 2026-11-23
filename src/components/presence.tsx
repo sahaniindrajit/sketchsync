@@ -79,12 +79,13 @@ export function PresenceStack() {
     const colors = assignColors(me, peers);
     const connection = useBoard((s) => s.connection);
     const error = useBoard((s) => s.connectionError);
-    const { activity, now } = useAiActivityClock(8000);
-    const aiHere = !!activity && now - activity.at < 8000;
+    const { activity, now } = useAiActivityClock(30000);
+    const aiHere = !!activity && now - activity.at < 30000;
     const [editing, setEditing] = useState(false);
     const compact = useMedia('(max-width: 639px)');
-    const shown = peers.slice(0, compact ? 1 : 3);
-    const extra = peers.length - shown.length;
+    const sorted = [...peers].sort((a, b) => a.id.localeCompare(b.id));
+    const shown = sorted.slice(0, compact ? 0 : 3);
+    const extra = peers.length - shown.length + (compact && aiHere ? 1 : 0);
     const status = {
         online: ['bg-success', peers.length ? `Live · ${peers.length + 1} here` : 'Live'],
         connecting: ['bg-warning animate-pulse', 'Connecting…'],
@@ -97,7 +98,7 @@ export function PresenceStack() {
         <div className="flex h-11 items-center gap-2 pl-1.5 pr-1">
             <div className="flex items-center">
                 <AnimatePresence initial={false}>
-                    {aiHere && (
+                    {aiHere && !compact && (
                         <Avatar key="ai" color="hsl(var(--claude))" label={`${activity!.name} (AI)`} className={cn(now - activity!.at < 2500 && 'ai-ping')}>
                             <Sparkles className="h-3.5 w-3.5" strokeWidth={2.2} />
                         </Avatar>

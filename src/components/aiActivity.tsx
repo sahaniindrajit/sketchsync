@@ -71,8 +71,9 @@ export function AiActivityToast({ onJump }: { onJump: (box: Box) => void }) {
                         </span>
                         <motion.span layout="position" className="flex items-center gap-1">
                             <b className="font-semibold text-foreground">{activity!.name}</b>
-                            <AnimatePresence mode="wait" initial={false}>
+                            <AnimatePresence mode="popLayout" initial={false}>
                                 <motion.span
+                                    layout="position"
                                     key={active ? 'on' : 'off'}
                                     initial={{ opacity: 0, y: 4 }}
                                     animate={{ opacity: 1, y: 0 }}

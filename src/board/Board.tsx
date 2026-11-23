@@ -700,6 +700,8 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
         const onKeyDown = (e: KeyboardEvent) => {
             if (isTyping(e.target)) return;
             const state = useBoard.getState();
+            // A text box is opening: its keys belong to the editor, not to tool shortcuts.
+            if (state.editing) return;
             if (e.code === 'Space') {
                 setSpaceHeld(true);
                 e.preventDefault();

@@ -1,4 +1,4 @@
-import { Github, ImagePlus, Sparkles, WifiOff } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { motion, useInView, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -118,7 +118,8 @@ function MathDemo() {
                 <motion.div {...step(1)} className="flex items-baseline justify-between gap-3">
                     <span className="text-[22px] leading-tight" style={MATH_FONT}>
                         = <i>x</i>
-                        <sup className="text-[0.6em]">3</sup>⁄3 + <i>C</i>
+                        <sup className="text-[0.6em]">3</sup>
+                        <span className="mx-[0.08em]">/</span>3 + <i>C</i>
                     </span>
                     <span className="flex items-center gap-1 text-[11px] font-medium text-claude">
                         <Sparkles className="h-3 w-3" /> power rule
@@ -257,7 +258,7 @@ export function Bento() {
     return (
         <section id="features" className="scroll-mt-24">
             <SectionHeading title="A board your AI can read, not just write.">
-                Everything below is in the app today. No sign-up, nothing to install.
+                Read, draw, lay out and typeset. Everything here works in the app today.
             </SectionHeading>
             <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-3">
                 <Cell className="md:col-span-2" title="Your AI can read your sketches" body="Draw something rough. The assistant sees it as an image, understands it, and builds on it." delay={0.1}>
@@ -273,18 +274,6 @@ export function Bento() {
                     <LayoutDemo />
                 </Cell>
             </div>
-            <Reveal className="mt-4 grid gap-x-6 gap-y-2 rounded-2xl border border-border bg-card px-5 py-4 text-[14px] text-muted-foreground sm:grid-cols-3">
-                {[
-                    { icon: WifiOff, text: 'Works offline, syncs when you reconnect' },
-                    { icon: ImagePlus, text: 'Drop images in, export PNG out' },
-                    { icon: Github, text: 'Open source, self-host in a minute' },
-                ].map((f) => (
-                    <span key={f.text} className="flex items-center gap-2">
-                        <f.icon className="h-4 w-4 text-foreground/70" strokeWidth={1.75} />
-                        {f.text}
-                    </span>
-                ))}
-            </Reveal>
         </section>
     );
 }

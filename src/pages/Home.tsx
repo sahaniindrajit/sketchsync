@@ -38,7 +38,7 @@ function Hero() {
                 </motion.p>
 
                 <Note author="Maya" color="yellow" rotate={3} arrow="down-left" className="absolute right-[max(16px,env(safe-area-inset-left))] top-[150px] hidden xl:block">
-                    No sign-up. Open a board and invite your AI.
+                    Try it: open a board, then paste its MCP link into Claude.
                 </Note>
                 <h1 className="mt-4 max-w-[16ch] text-balance text-[clamp(40px,6.2vw,76px)] font-semibold leading-[0.95] tracking-display" aria-label={HEADLINE.join(' ')}>
                     {HEADLINE.map((w, i) => (
@@ -61,9 +61,9 @@ function Hero() {
                                             strokeWidth="5"
                                             strokeLinecap="round"
                                             vectorEffect="non-scaling-stroke"
-                                            initial={{ pathLength: reduced ? 1 : 0 }}
-                                            animate={{ pathLength: 1 }}
-                                            transition={{ duration: 0.7, ease: [0.65, 0, 0.35, 1], delay: reduced ? 0 : 0.75 }}
+                                            initial={reduced ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 0 }}
+                                            animate={{ pathLength: 1, opacity: 1 }}
+                                            transition={{ pathLength: { duration: 0.7, ease: [0.65, 0, 0.35, 1], delay: reduced ? 0 : 0.75 }, opacity: { duration: 0.01, delay: reduced ? 0 : 0.75 } }}
                                         />
                                     </svg>
                                 </span>
@@ -177,8 +177,7 @@ const SKETCHES: Mark[][] = [
     ],
     [
         { text: '∫ x² dx', x: 120, y: 70, size: 28 },
-        { d: 'M40 92 H 300' },
-        { text: '= x³ ⁄ 3 + C', x: 150, y: 140, size: 26 },
+        { text: '= x³/3 + C', x: 150, y: 140, size: 26 },
         { text: 'power rule: xⁿ → xⁿ⁺¹ ⁄ (n+1)', x: 180, y: 196, size: 13 },
     ],
     [
@@ -213,7 +212,7 @@ function SketchBoard({ index, progress }: { index: number; progress: number }) {
                         {marks.map((m, i) => {
                             const on = Math.min(1, Math.max(0, shown - i));
                             return m.text ? (
-                                <motion.text key={i} x={m.x} y={m.y} textAnchor="middle" fontSize={m.size ?? 14} fill="currentColor" fontFamily="Inter, sans-serif" animate={{ opacity: on }} initial={{ opacity: 0 }}>
+                                <motion.text key={i} x={m.x} y={m.y} textAnchor="middle" fontSize={m.size ?? 14} fill="currentColor" fontFamily={index === 2 && i < 2 ? '"Latin Modern Math", "STIX Two Math", "Cambria Math", Georgia, serif' : 'Inter, sans-serif'} fontStyle={index === 2 && i < 2 ? 'italic' : undefined} animate={{ opacity: on }} initial={{ opacity: 0 }}>
                                     {m.text}
                                 </motion.text>
                             ) : (
@@ -293,7 +292,8 @@ function PromptBox({ onDemo }: { onDemo: (index: number, progress: number) => vo
                         onFocus={() => setFocused(true)}
                         onBlur={() => setFocused(false)}
                         aria-label="What should your AI draw?"
-                        className="h-10 w-full bg-transparent text-[15px] outline-none"
+                        placeholder={focused ? 'Describe a diagram, a flow or a sketch…' : undefined}
+                        className="h-10 w-full bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
                     />
                     {demo && (
                         <span className="pointer-events-none absolute inset-0 flex items-center overflow-hidden whitespace-nowrap text-[15px] text-muted-foreground" aria-hidden>
@@ -317,8 +317,9 @@ function Cta() {
     const [demo, setDemo] = useState({ index: 0, progress: 0 });
     const onDemo = useCallback((index: number, progress: number) => setDemo({ index, progress }), []);
     return (
-        <section className="dot-grid relative overflow-hidden border-y border-border bg-card dark:bg-[hsl(228_9%_9%)]">
-            <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-[max(16px,env(safe-area-inset-left))] py-24 sm:py-28 lg:grid-cols-[1fr_1fr]">
+        <section className="relative mx-auto max-w-6xl overflow-hidden px-[max(16px,env(safe-area-inset-left))]">
+            <div className="dot-grid relative overflow-hidden rounded-[28px] border border-border bg-card dark:bg-[hsl(228_9%_10%)]">
+            <div className="relative grid items-center gap-12 px-5 py-16 sm:px-12 sm:py-20 lg:grid-cols-[1fr_1fr]">
                 <Reveal className="space-y-6">
                     <h2 className="max-w-[13ch] text-balance text-[clamp(36px,5vw,60px)] font-semibold leading-[0.98] tracking-[-0.045em]">Invite a teammate. Or an AI.</h2>
                     <p className="max-w-md text-[17px] leading-relaxed text-muted-foreground">Start a board in one click, no account. Tell your AI what to draw and watch it land.</p>
@@ -328,13 +329,14 @@ function Cta() {
                     <SketchBoard index={demo.index} progress={demo.progress} />
                 </Reveal>
             </div>
+            </div>
         </section>
     );
 }
 
 /** Space between sections, where collaborators leave notes. */
 function Gutter({ children }: { children: React.ReactNode }) {
-    return <div className="mx-auto flex min-h-[96px] max-w-6xl flex-col justify-center px-[max(16px,env(safe-area-inset-left))] py-10 sm:min-h-[200px]">{children}</div>;
+    return <div className="mx-auto flex min-h-[56px] max-w-6xl flex-col justify-center px-[max(16px,env(safe-area-inset-left))] py-6 sm:min-h-[132px]">{children}</div>;
 }
 
 export default function Home() {
@@ -377,6 +379,7 @@ export default function Home() {
                 </div>
                 <div className="h-24 sm:h-32" />
                 <Cta />
+                <div className="h-24 sm:h-32" />
             </main>
             <Footer />
         </div>

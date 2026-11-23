@@ -58,7 +58,7 @@ export function CommandPalette({ open, onOpenChange, actions, onFit }: { open: b
                 <Command.Input autoFocus placeholder="Search tools and actions…" className="h-12 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground" />
                 <Kbd>esc</Kbd>
             </div>
-            <Command.List className="h-[min(var(--cmdk-list-height),min(380px,60vh))] overflow-y-auto overscroll-contain p-1.5 transition-[height] duration-200 ease-out [mask-image:linear-gradient(to_bottom,#000_calc(100%-28px),transparent)]">
+            <Command.List className="h-[min(var(--cmdk-list-height),min(380px,60vh))] overflow-y-auto overscroll-contain p-1.5 pb-6 transition-[height] duration-200 ease-out [mask-image:linear-gradient(to_bottom,#000_calc(100%-16px),transparent)]">
                 <Command.Empty className="px-3 py-8 text-center text-sm text-muted-foreground">No matching commands.</Command.Empty>
                 <Command.Group heading="Board" className={groupClass}>
                     <Command.Item className={itemClass} onSelect={run(actions.onConnectAi)} keywords={['mcp', 'claude', 'cursor', 'agent']}>

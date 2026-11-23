@@ -25,9 +25,9 @@ export function Frame({ name, children, className, dark }: { name: string; child
 }
 
 const NOTE_COLORS = {
-    yellow: 'bg-[#fff3bf] text-[#3d3200] dark:bg-[#4a3f12] dark:text-[#fff3bf]',
-    blue: 'bg-[#dbeafe] text-[#10294a] dark:bg-[#1c3355] dark:text-[#dbeafe]',
-    clay: 'bg-[#fbe3d8] text-[#4a2213] dark:bg-[#4a2a1e] dark:text-[#fbe3d8]',
+    yellow: 'bg-[#fff3bf] text-[#3d3200] dark:bg-[#e9dca0] dark:text-[#2d2500]',
+    blue: 'bg-[#dbeafe] text-[#10294a] dark:bg-[#bcd3f0] dark:text-[#0d2240]',
+    clay: 'bg-[#fbe3d8] text-[#4a2213] dark:bg-[#ecc8b7] dark:text-[#3d1a0d]',
 } as const;
 
 /** A sticky note left on the page by a collaborator (person or AI), with a hand-drawn arrow. */

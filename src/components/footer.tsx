@@ -29,8 +29,8 @@ const groups = [
 
 export default function Footer() {
     return (
-        <footer className="border-t border-border">
-            <div className="mx-auto grid max-w-6xl gap-10 px-[max(16px,env(safe-area-inset-left))] py-14 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        <footer className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
+            <div className="grid gap-10 border-t border-border py-14 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
                 <div className="space-y-3">
                     <Logo />
                     <p className="max-w-xs text-[14px] leading-relaxed text-muted-foreground">The realtime whiteboard that people and their AI assistants draw on together.</p>
@@ -58,11 +58,9 @@ export default function Footer() {
                     </nav>
                 ))}
             </div>
-            <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
-                <div className="flex items-center justify-between border-t border-border/70 py-5 text-[12.5px] text-muted-foreground">
-                    <span>© {new Date().getFullYear()} SketchSync</span>
-                    <span>Open source under the ISC license</span>
-                </div>
+            <div className="flex items-center justify-between border-t border-border/70 py-5 text-[12.5px] text-muted-foreground">
+                <span>© {new Date().getFullYear()} SketchSync</span>
+                <span>Open source under the ISC license</span>
             </div>
         </footer>
     );

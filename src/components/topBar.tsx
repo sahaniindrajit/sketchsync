@@ -138,8 +138,13 @@ function BoardTitle() {
         window.addEventListener('sketchsync:rename', start);
         return () => window.removeEventListener('sketchsync:rename', start);
     }, []);
-    const commit = (value: string) => {
+    const button = useRef<HTMLButtonElement>(null);
+    const finish = () => {
         setEditing(false);
+        requestAnimationFrame(() => button.current?.focus({ focusVisible: false } as FocusOptions));
+    };
+    const commit = (value: string) => {
+        finish();
         if (value.trim() === (title || 'Untitled board')) return;
         usePresence.getState().setTitle(value);
         usePresence.getState().announce();
@@ -157,7 +162,7 @@ function BoardTitle() {
                 onKeyDown={(e) => {
                     e.stopPropagation();
                     if (e.key === 'Enter') commit(e.currentTarget.value);
-                    if (e.key === 'Escape') setEditing(false);
+                    if (e.key === 'Escape') finish();
                 }}
                 className="h-8 w-[180px] rounded-md border border-ring bg-card px-2 text-[13px] font-medium outline-none ring-[3px] ring-ring/15 max-sm:fixed max-sm:left-3 max-sm:right-3 max-sm:top-[64px] max-sm:z-50 max-sm:h-11 max-sm:w-auto max-sm:text-[15px] max-sm:shadow-lift"
             />
@@ -165,6 +170,7 @@ function BoardTitle() {
     }
     return (
         <button
+            ref={button}
             type="button"
             onClick={() => setEditing(true)}
             title="Rename board"

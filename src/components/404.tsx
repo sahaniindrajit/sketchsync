@@ -36,7 +36,7 @@ export default function NotFound() {
                                 animate={{ pathLength: 1 }}
                                 transition={{ duration: 1.4, ease: 'easeInOut' }}
                             />
-                            <text x="458" y="200" fontSize="30" fontWeight="700" className="fill-foreground" fontFamily="Inter, sans-serif">
+                            <text x="448" y="168" fontSize="26" fontWeight="400" className="fill-foreground/80" fontFamily="Inter, sans-serif">
                                 ?
                             </text>
                             <rect x="40" y="280" width="40" height="40" rx="9" fill="none" stroke="currentColor" strokeWidth="2.5" />

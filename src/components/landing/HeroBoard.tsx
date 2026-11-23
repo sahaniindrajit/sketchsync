@@ -217,11 +217,11 @@ export function HeroBoard({ className }: { className?: string }) {
                     <Node on={s(5)} order={5} {...L.d} label="Send welcome email" />
                     {L.be && <Arrow on={s(6)} order={6} d={L.be[0]} head={L.be[1]} />}
                     {L.e && <Node on={s(6)} order={6} {...L.e} label="Show inline error" fill={fill('#f1eee8')} />}
-                    <motion.text x={L.yes[0]} y={L.yes[1]} fontSize="13" className="fill-muted-foreground" fontFamily="Inter, sans-serif" {...faded(s(6), 7, 0.3)}>
+                    <motion.text x={L.yes[0]} y={L.yes[1]} fontSize="14" className="fill-foreground/70" fontFamily="Inter, sans-serif" fontWeight="500" {...faded(s(6), 7, 0.3)}>
                         yes
                     </motion.text>
                     {L.no && (
-                        <motion.text x={L.no[0]} y={L.no[1]} fontSize="13" className="fill-muted-foreground" fontFamily="Inter, sans-serif" {...faded(s(6), 7, 0.4)}>
+                        <motion.text x={L.no[0]} y={L.no[1]} fontSize="14" className="fill-foreground/70" fontFamily="Inter, sans-serif" fontWeight="500" {...faded(s(6), 7, 0.4)}>
                             no
                         </motion.text>
                     )}
@@ -233,7 +233,7 @@ export function HeroBoard({ className }: { className?: string }) {
                         strokeWidth="3"
                         strokeLinecap="round"
                         initial={{ pathLength: 0, opacity: 0 }}
-                        animate={s(7) ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 0 }}
+                        animate={s(7) ? { pathLength: 1, opacity: 1 } : ran ? { pathLength: 1, opacity: 0.14 } : { pathLength: 0, opacity: 0 }}
                         transition={s(7) ? { pathLength: { duration: 1, ease: 'easeInOut', delay: 0.15 }, opacity: { duration: 0.05, delay: 0.15 } } : { duration: 0.3, delay: 0.1 }}
                     />
                     <motion.path d={L.pointer} fill="none" stroke={pen} strokeWidth="2.5" strokeLinecap="round" {...drawn(s(8), 9)} />
@@ -323,6 +323,14 @@ export function HeroBoard({ className }: { className?: string }) {
                     >
                         {paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
                     </button>
+                )}
+
+                {/* phones: the latest tool call as a one-line ticker */}
+                {compact && step >= 1 && (
+                    <div className="pointer-events-none absolute bottom-3 right-3 flex max-w-[70%] items-center gap-1.5 rounded-lg border border-border/80 bg-[hsl(var(--chrome)/0.94)] px-2 py-1 font-mono text-[10.5px] shadow-chrome">
+                        <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', aiWorking ? 'animate-pulse bg-claude' : 'bg-success')} />
+                        <span className="truncate">{FEED.filter((f) => step >= f.at).slice(-1)[0]?.tool ?? 'get_board'}</span>
+                    </div>
                 )}
 
                 {/* mini dock */}

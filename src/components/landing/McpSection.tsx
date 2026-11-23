@@ -71,7 +71,7 @@ function Session({ n }: { n: number }) {
                 <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#d97757] text-white">
                     <svg viewBox="0 0 16 16" className="h-2.5 w-2.5" fill="currentColor"><path d="M8 0l1.8 6.2L16 8l-6.2 1.8L8 16l-1.8-6.2L0 8l6.2-1.8z" /></svg>
                 </span>
-                <p className="text-white/90">Done. I put a cache in front of Postgres.</p>
+                <p className="text-white/90">Done. I added Redis to cache reads for Postgres.</p>
             </motion.div>
         </div>
     );
@@ -118,7 +118,7 @@ function MiniBoard({ n }: { n: number }) {
                         cache
                     </text>
                     <text x="24" y="256" fontSize="12" fill="#e58a6b" fontFamily="Inter, sans-serif" fontWeight="600">
-                        ✓ Redis now sits in front of Postgres
+                        ✓ Redis caches reads for Postgres
                     </text>
                 </motion.g>
                 <motion.g initial={false} animate={{ x: cx, y: cy, opacity: ai ? 1 : 0 }} transition={{ type: 'spring', visualDuration: 0.6, bounce: 0.1 }}>
@@ -139,8 +139,10 @@ export function McpSection() {
     const setup = SETUPS.find((s) => s.id === tab)!;
     const { ref, n, replay } = useReplay();
     return (
-        <section id="mcp" className="scroll-mt-16 bg-[hsl(228_12%_7%)] text-white dark:bg-[radial-gradient(60rem_24rem_at_20%_0%,hsl(var(--claude)/0.12),transparent),linear-gradient(180deg,hsl(228_14%_14%),hsl(228_12%_11%))] dark:[border-block:1px_solid_hsl(0_0%_100%/0.1)]">
-            <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))] py-24 sm:py-32">
+        <section id="mcp" className="mx-auto max-w-6xl scroll-mt-16 px-[max(16px,env(safe-area-inset-left))]">
+            <div className="relative overflow-hidden rounded-[28px] bg-[hsl(228_12%_7%)] px-5 py-14 text-white shadow-lift ring-1 ring-black/5 sm:px-12 sm:py-20 dark:bg-[radial-gradient(60rem_24rem_at_20%_0%,hsl(var(--claude)/0.12),transparent),linear-gradient(180deg,hsl(228_14%_14%),hsl(228_12%_11%))] dark:ring-white/10">
+                <div className="pointer-events-none absolute inset-0 [background-image:radial-gradient(hsl(0_0%_100%/0.07)_1px,transparent_1.2px)] [background-size:20px_20px]" />
+                <div className="relative">
                 <Reveal className="grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:items-end">
                     <h2 className="max-w-xl text-balance text-[clamp(32px,5vw,56px)] font-semibold leading-[1.02] tracking-[-0.04em]">One URL, and your AI can draw.</h2>
                     <p className="max-w-lg text-pretty text-[17px] leading-relaxed text-white/65">
@@ -186,7 +188,7 @@ export function McpSection() {
                                 <CopyButton value={setup.code.replace(/\\\n\s+/g, '')} label="Copy snippet" dense className="text-white/60 hover:bg-white/10 hover:text-white" />
                             </div>
                             <div className="relative">
-                                <motion.pre key={setup.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="overflow-x-auto px-5 pb-4 pt-2 font-mono text-[12.5px] leading-[1.75] [scrollbar-width:thin]">
+                                <motion.pre key={setup.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="overflow-x-auto px-5 pb-4 pt-2 font-mono md:min-h-[188px] text-[12.5px] leading-[1.75] [scrollbar-width:thin]">
                                     <code>
                                         {setup.code.split('\n').map((line, i) => (
                                             <div key={i} className="flex">
@@ -212,6 +214,7 @@ export function McpSection() {
                     <MiniBoard n={n} />
                 </Reveal>
                 </Frame>
+                </div>
             </div>
         </section>
     );

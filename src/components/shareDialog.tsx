@@ -105,7 +105,7 @@ export function ShareDialog({ roomId, tab, onTab, onClose, aiPanel }: { roomId: 
                         exit={{ opacity: 0, transition: { duration: 0.15 } }}
                     />
                 </Dialog.Overlay>
-                <div className="pointer-events-none fixed inset-0 z-[61] flex items-center justify-center p-4">
+                <div className="pointer-events-none fixed inset-0 z-[61] flex items-start justify-center p-4 pt-[max(1rem,14vh)]">
                     <Dialog.Content asChild forceMount aria-describedby={undefined}>
                         <motion.div
                             initial={{ opacity: 0, scale: 0.96, y: 8 }}
@@ -116,12 +116,26 @@ export function ShareDialog({ roomId, tab, onTab, onClose, aiPanel }: { roomId: 
                         >
                             <Dialog.Title className="sr-only">Share board</Dialog.Title>
                             <div className="flex items-center gap-2 border-b border-border/70 p-2">
-                                <div className="flex flex-1 gap-0.5" role="tablist">
+                                <div
+                                    className="flex flex-1 gap-0.5"
+                                    role="tablist"
+                                    aria-label="Share options"
+                                    onKeyDown={(e) => {
+                                        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+                                        e.preventDefault();
+                                        const next = tab === 'collaborate' ? 'ai' : 'collaborate';
+                                        onTab(next);
+                                        requestAnimationFrame(() => document.getElementById(`share-tab-${next}`)?.focus());
+                                    }}
+                                >
                                     {tabs.map(([id, label, Icon]) => (
                                         <button
                                             key={id}
+                                            id={`share-tab-${id}`}
                                             role="tab"
                                             aria-selected={tab === id}
+                                            aria-controls="share-panel"
+                                            tabIndex={tab === id ? 0 : -1}
                                             className={cn('relative flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors', tab === id ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}
                                             onClick={() => onTab(id)}
                                         >
@@ -144,6 +158,9 @@ export function ShareDialog({ roomId, tab, onTab, onClose, aiPanel }: { roomId: 
                                     exit={{ opacity: 0, x: tab === 'ai' ? -16 : 16, filter: 'blur(2px)', transition: { duration: 0.12 } }}
                                     transition={{ type: 'spring', visualDuration: 0.22, bounce: 0 }}
                                     className="p-5"
+                                    id="share-panel"
+                                    role="tabpanel"
+                                    aria-labelledby={`share-tab-${tab}`}
                                 >
                                     {tab === 'collaborate' ? (
                                         <div className="space-y-4">

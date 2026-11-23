@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { applyOp } from '@/shared/ops';
-import { redo, resetHistory, undo } from './history';
+import { asOneStep, redo, resetHistory, undo } from './history';
 import { DEFAULTS, type Op, type Shape } from '@/shared/protocol';
 
 export type Tool = 'select' | 'hand' | 'rect' | 'ellipse' | 'diamond' | 'arrow' | 'line' | 'pencil' | 'text' | 'math' | 'eraser';
@@ -17,6 +17,9 @@ export interface AiActivity {
     name: string;
     shapeIds: string[];
     at: number;
+    /** Ops that revert this batch of AI edits, oldest first. */
+    undo: Op[];
+    added: number;
 }
 
 /** `text`/`math` edit a shape, `label` edits a box/line label, `new-text`/`new-math` place a new shape. */
@@ -102,6 +105,16 @@ export function resetBoardState(roomId: string | null, shapes: Map<string, Shape
 
 /** Undo/redo the local user's last change. */
 export const undoLast = () => undo((op) => useBoard.getState().dispatch(op), () => useBoard.getState().shapes);
+/** Reverts the AI's most recent batch of edits (as one undoable step for this user). */
+export function undoAiBatch() {
+    const { aiActivity, dispatch, notify } = useBoard.getState();
+    if (!aiActivity?.undo.length) return;
+    asOneStep(() => {
+        for (const op of [...aiActivity.undo].reverse()) dispatch(op);
+    });
+    useBoard.setState({ aiActivity: null });
+    notify(`Reverted ${aiActivity.name}'s changes`);
+}
 export const redoLast = () => redo((op) => useBoard.getState().dispatch(op), () => useBoard.getState().shapes);
 
 if (import.meta.env.DEV || import.meta.env.MODE === 'test') {

@@ -74,7 +74,7 @@ const DockButton = React.forwardRef<
 });
 
 /** A small tray of extra tools that rises out of the dock (phones). */
-function Tray({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+function Tray({ open, onClose, children, align = 'left' }: { open: boolean; onClose: () => void; children: React.ReactNode; align?: 'left' | 'right' }) {
     const ref = useRef<HTMLDivElement>(null);
     useEffect(() => {
         if (!open) return;
@@ -90,7 +90,8 @@ function Tray({ open, onClose, children }: { open: boolean; onClose: () => void;
                     initial={{ opacity: 0, y: 8, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 6, scale: 0.97, transition: { duration: 0.12 } }}
-                    className="chrome absolute bottom-full mb-2 flex items-center gap-0.5 rounded-2xl p-1.5"
+                    style={{ transformOrigin: align === 'right' ? 'bottom right' : 'bottom left' }}
+                    className={cn('chrome absolute bottom-full mb-3 flex items-center gap-0.5 rounded-2xl p-1.5', align === 'right' ? 'right-0' : 'left-0')}
                     role="menu"
                 >
                     {children}
@@ -183,8 +184,7 @@ export const Toolbar = React.memo(function Toolbar({ onImage, onDownload }: Tool
                             <DockButton label="More tools" tip={false} active={selectedTool === 'math'} aria-expanded={tray === 'more'} onClick={() => setTray((t) => (t === 'more' ? null : 'more'))}>
                                 <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
                             </DockButton>
-                            <div className="absolute right-0 bottom-0">
-                                <Tray open={tray === 'more'} onClose={() => setTray(null)}>
+                            <Tray align="right" open={tray === 'more'} onClose={() => setTray(null)}>
                                     {toolButton(T.math, { tip: false, onPick: () => setTray(null) })}
                                     <DockButton label="Insert image" tip={false} role="menuitem" onClick={() => { setTray(null); fileRef.current?.click(); }}>
                                         <ImagePlus className="h-[18px] w-[18px]" strokeWidth={1.75} />
@@ -192,8 +192,7 @@ export const Toolbar = React.memo(function Toolbar({ onImage, onDownload }: Tool
                                     <DockButton label="Download PNG" tip={false} role="menuitem" onClick={() => { setTray(null); onDownload(); }}>
                                         <Download className="h-[18px] w-[18px]" strokeWidth={1.75} />
                                     </DockButton>
-                                </Tray>
-                            </div>
+                            </Tray>
                         </div>
                     </>
                 ) : (

@@ -91,33 +91,51 @@ export function McpSection() {
     const [tab, setTab] = useState(SETUPS[0].id);
     const setup = SETUPS.find((s) => s.id === tab)!;
     return (
-        <section id="mcp" className="scroll-mt-24">
-            <SectionHeading eyebrow="Model Context Protocol" title={<>One URL, and your AI can draw.</>}>
-                Every board has its own MCP endpoint. Paste it into Claude, Cursor or VS Code and the assistant can read the board, see your sketches as an image, and add shapes, flowcharts and LaTeX while you watch.
-            </SectionHeading>
-
-            <div className="mt-12 grid gap-4 lg:grid-cols-[1.05fr_1fr]">
-                <Reveal className="flex flex-col justify-between gap-6 rounded-2xl border border-border bg-card p-6">
-                    <Diagram />
-                    <div className="space-y-2.5">
-                        <p className="font-mono text-[11px] uppercase tracking-[0.06em] text-muted-foreground">Tools the AI gets</p>
+        <section id="mcp" className="scroll-mt-24 space-y-5">
+            <div className="grid items-center gap-10 lg:grid-cols-[1fr_1.05fr]">
+                <div className="space-y-8">
+                    <SectionHeading eyebrow="Model Context Protocol" title={<>One URL, and your AI can draw.</>}>
+                        Every board has its own MCP endpoint. Paste it into Claude, Cursor or VS Code and the assistant can read the board, see your sketches as an image, and add shapes, flowcharts and LaTeX while you watch.
+                    </SectionHeading>
+                    <Reveal className="space-y-2.5">
+                        <p className="font-mono text-[11.5px] uppercase tracking-[0.06em] text-muted-foreground">Tools the AI gets</p>
                         <div className="flex flex-wrap gap-1.5">
                             {TOOLS.map((t) => (
-                                <code key={t} className="rounded-md border border-border bg-secondary/60 px-2 py-0.5 font-mono text-[11.5px] text-foreground">
+                                <code key={t} className="rounded-md border border-border bg-card px-2 py-0.5 font-mono text-[12px] text-foreground">
                                     {t}
                                 </code>
                             ))}
                         </div>
-                    </div>
+                    </Reveal>
+                </div>
+                <Reveal delay={0.05} className="rounded-2xl border border-border bg-card p-6 sm:p-8">
+                    <Diagram />
                 </Reveal>
+            </div>
 
-                <Reveal delay={0.08} className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-[hsl(228_10%_8%)] text-[hsl(240_6%_88%)] dark:bg-card">
-                    <div className="flex items-center gap-1 overflow-x-auto border-b border-white/10 p-2 [scrollbar-width:none]" role="tablist" aria-label="Setup instructions">
+            <Reveal delay={0.05} className="grid overflow-hidden rounded-2xl border border-border bg-[hsl(228_10%_8%)] text-[hsl(240_6%_88%)] dark:border-white/[0.12] dark:bg-[hsl(228_10%_10%)] md:grid-cols-[1.1fr_1fr]">
+                <div className="flex min-w-0 flex-col">
+                    <div
+                        className="flex items-center gap-1 overflow-x-auto border-b border-white/10 p-2 [scrollbar-width:none]"
+                        role="tablist"
+                        aria-label="Setup instructions"
+                        onKeyDown={(e) => {
+                            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+                            e.preventDefault();
+                            const i = SETUPS.findIndex((x) => x.id === tab);
+                            const next = SETUPS[(i + (e.key === 'ArrowRight' ? 1 : SETUPS.length - 1)) % SETUPS.length];
+                            setTab(next.id);
+                            requestAnimationFrame(() => document.getElementById(`mcp-tab-${next.id}`)?.focus());
+                        }}
+                    >
                         {SETUPS.map((s) => (
                             <button
                                 key={s.id}
+                                id={`mcp-tab-${s.id}`}
                                 role="tab"
                                 aria-selected={tab === s.id}
+                                aria-controls="mcp-panel"
+                                tabIndex={tab === s.id ? 0 : -1}
                                 onClick={() => setTab(s.id)}
                                 className={cn('relative whitespace-nowrap rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors', tab === s.id ? 'text-white' : 'text-white/50 hover:text-white/80')}
                             >
@@ -126,23 +144,25 @@ export function McpSection() {
                             </button>
                         ))}
                     </div>
-                    <div className="flex items-center justify-between px-5 pt-4 font-mono text-[11px] text-white/40">
-                        <span>{setup.file}</span>
-                        <CopyButton value={setup.code.replace(/\\\n\s+/g, '')} label="Copy snippet" dense className="text-white/60 hover:bg-white/10 hover:text-white" />
+                    <div id="mcp-panel" role="tabpanel" aria-labelledby={`mcp-tab-${tab}`} className="flex-1">
+                        <div className="flex items-center justify-between px-5 pt-4 font-mono text-[11px] text-white/45">
+                            <span>{setup.file}</span>
+                            <CopyButton value={setup.code.replace(/\\\n\s+/g, '')} label="Copy snippet" dense className="text-white/60 hover:bg-white/10 hover:text-white" />
+                        </div>
+                        <motion.pre key={setup.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="px-5 pb-6 pt-2 font-mono text-[12.5px] leading-[1.75]">
+                            <code>
+                                {setup.code.split('\n').map((line, i) => (
+                                    <div key={i} className="flex">
+                                        <span className="mr-4 inline-block w-4 shrink-0 select-none text-right text-white/25">{i + 1}</span>
+                                        <span className="min-w-0 whitespace-pre-wrap break-all">{colorize(line)}</span>
+                                    </div>
+                                ))}
+                            </code>
+                        </motion.pre>
                     </div>
-                    <motion.pre key={setup.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="overflow-x-auto px-5 pb-5 pt-2 font-mono text-[12.5px] leading-[1.75]">
-                        <code>
-                            {setup.code.split('\n').map((line, i) => (
-                                <div key={i}>
-                                    <span className="mr-4 inline-block w-4 select-none text-right text-white/25">{i + 1}</span>
-                                    {colorize(line)}
-                                </div>
-                            ))}
-                        </code>
-                    </motion.pre>
-                    <Session />
-                </Reveal>
-            </div>
+                </div>
+                <Session />
+            </Reveal>
         </section>
     );
 }
@@ -175,14 +195,15 @@ function Session() {
     const ref = useRef<HTMLDivElement>(null);
     const inView = useInView(ref, { once: true, amount: 0.5 });
     const reduced = useReducedMotion();
-    const [n, setN] = useState(reduced ? SESSION.length + 1 : 0);
+    const [n, setN] = useState(reduced ? SESSION.length + 1 : 1);
     useEffect(() => {
         if (!inView || reduced) return;
-        const timers = Array.from({ length: SESSION.length + 1 }, (_, i) => setTimeout(() => setN(i + 1), 500 + i * 650));
+        const timers = Array.from({ length: SESSION.length }, (_, i) => setTimeout(() => setN(i + 2), 600 + i * 700));
         return () => timers.forEach(clearTimeout);
     }, [inView, reduced]);
     return (
-        <div ref={ref} className="flex-1 space-y-3 border-t border-white/10 px-5 py-5 text-[13px]">
+        <div ref={ref} className="min-w-0 space-y-3 border-t border-white/10 px-5 py-5 text-[13px] md:border-l md:border-t-0">
+            <p className="font-mono text-[11px] uppercase tracking-[0.06em] text-white/40">Then ask</p>
             <div className="flex items-start gap-2.5">
                 <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-[10px] font-semibold text-white">Y</span>
                 <p className="text-white/90">Draw a flowchart of our signup flow.</p>

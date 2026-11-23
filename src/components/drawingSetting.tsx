@@ -1,4 +1,6 @@
-import { Check, Palette, Pipette, X } from 'lucide-react';
+import { BringToFront, Check, Copy, Palette, Pipette, SendToBack, Trash2, X } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { AnimatePresence, motion } from 'motion/react';
 import React, { useMemo, useState } from 'react';
 import { Input } from '@/components/ui/input';
@@ -81,6 +83,71 @@ function applyStyle(key: StyleKey, value: string | number) {
 }
 
 const isTransparent = (c: string) => c === 'transparent';
+
+const opacities = [0.25, 0.5, 0.75, 1];
+
+function selection() {
+    const state = useBoard.getState();
+    return state.selectedIds.map((id) => state.shapes.get(id)).filter((x): x is Shape => !!x);
+}
+
+function setOpacity(value: number) {
+    const patches = selection().map((x) => ({ id: x.id, changes: { opacity: value } }));
+    if (patches.length) useBoard.getState().dispatch({ kind: 'update', patches });
+}
+
+function reorder(where: 'front' | 'back') {
+    const state = useBoard.getState();
+    const all = Array.from(state.shapes.values()).map((x) => x.z);
+    const picked = selection().sort((a, b) => a.z - b.z);
+    if (!picked.length) return;
+    const base = where === 'front' ? Math.max(...all) + 1 : Math.min(...all) - picked.length;
+    state.dispatch({ kind: 'update', patches: picked.map((x, i) => ({ id: x.id, changes: { z: base + i } })) });
+}
+
+function duplicate() {
+    const state = useBoard.getState();
+    const picked = selection().sort((a, b) => a.z - b.z);
+    if (!picked.length) return;
+    const top = Math.max(...Array.from(state.shapes.values()).map((x) => x.z));
+    const copies = picked.map((x, i) => {
+        const copy = { ...x, id: uuidv4(), x: x.x + 20, y: x.y + 20, z: top + 1 + i, updatedAt: Date.now() } as Shape;
+        if ('startBinding' in copy) delete copy.startBinding;
+        if ('endBinding' in copy) delete copy.endBinding;
+        return copy;
+    });
+    state.dispatch({ kind: 'add', shapes: copies });
+    state.setSelection(copies.map((c) => c.id));
+}
+
+function removeSelected() {
+    const state = useBoard.getState();
+    if (state.selectedIds.length) state.dispatch({ kind: 'delete', ids: state.selectedIds });
+}
+
+function ActionButton({ label, hint, onClick, children, danger }: { label: string; hint?: string; onClick: () => void; children: React.ReactNode; danger?: boolean }) {
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    type="button"
+                    aria-label={label}
+                    onClick={onClick}
+                    className={cn(
+                        'flex h-8 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors active:scale-95',
+                        danger ? 'hover:bg-destructive/10 hover:text-destructive' : 'hover:bg-secondary/60 hover:text-foreground',
+                    )}
+                >
+                    {children}
+                </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+                {label}
+                {hint && <span className="kbd">{hint}</span>}
+            </TooltipContent>
+        </Tooltip>
+    );
+}
 const checker = {
     backgroundImage: 'repeating-conic-gradient(hsl(var(--border)) 0 25%, transparent 0 50%)',
     backgroundSize: '8px 8px',
@@ -152,11 +219,23 @@ export const DrawingSettings = React.memo(function DrawingSettings() {
     const strokeWidth = useBoard((s) => s.strokeWidth);
     const fontSize = useBoard((s) => s.fontSize);
     const keys = useRelevantKeys();
+    const selectedCount = useBoard((s) => s.selectedIds.length);
+    const selOpacity = useBoard((s) => {
+        const first = s.selectedIds[0] && s.shapes.get(s.selectedIds[0]);
+        return first ? first.opacity : 1;
+    });
     const [open, setOpen] = useState(() => window.innerWidth >= 768);
     const [picker, setPicker] = useState<'strokeColor' | 'fillColor' | null>(null);
     const [hex, setHex] = useState('#f08c00');
     const hexValid = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex);
-    const relevant = keys.size > 0;
+    const relevant = keys.size > 0 || selectedCount > 0;
+
+    // On phones, opening the app menu tucks the panel away so the two don't stack.
+    React.useEffect(() => {
+        const close = () => window.innerWidth < 768 && setOpen(false);
+        window.addEventListener('sketchsync:menu-open', close);
+        return () => window.removeEventListener('sketchsync:menu-open', close);
+    }, []);
     const activePicker = picker && keys.has(picker) ? picker : null;
 
     return (
@@ -191,7 +270,7 @@ export const DrawingSettings = React.memo(function DrawingSettings() {
                         layout
                     >
                         <div className="-mb-1 flex items-center justify-between">
-                            <span className="text-[13px] font-medium">Style</span>
+                            <span className="text-[13px] font-medium">{selectedCount ? `${selectedCount} selected` : 'Style'}</span>
                             <button type="button" aria-label="Hide style panel" className="-mr-1 flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground" onClick={() => setOpen(false)}>
                                 <X className="h-3.5 w-3.5" />
                             </button>
@@ -283,6 +362,36 @@ export const DrawingSettings = React.memo(function DrawingSettings() {
                                     render={(v) => sizes.find((s) => s.value === v)!.label}
                                 />
                             </Section>
+                        )}
+                        {selectedCount > 0 && (
+                            <>
+                                <Section title="Opacity" value={`${Math.round(selOpacity * 100)}%`}>
+                                    <Segmented
+                                        group="opacity"
+                                        options={opacities}
+                                        value={opacities.includes(selOpacity) ? selOpacity : -1}
+                                        onChange={setOpacity}
+                                        labelOf={(v) => `Opacity ${Math.round(v * 100)}%`}
+                                        render={(v) => <span className="block h-3 w-3 rounded-[3px] bg-current" style={{ opacity: v }} />}
+                                    />
+                                </Section>
+                                <Section title="Actions">
+                                    <div className="grid grid-cols-4 gap-1">
+                                        <ActionButton label="Bring to front" onClick={() => reorder('front')}>
+                                            <BringToFront className="h-4 w-4" strokeWidth={1.75} />
+                                        </ActionButton>
+                                        <ActionButton label="Send to back" onClick={() => reorder('back')}>
+                                            <SendToBack className="h-4 w-4" strokeWidth={1.75} />
+                                        </ActionButton>
+                                        <ActionButton label="Duplicate" onClick={duplicate}>
+                                            <Copy className="h-4 w-4" strokeWidth={1.75} />
+                                        </ActionButton>
+                                        <ActionButton label="Delete" hint="Del" onClick={removeSelected} danger>
+                                            <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+                                        </ActionButton>
+                                    </div>
+                                </Section>
+                            </>
                         )}
                     </motion.div>
                 )}

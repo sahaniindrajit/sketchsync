@@ -1,5 +1,5 @@
-import { ArrowRight, Sparkles } from 'lucide-react';
-import { motion } from 'motion/react';
+import { ArrowRight, Code2, MousePointer2, Sparkles, SquareTerminal, Wind, Zap } from 'lucide-react';
+import { motion, useReducedMotion } from 'motion/react';
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Footer from '@/components/footer';
@@ -13,9 +13,17 @@ import { Shortcuts } from '@/components/landing/Shortcuts';
 import { LogoMark } from '@/components/logo';
 
 const HEADLINE = ['The', 'whiteboard', 'your', 'AI', 'can', 'draw', 'on.'];
-const CLIENTS = ['Claude', 'Claude Code', 'Cursor', 'VS Code', 'Windsurf', 'Zed'];
+const CLIENTS = [
+    { name: 'Claude', icon: Sparkles },
+    { name: 'Claude Code', icon: SquareTerminal },
+    { name: 'Cursor', icon: MousePointer2 },
+    { name: 'VS Code', icon: Code2 },
+    { name: 'Windsurf', icon: Wind },
+    { name: 'Zed', icon: Zap },
+];
 
 function Hero() {
+    const reduced = useReducedMotion();
     return (
         <section className="relative">
             <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))] pb-8 pt-14 sm:pt-20">
@@ -38,8 +46,8 @@ function Hero() {
                             key={i}
                             aria-hidden
                             className="mr-[0.22em] inline-block last:mr-0"
-                            initial={{ opacity: 0, y: '0.35em', filter: 'blur(8px)' }}
-                            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                            initial={reduced ? { opacity: 0 } : { opacity: 0, y: '0.35em', filter: 'blur(8px)' }}
+                            animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0, filter: 'blur(0px)' }}
                             transition={{ type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.08 + i * 0.06 }}
                         >
                             {w === 'AI' ? (
@@ -56,37 +64,35 @@ function Hero() {
                     ))}
                 </h1>
 
-                <div className="mt-8 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
-                    <motion.p
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.5 }}
-                        className="max-w-[46ch] text-pretty text-[17px] leading-relaxed text-muted-foreground"
-                    >
-                        Sketch with your team in real time. Connect Claude or any MCP client and it adds flowcharts, diagrams and math to the same board while you watch.
-                    </motion.p>
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.6 }}
-                        className="flex flex-col gap-3 sm:items-end"
-                    >
-                        <div className="flex flex-wrap gap-2.5">
-                            <Link
-                                to="/board"
-                                className="group relative inline-flex h-12 items-center gap-2 overflow-hidden rounded-xl bg-primary px-5 text-[15px] font-medium text-primary-foreground shadow-[inset_0_1px_0_hsl(0_0%_100%/0.15),0_8px_24px_-8px_hsl(225_20%_10%/0.5)] transition-transform active:scale-[0.97]"
-                            >
-                                <span className="absolute inset-0 animate-sheen bg-[linear-gradient(100deg,transparent_30%,hsl(0_0%_100%/0.22)_50%,transparent_70%)]" />
-                                <span className="relative">Open a board</span>
-                                <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                            </Link>
-                            <a href="#mcp" className="inline-flex h-12 items-center gap-2 rounded-xl border border-border bg-card px-5 text-[15px] font-medium transition-colors hover:bg-secondary">
-                                Connect your AI
-                            </a>
-                        </div>
-                        <p className="font-mono text-[11.5px] text-muted-foreground">Free · no sign-up · open source</p>
-                    </motion.div>
-                </div>
+                <motion.p
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.5 }}
+                    className="mt-7 max-w-[54ch] text-pretty text-[18px] leading-relaxed text-muted-foreground"
+                >
+                    Sketch with your team in real time. Connect Claude or any MCP client and watch it add flowcharts, diagrams and math to the same board.
+                </motion.p>
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.6 }}
+                    className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-4"
+                >
+                    <div className="flex flex-wrap gap-2.5">
+                        <Link
+                            to="/board"
+                            className="group relative inline-flex h-12 items-center gap-2 overflow-hidden rounded-xl bg-primary px-5 text-[15px] font-medium text-primary-foreground shadow-[inset_0_1px_0_hsl(0_0%_100%/0.15),0_8px_24px_-8px_hsl(225_20%_10%/0.5)] transition-transform active:scale-[0.97]"
+                        >
+                            <span className="absolute inset-0 animate-sheen bg-[linear-gradient(100deg,transparent_30%,hsl(0_0%_100%/0.22)_50%,transparent_70%)] [animation-iteration-count:3]" />
+                            <span className="relative">Open a board</span>
+                            <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                        </Link>
+                        <a href="#mcp" className="inline-flex h-12 items-center gap-2 rounded-xl border border-border bg-card px-5 text-[15px] font-medium transition-colors hover:bg-secondary">
+                            Connect your AI
+                        </a>
+                    </div>
+                    <p className="font-mono text-[12px] text-muted-foreground">Free · no sign-up · open source</p>
+                </motion.div>
             </div>
 
             <motion.div
@@ -106,11 +112,13 @@ function WorksWith() {
         <section className="mx-auto mt-12 max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
             <Reveal className="flex flex-col gap-4 border-y border-border/70 py-6 md:flex-row md:items-center md:gap-10">
                 <p className="shrink-0 font-mono text-[11.5px] uppercase tracking-[0.08em] text-muted-foreground">Draws with any MCP client</p>
-                <ul className="grid flex-1 grid-cols-3 gap-x-6 gap-y-3 sm:grid-cols-6">
+                <ul className="grid flex-1 grid-cols-2 gap-x-6 gap-y-3 min-[480px]:grid-cols-3 lg:grid-cols-6">
                     {CLIENTS.map((c) => (
-                        <li key={c} className="flex items-center gap-2 whitespace-nowrap text-[16px] font-medium tracking-tightish text-foreground/70">
-                            <span className="h-1.5 w-1.5 rounded-full bg-claude/70" aria-hidden />
-                            {c}
+                        <li key={c.name} className="flex items-center gap-2.5 whitespace-nowrap text-[16px] font-semibold tracking-tightish text-foreground/75">
+                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-foreground/70" aria-hidden>
+                                <c.icon className="h-3.5 w-3.5" strokeWidth={2} />
+                            </span>
+                            {c.name}
                         </li>
                     ))}
                 </ul>
@@ -124,8 +132,9 @@ function Cta() {
     return (
         <section ref={ref} className={cn('mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]', paused)}>
             <Reveal>
-                <div className="border-beam relative overflow-hidden rounded-3xl border border-border bg-card">
+                <div className="relative overflow-hidden rounded-3xl border border-border bg-card">
                     <div className="dot-grid absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_at_center,#000,transparent_75%)]" />
+                    <div className="pointer-events-none absolute -top-40 left-1/2 h-80 w-[640px] max-w-full -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,hsl(var(--claude)/0.18),transparent)]" />
                     <div className="relative flex flex-col items-center px-6 py-20 text-center">
                         <LogoMark className="h-12 w-12" />
                         <h2 className="mt-6 max-w-[18ch] text-balance text-[clamp(30px,4.5vw,52px)] font-semibold leading-[1.02] tracking-[-0.04em]">Start a board. Invite a teammate. Or an AI.</h2>

@@ -120,3 +120,16 @@ export function resetHistory() {
     gestureEntry = null;
     useHistory.setState({ undo: [], redo: [] });
 }
+
+/** Runs `fn` so that every op it dispatches becomes a single undo step. */
+export function asOneStep(fn: () => void) {
+    const wasOpen = gestureOpen;
+    gestureOpen = true;
+    gestureEntry = null;
+    try {
+        fn();
+    } finally {
+        gestureOpen = wasOpen;
+        gestureEntry = null;
+    }
+}

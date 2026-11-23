@@ -43,7 +43,10 @@ export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand
                         'flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
                         showMenu && 'bg-secondary text-foreground',
                     )}
-                    onClick={() => setShowMenu((v) => !v)}
+                    onClick={() => {
+                        if (!showMenu) window.dispatchEvent(new Event('sketchsync:menu-open'));
+                        setShowMenu((v) => !v);
+                    }}
                 >
                     <Menu className="h-[18px] w-[18px]" strokeWidth={1.75} />
                 </button>

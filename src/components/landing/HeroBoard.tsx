@@ -1,4 +1,4 @@
-import { ArrowUp, Check, Hand, MousePointer2, Pencil, Sigma, Sparkles, Square, Type } from 'lucide-react';
+import { ArrowUp, Check, Hand, MousePointer2, Pause, Pencil, Play, Sigma, Sparkles, Square, Type } from 'lucide-react';
 import { AnimatePresence, motion, useInView, useReducedMotion } from 'motion/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { LogoMark } from '@/components/logo';
@@ -20,8 +20,53 @@ const FADE_MS = 900;
 const BEAT_MS = 600;
 
 type Pt = [number, number];
-const AI_PATH: Pt[] = [[960, 110], [700, 160], [195, 120], [195, 265], [472, 265], [752, 265], [195, 430], [300, 470], [560, 150], [900, 110]];
-const ME_PATH: Pt[] = [[250, 32], [300, 60], [330, 70], [360, 90], [840, 430], [800, 440], [700, 300], [590, 230], [470, 372], [560, 420]];
+type Box = { x: number; y: number; w: number; h: number };
+
+/** Everything positional, for the wide board and the phone board. */
+const LAYOUTS = {
+    wide: {
+        viewBox: '0 0 1000 560',
+        aspect: 'aspect-[1000/560]',
+        halo: { x: 88, y: 72, w: 785, h: 400 },
+        a: { x: 110, y: 92, w: 170, h: 58 },
+        ab: ['M195 150 V203', 'M188 196 L195 204 L202 196'],
+        diamond: { cx: 195, cy: 265, rx: 95, ry: 58 },
+        bc: ['M290 265 H378', 'M371 258 L379 265 L371 272'],
+        c: { x: 382, y: 236, w: 180, h: 58 },
+        cd: ['M562 265 H648', 'M641 258 L649 265 L641 272'],
+        d: { x: 652, y: 236, w: 200, h: 58 },
+        be: ['M195 323 V398', 'M188 391 L195 399 L202 391'] as string[] | null,
+        e: { x: 110, y: 402, w: 170, h: 56 } as Box | null,
+        yes: [318, 254] as Pt,
+        no: [206, 366] as Pt | null,
+        circle: 'M590 236 C 560 196, 400 192, 362 236 C 330 274, 372 318, 470 320 C 560 322, 608 296, 596 250',
+        pointer: 'M470 330 C 472 350, 476 362, 480 372',
+        note: [430, 400] as Pt,
+        ai: [[960, 110], [700, 160], [195, 120], [195, 265], [472, 265], [752, 265], [195, 430], [300, 470], [560, 150], [900, 110]] as Pt[],
+        me: [[250, 32], [300, 60], [330, 70], [360, 90], [840, 430], [800, 440], [700, 300], [590, 230], [470, 372], [560, 420]] as Pt[],
+    },
+    tall: {
+        viewBox: '0 0 400 560',
+        aspect: 'aspect-[400/560]',
+        halo: { x: 84, y: 56, w: 232, h: 412 },
+        a: { x: 115, y: 70, w: 170, h: 52 },
+        ab: ['M200 122 V160', 'M193 153 L200 161 L207 153'],
+        diamond: { cx: 200, cy: 214, rx: 92, ry: 52 },
+        bc: ['M200 266 V302', 'M193 295 L200 303 L207 295'],
+        c: { x: 110, y: 306, w: 180, h: 52 },
+        cd: ['M200 358 V394', 'M193 387 L200 395 L207 387'],
+        d: { x: 100, y: 398, w: 200, h: 52 },
+        be: null,
+        e: null,
+        yes: [210, 288] as Pt,
+        no: null,
+        circle: 'M306 318 C 296 284, 116 282, 92 322 C 74 356, 128 378, 200 377 C 278 377, 318 360, 308 328',
+        pointer: 'M318 372 C 330 420, 334 456, 330 486',
+        note: [236, 514] as Pt,
+        ai: [[380, 40], [330, 50], [200, 96], [200, 214], [200, 332], [200, 424], [320, 470], [340, 500], [360, 120], [360, 100]] as Pt[],
+        me: [[40, 70], [40, 80], [50, 90], [60, 100], [40, 520], [30, 500], [330, 300], [300, 320], [320, 470], [250, 540]] as Pt[],
+    },
+};
 
 const ink = 'currentColor';
 
@@ -104,14 +149,16 @@ export function HeroBoard({ className }: { className?: string }) {
     const theme = useTheme((s) => s.resolved);
     const [step, setStep] = useState(reduced ? FINAL : -1);
     const [typed, setTyped] = useState(reduced ? PROMPT.length : 0);
+    const [paused, setPaused] = useState(false);
+    const [ran, setRan] = useState(false);
 
     useEffect(() => {
-        if (reduced) {
+        if (reduced || paused) {
             setStep(FINAL);
             setTyped(PROMPT.length);
             return;
         }
-        if (!inView) return;
+        if (!inView || paused) return;
         let timers: ReturnType<typeof setTimeout>[] = [];
         const loopMs = TIMELINE[FINAL] + HOLD_MS + FADE_MS + BEAT_MS;
         const run = () => {
@@ -120,12 +167,15 @@ export function HeroBoard({ className }: { className?: string }) {
             setTyped(0);
             TIMELINE.forEach((ms, i) => timers.push(setTimeout(() => setStep(i), BEAT_MS + ms)));
             for (let c = 1; c <= PROMPT.length; c++) timers.push(setTimeout(() => setTyped(c), BEAT_MS + 150 + c * 38));
-            timers.push(setTimeout(() => setStep(-1), BEAT_MS + TIMELINE[FINAL] + HOLD_MS));
+            timers.push(setTimeout(() => {
+                setRan(true);
+                setStep(-1);
+            }, BEAT_MS + TIMELINE[FINAL] + HOLD_MS));
             timers.push(setTimeout(run, loopMs));
         };
         run();
         return () => timers.forEach(clearTimeout);
-    }, [inView, reduced]);
+    }, [inView, reduced, paused]);
 
     const s = (n: number) => step >= n;
     const aiWorking = step >= 1 && step < FINAL - 1;
@@ -133,57 +183,58 @@ export function HeroBoard({ className }: { className?: string }) {
     const fill = (c: string) => displayFill(c, theme);
     const showPrompt = step >= 0;
     const at = (path: Pt[]) => path[Math.max(0, step)];
+    const L = compact ? LAYOUTS.tall : LAYOUTS.wide;
+    const { cx, cy, rx, ry } = L.diamond;
+    const diamond = `M${cx} ${cy - ry} L${cx + rx} ${cy} L${cx} ${cy + ry} L${cx - rx} ${cy} Z`;
+    const pen = theme === 'dark' ? '#4d9be6' : '#1971c2';
 
     return (
         <div ref={ref} className={cn('relative overflow-hidden rounded-[18px] border border-border bg-card shadow-lift', className)}>
-            <div className={cn('dot-grid relative w-full bg-background', compact ? 'aspect-[560/470]' : 'aspect-[1000/560]')}>
-                <svg
-                    viewBox={compact ? '70 20 560 470' : '0 0 1000 560'}
-                    className="absolute inset-0 h-full w-full text-foreground"
-                    role="img"
-                    aria-label="Claude drawing a signup flowchart on a SketchSync board while a teammate adds a note"
-                >
-                    <motion.rect x="88" y="72" width="785" height="400" rx="14" fill="none" style={{ stroke: 'hsl(var(--claude))' }} strokeWidth="1.5" strokeDasharray="6 5" initial={{ opacity: 0 }} animate={{ opacity: aiWorking && step >= 2 ? 0.9 : 0 }} transition={{ duration: 0.4 }} />
+            <div className={cn('dot-grid relative w-full bg-background', L.aspect)}>
+                <svg viewBox={L.viewBox} className="absolute inset-0 h-full w-full text-foreground" role="img" aria-label="Claude drawing a signup flowchart on a SketchSync board while a teammate adds a note">
+                    <motion.rect x={L.halo.x} y={L.halo.y} width={L.halo.w} height={L.halo.h} rx="14" fill="none" style={{ stroke: 'hsl(var(--claude))' }} strokeWidth="1.5" strokeDasharray="6 5" initial={{ opacity: 0 }} animate={{ opacity: aiWorking && step >= 2 ? 0.9 : 0 }} transition={{ duration: 0.4 }} />
 
-                    <Node on={s(2)} order={1} x={110} y={92} w={170} h={58} label="Sign-up form" />
-                    <Arrow on={s(3)} order={2} d="M195 150 V203" head="M188 196 L195 204 L202 196" />
+                    <Node on={s(2)} order={1} {...L.a} label="Sign-up form" />
+                    <Arrow on={s(3)} order={2} d={L.ab[0]} head={L.ab[1]} />
                     <g>
-                        <motion.path d="M195 207 L290 265 L195 323 L100 265 Z" style={{ fill: fill('#a5d8ff') }} {...faded(s(3), 3, 0.45)} />
-                        <motion.path d="M195 207 L290 265 L195 323 L100 265 Z" fill="none" stroke={ink} strokeWidth="2" strokeLinejoin="round" {...drawn(s(3), 3)} />
-                        <motion.text x="195" y="270" textAnchor="middle" fontSize="15" fill="currentColor" fontFamily="Inter, sans-serif" {...faded(s(3), 3, 0.4)}>
+                        <motion.path d={diamond} style={{ fill: fill('#a5d8ff') }} {...faded(s(3), 3, 0.45)} />
+                        <motion.path d={diamond} fill="none" stroke={ink} strokeWidth="2" strokeLinejoin="round" {...drawn(s(3), 3)} />
+                        <motion.text x={L.diamond.cx} y={L.diamond.cy + 5} textAnchor="middle" fontSize="15" fill="currentColor" fontFamily="Inter, sans-serif" {...faded(s(3), 3, 0.4)}>
                             Email valid?
                         </motion.text>
                     </g>
-                    <Arrow on={s(4)} order={4} d="M290 265 H378" head="M371 258 L379 265 L371 272" />
-                    <Node on={s(4)} order={4} x={382} y={236} w={180} h={58} label="Create account" fill={fill('#b2f2bb')} />
-                    <Arrow on={s(5)} order={5} d="M562 265 H648" head="M641 258 L649 265 L641 272" />
-                    <Node on={s(5)} order={5} x={652} y={236} w={200} h={58} label="Send welcome email" />
-                    <Arrow on={s(6)} order={6} d="M195 323 V398" head="M188 391 L195 399 L202 391" />
-                    <Node on={s(6)} order={6} x={110} y={402} w={170} h={56} label="Show inline error" fill={fill('#ffc9c9')} />
-                    <motion.text x="318" y="254" fontSize="13" className="fill-muted-foreground" fontFamily="Inter, sans-serif" {...faded(s(6), 7, 0.3)}>
+                    <Arrow on={s(4)} order={4} d={L.bc[0]} head={L.bc[1]} />
+                    <Node on={s(4)} order={4} {...L.c} label="Create account" fill={fill('#b2f2bb')} />
+                    <Arrow on={s(5)} order={5} d={L.cd[0]} head={L.cd[1]} />
+                    <Node on={s(5)} order={5} {...L.d} label="Send welcome email" />
+                    {L.be && <Arrow on={s(6)} order={6} d={L.be[0]} head={L.be[1]} />}
+                    {L.e && <Node on={s(6)} order={6} {...L.e} label="Show inline error" fill={fill('#ffc9c9')} />}
+                    <motion.text x={L.yes[0]} y={L.yes[1]} fontSize="13" className="fill-muted-foreground" fontFamily="Inter, sans-serif" {...faded(s(6), 7, 0.3)}>
                         yes
                     </motion.text>
-                    <motion.text x="206" y="366" fontSize="13" className="fill-muted-foreground" fontFamily="Inter, sans-serif" {...faded(s(6), 7, 0.4)}>
-                        no
-                    </motion.text>
+                    {L.no && (
+                        <motion.text x={L.no[0]} y={L.no[1]} fontSize="13" className="fill-muted-foreground" fontFamily="Inter, sans-serif" {...faded(s(6), 7, 0.4)}>
+                            no
+                        </motion.text>
+                    )}
 
                     <motion.path
-                        d="M590 236 C 560 196, 400 192, 362 236 C 330 274, 372 318, 470 320 C 560 322, 608 296, 596 250"
+                        d={L.circle}
                         fill="none"
-                        stroke="#1971c2"
+                        stroke={pen}
                         strokeWidth="3"
                         strokeLinecap="round"
                         initial={{ pathLength: 0, opacity: 0 }}
                         animate={s(7) ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 0 }}
                         transition={s(7) ? { pathLength: { duration: 1, ease: 'easeInOut', delay: 0.15 }, opacity: { duration: 0.05, delay: 0.15 } } : { duration: 0.3, delay: 0.1 }}
                     />
-                    <motion.path d="M470 330 C 472 350, 476 362, 480 372" fill="none" stroke="#1971c2" strokeWidth="2.5" strokeLinecap="round" {...drawn(s(8), 9)} />
-                    <motion.text x="430" y="400" fontSize="18" fill="#4d9be6" fontFamily="Inter, sans-serif" fontWeight="700" {...faded(s(9), 10)}>
+                    <motion.path d={L.pointer} fill="none" stroke={pen} strokeWidth="2.5" strokeLinecap="round" {...drawn(s(8), 9)} />
+                    <motion.text x={L.note[0]} y={L.note[1]} fontSize="18" fill={pen} fontFamily="Inter, sans-serif" fontWeight="700" {...faded(s(9), 10)}>
                         + rate limit?
                     </motion.text>
 
-                    <Cursor at={at(ME_PATH)} label="Maya" color="#1971c2" visible={step >= 0} />
-                    <Cursor at={at(AI_PATH)} label="Claude" color="hsl(var(--claude))" visible={step >= 1} />
+                    <Cursor at={at(L.me)} label="Maya" color="#1971c2" visible={step >= 0} />
+                    <Cursor at={at(L.ai)} label="Claude" color="hsl(var(--claude))" visible={step >= 1} />
                 </svg>
 
                 {/* Maya's prompt */}
@@ -193,7 +244,7 @@ export function HeroBoard({ className }: { className?: string }) {
                             initial={{ opacity: 0, y: -6, scale: 0.97 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -4, transition: { duration: 0.25 } }}
-                            className="pointer-events-none absolute left-3 top-14 flex items-center gap-2 rounded-xl border border-border/80 bg-[hsl(var(--chrome)/0.95)] py-1.5 pl-1.5 pr-1.5 text-[13px] shadow-chrome backdrop-blur sm:left-[168px] sm:top-4"
+                            className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-xl border border-border/80 bg-[hsl(var(--chrome)/0.95)] py-1.5 pl-1.5 pr-1.5 text-[13px] shadow-chrome backdrop-blur sm:left-[168px] sm:top-4"
                         >
                             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1971c2] text-[11px] font-semibold text-white">M</span>
                             <span className="min-w-[13ch] font-medium">
@@ -209,18 +260,18 @@ export function HeroBoard({ className }: { className?: string }) {
                 </AnimatePresence>
 
                 {/* mini board chrome */}
-                <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-xl border border-border/80 bg-[hsl(var(--chrome)/0.9)] px-2.5 py-1.5 shadow-chrome backdrop-blur sm:left-4 sm:top-4">
+                <div className="pointer-events-none absolute left-4 top-4 hidden items-center gap-2 rounded-xl border border-border/80 bg-[hsl(var(--chrome)/0.9)] px-2.5 py-1.5 shadow-chrome backdrop-blur sm:flex">
                     <LogoMark className="h-4 w-4" />
                     <span className="font-mono text-[11px] text-muted-foreground">/signup-flow</span>
                 </div>
                 <div className="pointer-events-none absolute right-3 top-3 hidden items-center gap-2 sm:right-4 sm:top-4 sm:flex">
                     <motion.div layout transition={{ type: 'spring', visualDuration: 0.3, bounce: 0 }} className="flex items-center gap-2 overflow-hidden rounded-xl border border-border/80 bg-[hsl(var(--chrome)/0.9)] py-1.5 pl-1.5 pr-3 text-[12px] shadow-chrome backdrop-blur">
-                        <motion.span layout="position" className={cn('flex h-5 w-5 items-center justify-center rounded-full bg-claude text-white', aiWorking && 'animate-ping2')}>
+                        <motion.span layout="position" className={cn('relative flex h-5 w-5 items-center justify-center rounded-full bg-claude text-white', aiWorking && 'ai-ping')}>
                             <Sparkles className="h-3 w-3" />
                         </motion.span>
                         <AnimatePresence mode="popLayout" initial={false}>
                             <motion.span key={aiWorking ? 'a' : 'b'} layout="position" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className={cn('whitespace-nowrap', aiWorking ? 'text-shimmer font-medium' : 'text-muted-foreground')}>
-                                {aiWorking ? 'Claude is drawing' : step >= FINAL - 1 ? 'Claude added 11 shapes' : 'Claude · connected'}
+                                {aiWorking ? 'Claude is drawing' : step >= FINAL - 1 || (step === -1 && ran) ? 'Claude added 11 shapes' : 'Claude · connected'}
                             </motion.span>
                         </AnimatePresence>
                     </motion.div>
@@ -255,8 +306,19 @@ export function HeroBoard({ className }: { className?: string }) {
                     </div>
                 </div>
 
+                {!reduced && (
+                    <button
+                        type="button"
+                        onClick={() => setPaused((p) => !p)}
+                        aria-label={paused ? 'Play the demo' : 'Pause the demo'}
+                        className="absolute bottom-3 left-3 flex h-8 w-8 items-center justify-center rounded-lg border border-border/80 bg-[hsl(var(--chrome)/0.9)] text-muted-foreground shadow-chrome backdrop-blur transition-colors hover:text-foreground sm:bottom-4 sm:left-4"
+                    >
+                        {paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+                    </button>
+                )}
+
                 {/* mini dock */}
-                <div className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-0.5 rounded-xl border border-border/80 bg-[hsl(var(--chrome)/0.9)] p-1 shadow-chrome backdrop-blur max-sm:scale-90">
+                <div className="pointer-events-none absolute bottom-3 left-1/2 hidden -translate-x-1/2 items-center gap-0.5 rounded-xl border border-border/80 bg-[hsl(var(--chrome)/0.9)] p-1 shadow-chrome backdrop-blur sm:flex">
                     {[MousePointer2, Hand, Pencil, Square, Type, Sigma].map((Icon, i) => {
                         const on = meDrawing ? i === 2 : i === 0;
                         return (

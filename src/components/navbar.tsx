@@ -17,11 +17,11 @@ export default function Navbar() {
         <header className="sticky top-0 z-50 px-[max(16px,env(safe-area-inset-left))] pt-[env(safe-area-inset-top)]">
             <motion.nav
                 className={cn(
-                    'mx-auto mt-3 flex h-14 max-w-[calc(72rem-2rem)] items-center justify-between rounded-2xl border px-3 transition-[background-color,border-color,box-shadow] duration-300 sm:px-4',
+                    'mx-auto mt-3 flex h-14 max-w-6xl items-center justify-between rounded-2xl border px-3 transition-[background-color,border-color,box-shadow] duration-300 sm:px-4',
                     scrolled ? 'border-border/80 bg-[hsl(var(--background)/0.86)] shadow-chrome backdrop-blur-xl backdrop-saturate-150' : 'border-transparent',
                 )}
             >
-                <Link to="/" aria-label="SketchSync home">
+                <Link to="/" aria-label="SketchSync home" className="flex items-center">
                     <Logo />
                 </Link>
                 <div className="flex items-center gap-1 text-[13.5px] text-muted-foreground">

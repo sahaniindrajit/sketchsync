@@ -1,4 +1,6 @@
 import type Konva from 'konva';
+import KonvaLib from 'konva';
+import { useBoard } from '../store';
 import React, { useEffect, useState } from 'react';
 import { Arrow, Circle, Ellipse, Group, Image as KonvaImage, Line, Rect, Text } from 'react-konva';
 import { arrowHeadSize, diamondPoints, isDotStroke, polylineMidpoint, resolveLinePoints } from '@/shared/geometry';
@@ -44,8 +46,30 @@ export const ShapeNode = React.memo(function ShapeNode(props: ShapeNodeProps) {
     const { shape, draggable, hidden, onDragMove, onDragEnd, onTransformEnd } = props;
     const origin = shapeOrigin(shape);
     const isBoundLine = (shape.type === 'line' || shape.type === 'arrow') && origin.x === 0 && origin.y === 0 && (shape.startBinding || shape.endBinding);
+    const groupRef = React.useRef<Konva.Group>(null);
+    // Shapes an AI just added fade in one after another instead of popping in.
+    useEffect(() => {
+        const node = groupRef.current;
+        const ai = useBoard.getState().aiActivity;
+        if (!node || !ai || Date.now() - ai.at > 1200) return;
+        const index = ai.shapeIds.indexOf(shape.id);
+        if (index < 0 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const target = shape.opacity;
+        node.opacity(0);
+        let tween: KonvaLib.Tween | null = null;
+        const timer = setTimeout(() => {
+            tween = new KonvaLib.Tween({ node, opacity: target, duration: 0.4, easing: KonvaLib.Easings.EaseOut });
+            tween.play();
+        }, Math.min(index, 12) * 70);
+        return () => {
+            clearTimeout(timer);
+            tween?.destroy();
+            node.opacity(target);
+        };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
     return (
         <Group
+            ref={groupRef}
             id={shape.id}
             name="shape"
             x={origin.x}

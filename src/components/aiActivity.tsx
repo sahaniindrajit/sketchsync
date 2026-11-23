@@ -1,9 +1,9 @@
-import { Crosshair, Sparkles } from 'lucide-react';
+import { Crosshair, Sparkles, Undo2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { getShapeBounds, unionBoxes, type Box } from '@/shared/geometry';
 import { browserMeasurer } from '@/board/measure';
-import { useBoard } from '@/board/store';
+import { undoAiBatch, useBoard } from '@/board/store';
 import { cn } from '@/lib/utils';
 
 const ACTIVE_MS = 2500;
@@ -45,6 +45,8 @@ export function AiActivityToast({ onJump }: { onJump: (box: Box) => void }) {
     const visible = !!activity && now - activity.at <= VISIBLE_MS;
     const active = visible && now - activity!.at < ACTIVE_MS;
     const count = activity?.shapeIds.length ?? 0;
+    const added = activity?.added ?? 0;
+    const done = added > 0 ? `added ${added} ${added === 1 ? 'shape' : 'shapes'}` : `edited ${count} ${count === 1 ? 'shape' : 'shapes'}`;
     return (
         <div className="pointer-events-none fixed left-1/2 top-[calc(max(12px,env(safe-area-inset-top))+56px)] z-40 -translate-x-1/2 lg:top-[max(14px,env(safe-area-inset-top))]">
             <AnimatePresence>
@@ -59,7 +61,7 @@ export function AiActivityToast({ onJump }: { onJump: (box: Box) => void }) {
                         transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.1 }}
                         className="chrome pointer-events-auto flex items-center gap-2.5 whitespace-nowrap rounded-full py-1.5 pl-1.5 pr-1.5 text-[13px] text-muted-foreground"
                     >
-                        <span className={cn('flex h-7 w-7 items-center justify-center rounded-full bg-claude text-white', active && 'animate-ping2')}>
+                        <span className={cn('relative flex h-7 w-7 items-center justify-center rounded-full bg-claude text-white', active && 'ai-ping')}>
                             <Sparkles className="h-3.5 w-3.5" strokeWidth={2} />
                         </span>
                         <motion.span layout="position" className="flex items-center gap-1">
@@ -72,7 +74,7 @@ export function AiActivityToast({ onJump }: { onJump: (box: Box) => void }) {
                                     exit={{ opacity: 0, y: -4 }}
                                     className={cn(active && 'text-shimmer')}
                                 >
-                                    {active ? 'is editing the board…' : `edited ${count} ${count === 1 ? 'shape' : 'shapes'}`}
+                                    {active ? 'is drawing…' : done}
                                 </motion.span>
                             </AnimatePresence>
                         </motion.span>
@@ -88,6 +90,18 @@ export function AiActivityToast({ onJump }: { onJump: (box: Box) => void }) {
                             <Crosshair className="h-3.5 w-3.5" />
                             Show me
                         </motion.button>
+                        {!!activity?.undo.length && (
+                            <motion.button
+                                layout="position"
+                                type="button"
+                                aria-label={`Undo ${activity.name}'s changes`}
+                                title={`Undo ${activity.name}'s changes`}
+                                onClick={undoAiBatch}
+                                className="-ml-1 flex h-[30px] w-[30px] items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground active:scale-95"
+                            >
+                                <Undo2 className="h-3.5 w-3.5" />
+                            </motion.button>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>

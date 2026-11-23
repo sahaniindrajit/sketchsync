@@ -1,5 +1,5 @@
-import { Download, Github, ImagePlus, Sparkles, WifiOff } from 'lucide-react';
-import { AnimatePresence, motion, useInView, useReducedMotion } from 'motion/react';
+import { Github, ImagePlus, Sparkles, WifiOff } from 'lucide-react';
+import { motion, useInView, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Reveal, SectionHeading } from './Reveal';
@@ -70,7 +70,7 @@ function MultiplayerDemo() {
                     <svg width="14" height="16" viewBox="0 0 14 20"><path d="M0 0 L0 17 L4.6 12.8 L7.6 19.5 L10.4 18.3 L7.5 11.8 L13.6 11.6 Z" fill="#2f9e44" stroke="white" strokeWidth="1.3" /></svg>
                     <span className="mt-3 rounded-md bg-[#2f9e44] px-1.5 py-0.5 text-[10.5px] font-semibold text-white">Arjun</span>
                 </motion.div>
-                <motion.div animate={{ x: [250, 20, 230, 10][i], y: [90, 95, 0, 10][i] }} transition={{ type: 'spring', visualDuration: 0.9, bounce: 0.1 }} className="absolute flex items-start gap-0.5">
+                <motion.div animate={{ x: [250, 230, 10, 240][i], y: [100, 0, 100, 96][i] }} transition={{ type: 'spring', visualDuration: 0.9, bounce: 0.1 }} className="absolute flex items-start gap-0.5">
                     <svg width="14" height="16" viewBox="0 0 14 20"><path d="M0 0 L0 17 L4.6 12.8 L7.6 19.5 L10.4 18.3 L7.5 11.8 L13.6 11.6 Z" fill="#1971c2" stroke="white" strokeWidth="1.3" /></svg>
                     <span className="mt-3 rounded-md bg-[#1971c2] px-1.5 py-0.5 text-[10.5px] font-semibold text-white">Maya</span>
                 </motion.div>
@@ -119,7 +119,7 @@ function LayoutDemo() {
         <div ref={ref} className="w-full px-4">
             <svg viewBox="0 0 270 170" className="mx-auto h-[150px] w-full max-w-[300px] text-foreground" aria-hidden>
                 {edges.map(([a, b], k) => (
-                    <motion.line key={k} initial={false} animate={{ x1: p(a)[0] + 34, y1: p(a)[1], x2: p(b)[0] - 34, y2: p(b)[1] }} transition={spring} stroke="currentColor" strokeWidth="1.6" strokeDasharray={laid ? '0' : '3 4'} opacity={laid ? 1 : 0.4} />
+                    <motion.line key={k} initial={false} animate={{ x1: p(a)[0], y1: p(a)[1], x2: p(b)[0], y2: p(b)[1] }} transition={spring} stroke="currentColor" strokeWidth="1.6" strokeDasharray={laid ? '0' : '3 4'} opacity={laid ? 1 : 0.4} />
                 ))}
                 {nodes.map((n, k) => (
                     <motion.rect
@@ -136,32 +136,6 @@ function LayoutDemo() {
                     />
                 ))}
             </svg>
-        </div>
-    );
-}
-
-function OfflineDemo() {
-    const [ref, i] = useLoop(3, 1600);
-    const states = [
-        { icon: <WifiOff className="h-3.5 w-3.5" />, text: 'Offline · saved locally', dot: 'bg-muted-foreground' },
-        { icon: <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-warning border-t-transparent" />, text: 'Syncing 3 changes…', dot: 'bg-warning' },
-        { icon: <span className="h-2 w-2 rounded-full bg-success" />, text: 'Live', dot: 'bg-success' },
-    ];
-    const s = states[i];
-    return (
-        <div ref={ref} className="flex h-10 items-center">
-            <AnimatePresence mode="popLayout" initial={false}>
-                <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 10, filter: 'blur(3px)' }}
-                    animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                    exit={{ opacity: 0, y: -10, filter: 'blur(3px)' }}
-                    className="flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-2 text-[13px] text-muted-foreground shadow-chrome"
-                >
-                    {s.icon}
-                    {s.text}
-                </motion.div>
-            </AnimatePresence>
         </div>
     );
 }
@@ -206,23 +180,24 @@ export function Bento() {
                 <Cell className="md:col-span-2" title="The AI can see what you sketch" body="Hand drawings are rendered to an image for the assistant, so it can read your scribbles and build on them." delay={0.1}>
                     <SeesSketchDemo />
                 </Cell>
-                <Cell short title="Keeps working offline" body="Boards are cached in your browser. Edits made offline sync when you reconnect.">
-                    <OfflineDemo />
-                </Cell>
-                <Cell short title="Images in, PNG out" body="Drop in screenshots and photos. Export the whole board as a crisp PNG." delay={0.05}>
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                        <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-dashed border-border bg-card"><ImagePlus className="h-5 w-5" /></span>
-                        <span className="font-mono text-xs">→</span>
-                        <span className="flex h-12 items-center gap-2 rounded-xl bg-primary px-4 text-[13px] font-medium text-primary-foreground"><Download className="h-4 w-4" /> board.png</span>
-                    </div>
-                </Cell>
-                <Cell short title="Open source" body="Frontend and backend are on GitHub. Run your own server with one command." delay={0.1}>
-                    <div className="flex flex-col items-center gap-2">
-                        <Github className="h-8 w-8 text-foreground" strokeWidth={1.5} />
-                        <code className="rounded-md border border-border bg-card px-2 py-1 font-mono text-[11.5px] text-muted-foreground">npm run dev</code>
-                    </div>
-                </Cell>
             </div>
+            <Reveal className="mt-4 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-3">
+                {[
+                    { icon: WifiOff, title: 'Works offline', body: 'Boards are cached in your browser and sync when you reconnect.' },
+                    { icon: ImagePlus, title: 'Images in, PNG out', body: 'Drop in screenshots. Export the whole board as a crisp PNG.' },
+                    { icon: Github, title: 'Open source', body: 'Frontend and MCP server are on GitHub. Self-host in a minute.' },
+                ].map((f) => (
+                    <div key={f.title} className="flex gap-3.5 bg-card p-5">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border text-foreground/80">
+                            <f.icon className="h-4 w-4" strokeWidth={1.75} />
+                        </span>
+                        <div className="space-y-1">
+                            <h3 className="text-[14.5px] font-semibold tracking-tightish">{f.title}</h3>
+                            <p className="text-[13.5px] leading-relaxed text-muted-foreground">{f.body}</p>
+                        </div>
+                    </div>
+                ))}
+            </Reveal>
         </section>
     );
 }

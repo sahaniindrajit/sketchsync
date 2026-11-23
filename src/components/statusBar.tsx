@@ -23,33 +23,20 @@ export function ConnectionBadge({ onShare, onConnectAi }: { onShare: () => void;
         >
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <motion.button
-                        layout
+                    <button
                         type="button"
                         onClick={onConnectAi}
                         aria-label="Connect your AI"
-                        transition={{ type: 'spring', visualDuration: 0.3, bounce: 0 }}
                         className={cn(
                             'chrome flex h-11 items-center gap-2 rounded-xl pl-2.5 pr-3 text-[13px] font-medium text-foreground/80 transition-colors hover:text-foreground',
                             working && 'border-claude/40',
                         )}
                     >
-                        <span className={cn('relative flex h-5 w-5 items-center justify-center rounded-full', working ? 'animate-ping2 bg-claude text-white' : 'bg-secondary text-claude')}>
+                        <span className={cn('relative flex h-5 w-5 items-center justify-center rounded-full transition-colors', working ? 'ai-ping bg-claude text-white' : 'bg-secondary text-claude')}>
                             <Sparkles className="h-3 w-3" strokeWidth={2} />
                         </span>
-                        <AnimatePresence mode="popLayout" initial={false}>
-                            <motion.span
-                                layout="position"
-                                key={working ? 'working' : 'idle'}
-                                initial={{ opacity: 0, y: 6 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -6 }}
-                                className={cn('hidden whitespace-nowrap sm:inline', working && 'text-shimmer font-medium')}
-                            >
-                                {working ? `${activity!.name} is drawing` : 'Connect AI'}
-                            </motion.span>
-                        </AnimatePresence>
-                    </motion.button>
+                        <span className="hidden whitespace-nowrap sm:inline">Connect AI</span>
+                    </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Let Claude, Cursor or any MCP client draw here</TooltipContent>
             </Tooltip>
@@ -125,9 +112,9 @@ function ZoomButton({ label, hint, onClick, children, disabled }: { label: strin
                 <button
                     type="button"
                     aria-label={label}
-                    onClick={onClick}
-                    disabled={disabled}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground active:scale-95 disabled:pointer-events-none disabled:opacity-35"
+                    onClick={disabled ? undefined : onClick}
+                    aria-disabled={disabled || undefined}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground active:scale-95 aria-disabled:cursor-default aria-disabled:opacity-35 aria-disabled:hover:bg-transparent aria-disabled:active:scale-100"
                 >
                     {children}
                 </button>

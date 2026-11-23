@@ -1,6 +1,6 @@
-import type Konva from 'konva';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Group, Layer, Rect, Stage, Text, Transformer } from 'react-konva';
+import Konva from 'konva';
+import { Group, Layer, Path, Rect, Stage, Text, Transformer } from 'react-konva';
 import { getShapeBounds, isBindable, isLinear, resolveLinePoints, unionBoxes, type Box } from '@/shared/geometry';
 import { sortByZ } from '@/shared/ops';
 import type { EllipseShape, FreehandShape, ImageShape, LineShape, RectShape, DiamondShape, ShapePatch } from '@/shared/protocol';
@@ -11,6 +11,36 @@ import { redoLast, undoLast, useBoard, type Tool } from './store';
 import { TextEditor } from './TextEditor';
 import { useAiActivityClock } from '@/components/aiActivity';
 import { useTheme } from '@/lib/theme';
+
+/** The AI's cursor: glides to each shape it touches, then fades out. */
+function AiCursor({ target, name, color, scale }: { target: { x: number; y: number } | null; name: string; color: string; scale: number }) {
+    const ref = useRef<Konva.Group>(null);
+    const visible = useRef(false);
+    useEffect(() => {
+        const node = ref.current;
+        if (!node) return;
+        if (target) {
+            if (!visible.current) {
+                node.position({ x: target.x + 60 / scale, y: target.y + 40 / scale });
+                node.to({ opacity: 1, duration: 0.18 });
+                visible.current = true;
+            }
+            node.to({ x: target.x, y: target.y, duration: 0.45, easing: Konva.Easings.EaseInOut });
+        } else if (visible.current) {
+            visible.current = false;
+            node.to({ opacity: 0, duration: 0.35 });
+        }
+    }, [target?.x, target?.y, scale]); // eslint-disable-line react-hooks/exhaustive-deps
+    const k = 1 / scale;
+    const width = name.length * 7 + 18;
+    return (
+        <Group ref={ref} listening={false} opacity={0} scaleX={k} scaleY={k}>
+            <Path data="M0 0 L0 18 L4.8 13.5 L8 20.5 L11 19.2 L7.9 12.4 L14.3 12.2 Z" fill={color} stroke="#ffffff" strokeWidth={1.4} lineJoin="round" />
+            <Rect x={14} y={21} width={width} height={22} cornerRadius={7} fill={color} />
+            <Text x={23} y={26.5} text={name} fontSize={12.5} fontStyle="bold" fill="#ffffff" fontFamily="Inter, sans-serif" />
+        </Group>
+    );
+}
 
 const SELECTION = { light: '#1971c2', dark: '#5aa5ea' } as const;
 const AI_COLOR = { light: '#d97757', dark: '#e58a6b' } as const;
@@ -663,13 +693,12 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
 
     // Briefly outline shapes the AI just added or changed.
     const { activity: aiActivity, now: aiNow } = useAiActivityClock(2500);
-    const aiHighlights =
-        aiActivity && aiNow - aiActivity.at < 2500
-            ? aiActivity.shapeIds
-                  .map((id) => shapes.get(id))
-                  .filter((s) => !!s)
-                  .map((s) => ({ id: s!.id, box: getShapeBounds(s!, (id) => shapes.get(id), browserMeasurer) }))
-            : [];
+    const aiShapes =
+        aiActivity && aiNow - aiActivity.at < 2500 ? aiActivity.shapeIds.map((id) => shapes.get(id)).filter((x): x is NonNullable<typeof x> => !!x) : [];
+    const aiBox = aiShapes.length ? unionBoxes(aiShapes.map((x) => getShapeBounds(x, (id) => shapes.get(id), browserMeasurer))) : null;
+    const lastAi = aiShapes[aiShapes.length - 1];
+    const lastBox = lastAi ? getShapeBounds(lastAi, (id) => shapes.get(id), browserMeasurer) : null;
+    const aiTarget = lastBox ? { x: lastBox.x + lastBox.width * 0.75, y: lastBox.y + lastBox.height * 0.8 } : null;
 
     const hiddenId = editing && (editing.kind === 'text' || editing.kind === 'math') ? editing.shapeId : null;
     const labelHiddenId = editing && editing.kind === 'label' ? editing.shapeId : null;
@@ -725,30 +754,21 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
                         anchorCornerRadius={2}
                         boundBoxFunc={(oldBox, newBox) => (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5 ? oldBox : newBox)}
                     />
-                    {aiHighlights.map(({ id, box }, i) => {
-                        const k = 1 / viewport.scale;
-                        const opacity = Math.max(0, 1 - (aiNow - aiActivity!.at) / 2500);
-                        return (
-                            <Group key={`ai-${id}`} listening={false} opacity={opacity}>
-                                <Rect
-                                    x={box.x - 6 * k}
-                                    y={box.y - 6 * k}
-                                    width={box.width + 12 * k}
-                                    height={box.height + 12 * k}
-                                    stroke={AI_COLOR[theme]}
-                                    strokeWidth={1.5 * k}
-                                    dash={[5 * k, 4 * k]}
-                                    cornerRadius={6 * k}
-                                />
-                                {i === 0 && (
-                                    <Group x={box.x - 6 * k} y={box.y - 6 * k - 20 * k}>
-                                        <Rect width={(aiActivity!.name.length * 6.4 + 16) * k} height={17 * k} cornerRadius={[5 * k, 5 * k, 5 * k, 1 * k]} fill={AI_COLOR[theme]} />
-                                        <Text x={8 * k} y={3.5 * k} text={aiActivity!.name} fontSize={11 * k} fontStyle="bold" fill="#ffffff" fontFamily="Inter, sans-serif" />
-                                    </Group>
-                                )}
-                            </Group>
-                        );
-                    })}
+                    {aiBox && (
+                        <Group listening={false} opacity={Math.max(0, 1 - (aiNow - aiActivity!.at) / 2500)}>
+                            <Rect
+                                x={aiBox.x - 10 / viewport.scale}
+                                y={aiBox.y - 10 / viewport.scale}
+                                width={aiBox.width + 20 / viewport.scale}
+                                height={aiBox.height + 20 / viewport.scale}
+                                stroke={AI_COLOR[theme]}
+                                strokeWidth={1.5 / viewport.scale}
+                                dash={[6 / viewport.scale, 5 / viewport.scale]}
+                                cornerRadius={8 / viewport.scale}
+                            />
+                        </Group>
+                    )}
+                    <AiCursor target={aiTarget} name={aiActivity?.name ?? ''} color={AI_COLOR[theme]} scale={viewport.scale} />
                     {marquee && (
                         <Rect
                             x={marquee.x}

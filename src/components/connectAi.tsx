@@ -75,10 +75,10 @@ export function ConnectAiPanel({ roomId }: { roomId: string }) {
                             key={c.id}
                             type="button"
                             aria-pressed={client === c.id}
-                            className={cn('relative rounded-full px-3 py-1 text-xs font-medium transition-colors', client === c.id ? 'text-accent-foreground' : 'text-muted-foreground hover:bg-secondary hover:text-foreground')}
+                            className={cn('relative rounded-full px-3 py-1 text-xs font-medium transition-colors', client === c.id ? 'text-primary-foreground' : 'text-muted-foreground hover:bg-secondary hover:text-foreground')}
                             onClick={() => setClient(c.id)}
                         >
-                            {client === c.id && <motion.span layoutId="client-pill" className="absolute inset-0 rounded-full bg-accent" transition={{ type: 'spring', visualDuration: 0.25, bounce: 0.15 }} />}
+                            {client === c.id && <motion.span layoutId="client-pill" className="absolute inset-0 rounded-full bg-primary" transition={{ type: 'spring', visualDuration: 0.25, bounce: 0.15 }} />}
                             <span className="relative">{c.name}</span>
                         </button>
                     ))}

@@ -1,4 +1,4 @@
-import { Bot, FilePlus2, Github, HelpCircle, ImageDown, Maximize, Moon, Sun, Trash2, Users } from 'lucide-react';
+import { FilePlus2, Github, HelpCircle, ImageDown, Maximize, Moon, Sparkles, Sun, Trash2, Users } from 'lucide-react';
 import { motion } from 'motion/react';
 import React, { useEffect, useRef } from 'react';
 import { Kbd } from '@/components/ui/kbd';
@@ -14,7 +14,7 @@ export interface MenuActions {
     onFit?: () => void;
 }
 
-type Item = { icon: typeof Bot; label: string; onClick: () => void; hint?: string; danger?: boolean; external?: boolean };
+type Item = { icon: typeof Sparkles; label: string; onClick: () => void; hint?: string; danger?: boolean; external?: boolean };
 
 export const AppMenu = React.memo(function AppMenu({ actions, onClose }: { actions: MenuActions; onClose: (opts?: { refocus?: boolean }) => void }) {
     const ref = useRef<HTMLDivElement>(null);
@@ -44,8 +44,8 @@ export const AppMenu = React.memo(function AppMenu({ actions, onClose }: { actio
     const sections: Item[][] = [
         [
             { icon: Users, label: 'Share & collaborate', onClick: actions.onShare },
-            { icon: Bot, label: 'Connect your AI', onClick: actions.onConnectAi },
-            { icon: ImageDown, label: 'Export image', onClick: actions.onExport },
+            { icon: Sparkles, label: 'Connect your AI', onClick: actions.onConnectAi },
+            { icon: ImageDown, label: 'Export as PNG', onClick: actions.onExport },
             ...(actions.onFit ? [{ icon: Maximize, label: 'Zoom to fit', onClick: actions.onFit, hint: '⇧1' }] : []),
         ],
         [
@@ -78,10 +78,11 @@ export const AppMenu = React.memo(function AppMenu({ actions, onClose }: { actio
                             key={item.label}
                             role="menuitem"
                             className={cn(
-                                'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] outline-none transition-colors focus-visible:bg-secondary',
-                                item.danger ? 'text-destructive hover:bg-destructive/10' : item.external ? 'text-muted-foreground hover:bg-secondary hover:text-foreground' : 'text-foreground hover:bg-secondary',
+                                'group flex w-full items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] outline-none transition-colors',
+                                item.danger ? 'text-destructive focus-visible:bg-destructive/10 focus:bg-destructive/10' : item.external ? 'text-muted-foreground focus:bg-secondary focus:text-foreground' : 'text-foreground focus:bg-secondary',
                             )}
                             tabIndex={-1}
+                            onMouseEnter={(e) => e.currentTarget.focus()}
                             onClick={() => {
                                 onClose();
                                 item.onClick();

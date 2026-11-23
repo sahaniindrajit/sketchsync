@@ -17,7 +17,7 @@ import {
 import { canMerge, isUrgent, mergeOps } from './opQueue';
 import { adoptOrphanPending, holdTabLock, loadBoard, saveBoard, savePending } from './persistence';
 import { setShapes, useBoard } from './store';
-import { recordOp } from './history';
+import { inverseOf, recordOp } from './history';
 
 const FLUSH_INTERVAL_MS = 40;
 const SAVE_DEBOUNCE_MS = 400;
@@ -325,6 +325,7 @@ export class RoomSync {
 
     private onServerOp(payload: OpBroadcast) {
         if (payload.roomId !== this.roomId || !this.joined) return;
+        const aiInverse = payload.origin.startsWith('ai:') ? inverseOf(payload.op, this.confirmed) : null;
         this.confirmed = applyOp(this.confirmed, payload.op);
         const index = this.pending.findIndex((p) => p.opId === payload.opId);
         if (index === 0) {
@@ -342,7 +343,7 @@ export class RoomSync {
             this.rebuildView();
         }
         this.scheduleSave();
-        this.trackAi(payload);
+        this.trackAi(payload, aiInverse);
     }
 
     /** A remote op commutes with pending ops when they touch different shapes (and nothing pending deletes). */
@@ -369,17 +370,21 @@ export class RoomSync {
         return ids.every((id) => !touched.has(id));
     }
 
-    private trackAi(payload: OpBroadcast) {
+    private trackAi(payload: OpBroadcast, inverse: Op | null) {
         if (!payload.origin.startsWith('ai:')) return;
         const op = payload.op;
         const ids = op.kind === 'add' ? op.shapes.map((s) => s.id) : op.kind === 'update' ? op.patches.map((p) => p.id) : [];
+        const added = op.kind === 'add' ? op.shapes.length : 0;
+        const name = payload.origin.slice(3) || 'AI';
         const prev = useBoard.getState().aiActivity;
-        const sameBatch = prev && Date.now() - prev.at < 4000;
+        const sameBatch = prev && prev.name === name && Date.now() - prev.at < 4000;
         useBoard.setState({
             aiActivity: {
-                name: payload.origin.slice(3) || 'AI',
+                name,
                 shapeIds: sameBatch ? Array.from(new Set([...prev.shapeIds, ...ids])) : ids,
                 at: Date.now(),
+                undo: [...(sameBatch ? prev.undo : []), ...(inverse ? [inverse] : [])],
+                added: (sameBatch ? prev.added : 0) + added,
             },
         });
     }

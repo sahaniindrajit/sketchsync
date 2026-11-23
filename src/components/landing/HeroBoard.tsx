@@ -295,7 +295,7 @@ export function HeroBoard({ className }: { className?: string }) {
                             {aiWorking ? 'live' : step >= 1 ? 'done' : 'idle'}
                         </span>
                     </div>
-                    <div className="min-h-[92px] space-y-1.5">
+                    <div className="space-y-1.5">
                         <AnimatePresence initial={false}>
                             {FEED.filter((f) => step >= f.at).map((f, i, arr) => {
                                 const pending = i === arr.length - 1 && aiWorking;

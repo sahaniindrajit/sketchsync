@@ -37,8 +37,8 @@ function Hero() {
                     <span className="hidden sm:inline">Realtime whiteboard · </span>MCP server built in
                 </motion.p>
 
-                <Note author="Maya" color="yellow" rotate={3} arrow="down-left" className="absolute right-[max(16px,env(safe-area-inset-left))] top-[150px] hidden xl:block">
-                    Try it: open a board, then paste its MCP link into Claude.
+                <Note author="Maya" color="yellow" rotate={3} arrow="down" className="absolute right-[56px] top-[300px] hidden xl:block">
+                    Watch Claude's tool calls land here.
                 </Note>
                 <h1 className="mt-4 max-w-[16ch] text-balance text-[clamp(40px,6.2vw,76px)] font-semibold leading-[0.95] tracking-display" aria-label={HEADLINE.join(' ')}>
                     {HEADLINE.map((w, i) => (
@@ -176,9 +176,9 @@ const SKETCHES: Mark[][] = [
         { text: 'Postgres', x: 302, y: 175 },
     ],
     [
-        { text: '∫ x² dx', x: 120, y: 70, size: 28 },
-        { text: '= x³/3 + C', x: 150, y: 140, size: 26 },
-        { text: 'power rule: xⁿ → xⁿ⁺¹ ⁄ (n+1)', x: 180, y: 196, size: 13 },
+        { text: '∫ x² dx', x: 180, y: 96, size: 30 },
+        { text: '= x³/3 + C', x: 180, y: 144, size: 28 },
+        { text: 'power rule: xⁿ → xⁿ⁺¹/(n+1)', x: 180, y: 184, size: 13 },
     ],
     [
         { d: 'M30 140 C 20 100, 60 70, 90 92 C 120 110, 140 70, 120 150 C 100 190, 50 180, 30 140' },
@@ -196,7 +196,9 @@ function SketchBoard({ index, progress }: { index: number; progress: number }) {
     const shown = ready ? 0 : progress * marks.length;
     const lastShown = Math.max(0, Math.min(marks.length - 1, Math.ceil(shown) - 1));
     const cursorAt = marks[lastShown];
-    const [cx, cy] = cursorAt.text ? [cursorAt.x! + 30, cursorAt.y! + 6] : cursorAt.d ? cursorEnd(cursorAt.d) : [300, 200];
+    const [rx, ry] = cursorAt.text ? [cursorAt.x! + 30, cursorAt.y! + 6] : cursorAt.d ? cursorEnd(cursorAt.d) : [280, 180];
+    const cx = Math.min(rx, 290);
+    const cy = Math.min(ry, 178);
     return (
         <div className="dot-grid relative overflow-hidden rounded-2xl border border-border bg-background shadow-lift">
             {ready && (
@@ -206,7 +208,7 @@ function SketchBoard({ index, progress }: { index: number; progress: number }) {
                     </span>
                 </span>
             )}
-            <svg viewBox="0 0 360 240" className="block h-auto w-full text-foreground" role="img" aria-label={`A board sketching: ${PROMPTS[index]}`}>
+            <svg viewBox="0 36 360 172" className="block h-auto w-full text-foreground" role="img" aria-label={`A board sketching: ${PROMPTS[index]}`}>
                 <AnimatePresence mode="popLayout">
                     <motion.g key={index} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.25 } }}>
                         {marks.map((m, i) => {
@@ -303,12 +305,11 @@ function PromptBox({ onDemo }: { onDemo: (index: number, progress: number) => vo
                     )}
                 </div>
                 <button type="submit" className="group inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-primary px-4 text-[14.5px] font-medium text-primary-foreground transition-transform active:scale-[0.97] sm:px-5">
-                    <span className="hidden min-[420px]:inline">Open a board</span>
-                    <span className="min-[420px]:hidden">Open</span>
+                    Open a board
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </button>
             </div>
-            <p className="mt-4 text-[13.5px] text-muted-foreground">Opens a new board with the Connect your AI steps and your request ready to paste.</p>
+            <p className="mt-4 text-balance text-[13.5px] text-muted-foreground">Opens a new board with the Connect your AI steps and your request ready to paste.</p>
         </form>
     );
 }

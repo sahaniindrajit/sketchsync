@@ -44,7 +44,11 @@ function useLoop(length: number, ms: number) {
         // Plays a few rounds, then rests (endless motion is tiring and hard to ignore).
         let ticks = 0;
         const t = setInterval(() => {
-            if (++ticks > length * 3) return clearInterval(t);
+            if (++ticks > length * 3) {
+                clearInterval(t);
+                setI(length - 1); // rest on the finished state
+                return;
+            }
             setI((v) => (v + 1) % length);
         }, ms);
         return () => clearInterval(t);
@@ -149,7 +153,7 @@ function LayoutDemo() {
     const spring = { type: 'spring', visualDuration: 0.7, bounce: 0.15 } as const;
     return (
         <div ref={ref} className="w-full px-4">
-            <svg viewBox="0 0 270 170" className="mx-auto h-[150px] w-full max-w-[300px] text-foreground" aria-hidden>
+            <svg viewBox="0 10 270 150" className="mx-auto h-[170px] w-full max-w-[330px] text-foreground" aria-hidden>
                 {edges.map(([a, b], k) => (
                     <motion.line key={k} initial={false} animate={{ x1: p(a)[0], y1: p(a)[1], x2: p(b)[0], y2: p(b)[1] }} transition={spring} stroke="currentColor" strokeWidth="1.6" strokeDasharray={laid ? '0' : '3 4'} opacity={laid ? 1 : 0.4} />
                 ))}
@@ -192,7 +196,7 @@ function SeesSketchDemo() {
         />
     );
     // Claude's cursor visits each label after it has "looked" at the sketch.
-    const visits: [number, number][] = [[190, 10], ...LABELS.map((l) => [l.to[0] + 50, l.to[1] + 4] as [number, number])];
+    const visits: [number, number][] = [[190, 10], ...LABELS.map((l) => [l.to[0] + 64, l.to[1] + 14] as [number, number])];
     return (
         <div ref={ref} className="flex w-full flex-col items-center justify-center gap-5 px-6 py-6 sm:flex-row sm:gap-8">
             <svg viewBox="0 0 220 112" className="h-[132px] w-[260px] shrink-0 overflow-visible text-foreground" aria-hidden>

@@ -125,7 +125,7 @@ export function Shortcuts() {
                 Press a key, or click one, and it draws here. The same keys work on the board, and <span className="whitespace-nowrap"><span className="kbd">⌘</span> <span className="kbd">K</span></span> finds everything else.
             </SectionHeading>
             <Reveal className="mt-10 grid items-center gap-8 md:grid-cols-[1fr_1.2fr]">
-                <div className="grid grid-cols-6 gap-2 sm:grid-cols-4 sm:gap-3.5">
+                <div className="grid grid-cols-4 gap-2.5 sm:gap-3.5">
                     {KEYS.map(([k, label]) => {
                         const on = pressed === k;
                         return (
@@ -149,13 +149,13 @@ export function Shortcuts() {
                                 >
                                     {k}
                                 </motion.span>
-                                <span className={cn('hidden text-[12px] transition-colors sm:inline', on ? 'text-accent' : 'text-muted-foreground')}>{label}</span>
+                                <span className={cn('text-[11px] transition-colors sm:text-[12px]', on ? 'text-accent' : 'text-muted-foreground')}>{label}</span>
                             </button>
                         );
                     })}
                     <div className="flex flex-col items-center gap-2" aria-hidden>
                         <span className="flex aspect-square w-full max-w-[64px] items-center justify-center gap-0.5 rounded-xl bg-secondary text-[15px] font-medium text-muted-foreground">⌘K</span>
-                        <span className="hidden text-[12px] text-muted-foreground sm:inline">Commands</span>
+                        <span className="text-[11px] text-muted-foreground sm:text-[12px]">Commands</span>
                     </div>
                 </div>
                 <div className="dot-grid relative overflow-hidden rounded-2xl border border-border bg-background shadow-lift">
@@ -194,7 +194,7 @@ export function Shortcuts() {
                             </AnimatePresence>
                         </motion.g>
                     </svg>
-                    <span className="absolute left-3 top-3 hidden items-center gap-1.5 text-[12px] text-muted-foreground [@media(hover:hover)]:flex">
+                    <span className="absolute bottom-3 left-3 hidden items-center gap-1.5 text-[12px] text-muted-foreground [@media(hover:hover)]:flex">
                         Try pressing <span className="kbd">R</span> <span className="kbd">O</span> <span className="kbd">E</span>
                     </span>
                     <span className="absolute bottom-3 right-3 rounded-md border border-border bg-card px-2 py-1 font-mono text-[11px] text-muted-foreground">

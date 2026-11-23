@@ -9,7 +9,7 @@ export default function NotFound() {
     return (
         <div className="flex min-h-screen flex-col bg-background">
             <Navbar />
-            <main className="mx-auto flex min-h-[calc(100vh-80px)] w-full max-w-6xl flex-1 items-center px-[max(16px,env(safe-area-inset-left))] py-16">
+            <main className="mx-auto flex w-full max-w-6xl flex-1 items-center px-[max(16px,env(safe-area-inset-left))] py-16 sm:py-24">
                 <div className="grid w-full items-center gap-12 md:grid-cols-[1fr_1.1fr]">
                     <div className="max-w-[480px]">
                         <p className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted-foreground">Error 404</p>
@@ -36,7 +36,7 @@ export default function NotFound() {
                                 animate={{ pathLength: 1 }}
                                 transition={{ duration: 1.4, ease: 'easeInOut' }}
                             />
-                            <text x="448" y="168" fontSize="26" fontWeight="400" className="fill-foreground/80" fontFamily="Inter, sans-serif">
+                            <text x="452" y="236" fontSize="26" fontWeight="400" className="fill-foreground/80" fontFamily="Inter, sans-serif">
                                 ?
                             </text>
                             <rect x="40" y="280" width="40" height="40" rx="9" fill="none" stroke="currentColor" strokeWidth="2.5" />

@@ -1,13 +1,13 @@
 import { Check, RotateCcw } from 'lucide-react';
 import { AnimatePresence, motion, useInView, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
-import { BACKEND_URL } from '@/config';
 import { CopyButton } from '@/components/shareDialog';
 import { cn } from '@/lib/utils';
 import { Reveal } from './Reveal';
-import { Frame } from './Canvas';
+import { displayFill, useTheme } from '@/lib/theme';
 
-const URL = `${BACKEND_URL}/mcp/<board-id>`;
+// Marketing copy always shows the hosted server, whatever backend this build talks to.
+const URL = `https://sketchsync-backend-bkjk.onrender.com/mcp/<board-id>`;
 
 const SETUPS = [
     { id: 'code', name: 'Claude Code', file: 'terminal', code: `claude mcp add \\\n  --transport http sketchsync \\\n  ${URL}` },
@@ -79,6 +79,8 @@ function Session({ n }: { n: number }) {
 
 /** The board the session is drawing on: a small system diagram that builds as the steps tick. */
 function MiniBoard({ n }: { n: number }) {
+    const theme = useTheme((s) => s.resolved);
+    const dark = theme === 'dark';
     const nodes = [
         { x: 24, y: 112, w: 104, label: 'Browser', fill: '#f1eee8' },
         { x: 168, y: 112, w: 96, label: 'API', fill: '#f6dccf' },
@@ -100,8 +102,8 @@ function MiniBoard({ n }: { n: number }) {
             <svg viewBox="0 0 416 280" className="absolute inset-0 h-full w-full" role="img" aria-label="The board filling in with a system diagram as the assistant draws">
                 {nodes.map((nd, i) => (
                     <motion.g key={nd.label} initial={false} animate={{ opacity: drawing ? 1 : 0, scale: drawing ? 1 : 0.9 }} transition={{ delay: drawing ? 0.1 + i * 0.25 : 0, type: 'spring', visualDuration: 0.4, bounce: 0.2 }} style={{ transformOrigin: `${nd.x + nd.w / 2}px ${nd.y + 26}px` }}>
-                        <rect x={nd.x} y={nd.y} width={nd.w} height={52} rx={10} fill={nd.fill} stroke="#1e1e1e" strokeWidth="2" />
-                        <text x={nd.x + nd.w / 2} y={nd.y + 31} textAnchor="middle" fontSize="15" fill="#1e1e1e" fontFamily="Inter, sans-serif">
+                        <rect x={nd.x} y={nd.y} width={nd.w} height={52} rx={10} fill={displayFill(nd.fill, theme)} stroke={dark ? '#e6e6e9' : '#1e1e1e'} strokeWidth="2" />
+                        <text x={nd.x + nd.w / 2} y={nd.y + 31} textAnchor="middle" fontSize="15" fill={dark ? '#e6e6e9' : '#1e1e1e'} fontFamily="Inter, sans-serif">
                             {nd.label}
                         </text>
                     </motion.g>
@@ -140,7 +142,7 @@ export function McpSection() {
     const { ref, n, replay } = useReplay();
     return (
         <section id="mcp" className="mx-auto max-w-6xl scroll-mt-16 px-[max(16px,env(safe-area-inset-left))]">
-            <div className="relative overflow-hidden rounded-[28px] bg-[hsl(228_12%_7%)] px-5 py-14 text-white shadow-lift ring-1 ring-black/5 sm:px-12 sm:py-20 dark:bg-[radial-gradient(60rem_24rem_at_20%_0%,hsl(var(--claude)/0.12),transparent),linear-gradient(180deg,hsl(228_14%_14%),hsl(228_12%_11%))] dark:ring-white/10">
+            <div className="relative overflow-hidden rounded-[28px] bg-[hsl(228_12%_7%)] px-5 py-14 text-white shadow-lift ring-1 ring-black/5 sm:px-12 sm:py-20 dark:bg-[radial-gradient(60rem_24rem_at_15%_0%,hsl(var(--claude)/0.2),transparent),linear-gradient(180deg,hsl(228_16%_17%),hsl(228_14%_13%))] dark:ring-white/15">
                 <div className="pointer-events-none absolute inset-0 [background-image:radial-gradient(hsl(0_0%_100%/0.07)_1px,transparent_1.2px)] [background-size:20px_20px]" />
                 <div className="relative">
                 <Reveal className="grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:items-end">
@@ -150,7 +152,7 @@ export function McpSection() {
                     </p>
                 </Reveal>
 
-                <Frame name="Connect your AI" dark className="mt-16 !p-3">
+                <div className="mt-12">
                 <Reveal delay={0.05} className="grid gap-3 md:grid-cols-[1.1fr_1fr]">
                     <div ref={ref} className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[hsl(228_10%_5%)]">
                         <div
@@ -193,7 +195,7 @@ export function McpSection() {
                                         {setup.code.split('\n').map((line, i) => (
                                             <div key={i} className="flex">
                                                 <span className="mr-4 inline-block w-4 shrink-0 select-none text-right text-white/25">{i + 1}</span>
-                                                <span className="whitespace-pre pr-6">{colorize(line)}</span>
+                                                <span className="min-w-0 whitespace-pre-wrap break-words pr-2 [overflow-wrap:anywhere] md:whitespace-pre md:pr-6">{colorize(line)}</span>
                                             </div>
                                         ))}
                                     </code>
@@ -213,7 +215,7 @@ export function McpSection() {
                     </div>
                     <MiniBoard n={n} />
                 </Reveal>
-                </Frame>
+                </div>
                 </div>
             </div>
         </section>

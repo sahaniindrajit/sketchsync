@@ -158,7 +158,7 @@ export function McpSection() {
                 <Reveal delay={0.05} className="grid gap-3 md:grid-cols-[1.1fr_1fr]">
                     <div ref={ref} className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[hsl(228_10%_5%)]">
                         <div
-                            className="flex items-center gap-1 overflow-x-auto border-b border-white/10 p-2 pr-8 [mask-image:linear-gradient(90deg,#000_85%,transparent)] [scrollbar-width:none] md:pr-2 md:[mask-image:none]"
+                            className="flex items-center gap-1 overflow-x-auto border-b border-white/10 p-2 pr-10 [mask-image:linear-gradient(90deg,#000_78%,transparent)] [scrollbar-width:none] md:pr-2 md:[mask-image:none]"
                             role="tablist"
                             aria-label="Setup instructions"
                             onKeyDown={(e) => {
@@ -197,7 +197,7 @@ export function McpSection() {
                                         {setup.code.split('\n').map((line, i) => (
                                             <div key={i} className="flex">
                                                 <span className="mr-4 inline-block w-4 shrink-0 select-none text-right text-white/25">{i + 1}</span>
-                                                <span className="min-w-0 whitespace-pre-wrap break-words pr-2 [overflow-wrap:anywhere] md:whitespace-pre md:pr-6">{colorize(line)}</span>
+                                                <span className="min-w-0 whitespace-pre-wrap break-words pr-2 md:whitespace-pre md:pr-6">{colorize(line.replace(/\/mcp\//g, '/mcp/\u200b'))}</span>
                                             </div>
                                         ))}
                                     </code>

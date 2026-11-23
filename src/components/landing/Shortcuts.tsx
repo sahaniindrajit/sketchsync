@@ -68,7 +68,7 @@ export function Shortcuts() {
         { id: 1, kind: 'R', x: 70, y: 60 },
         { id: 2, kind: 'A', x: 200, y: 55 },
         { id: 3, kind: 'O', x: 330, y: 65 },
-        { id: 4, kind: 'D', x: 100, y: 140 },
+        { id: 4, kind: 'D', x: 110, y: 130 },
         { id: 5, kind: 'T', x: 220, y: 140 },
     ]);
     const [selected, setSelected] = useState<number | null>(null);
@@ -196,7 +196,7 @@ export function Shortcuts() {
                             </AnimatePresence>
                         </motion.g>
                     </svg>
-                    <span className="absolute bottom-3 left-3 hidden items-center gap-1.5 text-[12px] text-muted-foreground [@media(hover:hover)]:flex">
+                    <span className="absolute bottom-3 left-3 hidden items-center gap-1.5 text-[12px] text-muted-foreground [@media(hover:hover)_and_(pointer:fine)]:flex">
                         Try pressing <span className="kbd">R</span> <span className="kbd">O</span> <span className="kbd">E</span>
                     </span>
                     <span className="absolute bottom-3 right-3 rounded-md border border-border bg-card px-2 py-1 font-mono text-[11px] text-muted-foreground">

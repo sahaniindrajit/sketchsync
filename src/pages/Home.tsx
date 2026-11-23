@@ -37,7 +37,7 @@ function Hero() {
                     <span className="hidden sm:inline">Realtime whiteboard · </span>MCP server built in
                 </motion.p>
 
-                <Note author="Maya" color="yellow" rotate={3} arrow="down" className="absolute right-[56px] top-[300px] hidden xl:block">
+                <Note author="Maya" color="yellow" rotate={-2} arrow="down-right" className="absolute right-[300px] top-[318px] hidden xl:block">
                     Watch Claude's tool calls land here.
                 </Note>
                 <h1 className="mt-4 max-w-[16ch] text-balance text-[clamp(40px,6.2vw,76px)] font-semibold leading-[0.95] tracking-display" aria-label={HEADLINE.join(' ')}>
@@ -283,11 +283,11 @@ function PromptBox({ onDemo }: { onDemo: (index: number, progress: number) => vo
                 navigate(`/board?connect=ai&ask=${encodeURIComponent(ask)}`);
             }}
         >
-            <div className="flex items-center gap-3 rounded-2xl border border-border bg-background p-2 pl-4 text-left shadow-lift transition-[border-color,box-shadow] focus-within:border-ring focus-within:shadow-[0_0_0_4px_hsl(var(--ring)/0.15)]">
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-background p-2 pl-4 text-left shadow-lift transition-[border-color,box-shadow] focus-within:border-ring focus-within:shadow-[0_0_0_4px_hsl(var(--ring)/0.15)] max-[440px]:pr-4">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-claude text-white">
                     <Sparkles className="h-3.5 w-3.5" />
                 </span>
-                <div className="relative min-w-0 flex-1">
+                <div className="relative min-w-[200px] flex-1">
                     <input
                         value={value}
                         onChange={(e) => setValue(e.target.value)}
@@ -304,7 +304,7 @@ function PromptBox({ onDemo }: { onDemo: (index: number, progress: number) => vo
                         </span>
                     )}
                 </div>
-                <button type="submit" className="group inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-primary px-4 text-[14.5px] font-medium text-primary-foreground transition-transform active:scale-[0.97] sm:px-5">
+                <button type="submit" className="group inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-[14.5px] font-medium text-primary-foreground transition-transform active:scale-[0.97] max-[440px]:mb-2 max-[440px]:w-full sm:px-5">
                     Open a board
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </button>

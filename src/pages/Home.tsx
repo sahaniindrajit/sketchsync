@@ -189,7 +189,7 @@ const SKETCHES: Mark[][] = [
 ];
 
 /** A board that sketches whatever the prompt is asking for, as it is typed. */
-function SketchBoard({ index, progress }: { index: number; progress: number }) {
+function SketchBoard({ index, progress, typed }: { index: number; progress: number; typed: string }) {
     const theme = useTheme((s) => s.resolved);
     const marks = SKETCHES[index];
     const ready = progress < 0;
@@ -203,8 +203,11 @@ function SketchBoard({ index, progress }: { index: number; progress: number }) {
         <div className="dot-grid relative overflow-hidden rounded-2xl border border-border bg-background shadow-lift">
             {ready && (
                 <span className="absolute inset-0 flex items-center justify-center text-[14px] text-muted-foreground">
-                    <span className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 shadow-chrome">
-                        <Sparkles className="h-3.5 w-3.5 text-claude" /> Ready when you are
+                    <span className="max-w-[80%] -rotate-1 rounded-[3px] bg-[#fff3bf] px-4 py-3 text-[14px] leading-snug text-[#3d3200] shadow-[0_10px_24px_-12px_rgba(0,0,0,0.35)] dark:bg-[#e9dca0] dark:text-[#2d2500]">
+                        <span className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold opacity-70">
+                            <Sparkles className="h-3 w-3 text-claude" /> For Claude
+                        </span>
+                        {typed.trim() ? typed : 'Type what you want drawn…'}
                     </span>
                 </span>
             )}
@@ -246,7 +249,7 @@ function cursorEnd(d: string): [number, number] {
 }
 
 /** Type what you want an AI to draw; it opens a board with Connect your AI and your request ready. */
-function PromptBox({ onDemo }: { onDemo: (index: number, progress: number) => void }) {
+function PromptBox({ onDemo }: { onDemo: (index: number, progress: number, typed: string) => void }) {
     const reduced = useReducedMotion();
     const navigate = useNavigate();
     const ref = useRef<HTMLFormElement>(null);
@@ -258,8 +261,8 @@ function PromptBox({ onDemo }: { onDemo: (index: number, progress: number) => vo
     const demo = !value && !focused;
     useEffect(() => {
         // While you type your own request, the board waits for it instead of showing an example.
-        onDemo(i, demo ? n / PROMPTS[i].length : -1);
-    }, [i, n, demo, onDemo]);
+        onDemo(i, demo ? n / PROMPTS[i].length : -1, value);
+    }, [i, n, demo, value, onDemo]);
     useEffect(() => {
         if (!inView || reduced || !demo) return;
         const text = PROMPTS[i];
@@ -276,7 +279,7 @@ function PromptBox({ onDemo }: { onDemo: (index: number, progress: number) => vo
     return (
         <form
             ref={ref}
-            className="w-full max-w-xl"
+            className="w-full max-w-[600px]"
             onSubmit={(e) => {
                 e.preventDefault();
                 const ask = value.trim() || PROMPTS[i];
@@ -287,7 +290,7 @@ function PromptBox({ onDemo }: { onDemo: (index: number, progress: number) => vo
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-claude text-white">
                     <Sparkles className="h-3.5 w-3.5" />
                 </span>
-                <div className="relative min-w-[200px] flex-1">
+                <div className="relative min-w-[200px] flex-[1_1_260px]">
                     <input
                         value={value}
                         onChange={(e) => setValue(e.target.value)}
@@ -315,8 +318,8 @@ function PromptBox({ onDemo }: { onDemo: (index: number, progress: number) => vo
 }
 
 function Cta() {
-    const [demo, setDemo] = useState({ index: 0, progress: 0 });
-    const onDemo = useCallback((index: number, progress: number) => setDemo({ index, progress }), []);
+    const [demo, setDemo] = useState({ index: 0, progress: 0, typed: '' });
+    const onDemo = useCallback((index: number, progress: number, typed: string) => setDemo({ index, progress, typed }), []);
     return (
         <section className="relative mx-auto max-w-6xl overflow-hidden px-[max(16px,env(safe-area-inset-left))]">
             <Frame name="Start" className="!p-0">
@@ -328,7 +331,7 @@ function Cta() {
                     <PromptBox onDemo={onDemo} />
                 </Reveal>
                 <Reveal delay={0.1}>
-                    <SketchBoard index={demo.index} progress={demo.progress} />
+                    <SketchBoard index={demo.index} progress={demo.progress} typed={demo.typed} />
                 </Reveal>
             </div>
             </div>

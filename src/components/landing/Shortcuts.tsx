@@ -23,7 +23,7 @@ type Item = { id: number; kind: Kind; x: number; y: number };
 
 // Spots on the mini board, used in turn so new shapes rarely overlap.
 const SLOTS: [number, number][] = [
-    [80, 60], [200, 58], [320, 62], [100, 140], [220, 140], [330, 145], [150, 100], [270, 100],
+    [70, 52], [200, 52], [330, 52], [70, 140], [200, 140], [330, 140],
 ];
 const FILLS: Partial<Record<Kind, string>> = { R: '#a5d8ff', O: '#b2f2bb', D: '#ffec99' };
 
@@ -65,18 +65,16 @@ function ShapeGlyph({ kind, theme }: { kind: Kind; theme: ResolvedTheme }) {
 export function Shortcuts() {
     const [pressed, setPressed] = useState<string | null>(null);
     const [items, setItems] = useState<Item[]>([
-        { id: 1, kind: 'R', x: 70, y: 60 },
-        { id: 2, kind: 'A', x: 200, y: 55 },
-        { id: 3, kind: 'O', x: 330, y: 65 },
-        { id: 4, kind: 'D', x: 110, y: 130 },
-        { id: 5, kind: 'T', x: 220, y: 140 },
+        { id: 1, kind: 'R', x: 70, y: 52 },
+        { id: 2, kind: 'A', x: 200, y: 52 },
+        { id: 3, kind: 'O', x: 330, y: 52 },
+        { id: 4, kind: 'D', x: 70, y: 140 },
     ]);
     const [selected, setSelected] = useState<number | null>(null);
     const itemsRef = useRef(items);
     itemsRef.current = items;
     const [pan, setPan] = useState(0);
-    const counter = useRef(5);
-    const nextId = useRef(6);
+    const nextId = useRef(5);
 
     const act = useCallback((key: string) => {
         if (key === 'E') {
@@ -92,9 +90,14 @@ export function Shortcuts() {
             setPan((p) => (p === 0 ? 18 : p > 0 ? -18 : 0));
             return;
         }
-        const [x, y] = SLOTS[counter.current++ % SLOTS.length];
         setSelected(null);
-        setItems((list) => [...list.filter((i) => i.x !== x || i.y !== y), { id: nextId.current++, kind: key as Kind, x, y }].slice(-8));
+        setItems((list) => {
+            // Use the first empty spot; when the board is full, replace the oldest shape.
+            const free = SLOTS.find(([x, y]) => !list.some((i) => i.x === x && i.y === y));
+            const [x, y] = free ?? [list[0].x, list[0].y];
+            const rest = free ? list : list.slice(1);
+            return [...rest, { id: nextId.current++, kind: key as Kind, x, y }];
+        });
     }, []);
 
     const sectionRef = useRef<HTMLElement>(null);

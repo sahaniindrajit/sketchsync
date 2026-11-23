@@ -260,7 +260,7 @@ function SeesSketchDemo() {
 
 export function Bento() {
     return (
-        <section id="features" className="scroll-mt-24">
+        <section id="features" className="scroll-mt-32">
             <SectionHeading title="A board your AI can read, not just write.">
                 Read, draw, lay out and typeset. Everything here works in the app today.
             </SectionHeading>

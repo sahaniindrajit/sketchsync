@@ -6,9 +6,9 @@ import { cn } from '@/lib/utils';
  * and people leave sticky notes between them.
  */
 export function Frame({ name, children, className, dark }: { name: string; children: React.ReactNode; className?: string; dark?: boolean }) {
-    const handle = cn('absolute h-2 w-2 rounded-[2px] border bg-background', dark ? 'border-white/30 bg-[hsl(228_10%_8%)]' : 'border-accent/60');
+    const handle = cn('absolute h-2 w-2 rounded-[2px] border bg-background', dark ? 'border-white/30 bg-[hsl(228_10%_8%)]' : 'border-accent/50 dark:border-accent/35');
     return (
-        <div className={cn('relative rounded-[4px] border p-5 sm:p-10', dark ? 'border-white/15' : 'border-border bg-background/70 backdrop-blur-[1px]', className)}>
+        <div className={cn('relative scroll-mt-28 rounded-[4px] border p-5 sm:p-10', dark ? 'border-white/15' : 'border-border bg-background/70 backdrop-blur-[1px]', className)}>
             <span className={cn('absolute -top-7 left-0 flex items-center gap-1.5 font-mono text-[11.5px]', dark ? 'text-white/45' : 'text-muted-foreground')}>
                 <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden>
                     <path d="M3 0 V12 M9 0 V12 M0 3 H12 M0 9 H12" stroke="currentColor" strokeWidth="1.2" fill="none" />

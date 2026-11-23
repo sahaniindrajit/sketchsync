@@ -103,6 +103,38 @@ export function resetBoardState(roomId: string | null, shapes: Map<string, Shape
     useBoard.setState({ ...initialDefaults, roomId, shapes, selectedIds: [], viewport: { x: 0, y: 0, scale: 1 } });
 }
 
+let viewportAnim = 0;
+
+/**
+ * Glides the camera to `target`. Stops as soon as anything else moves the viewport
+ * (a pan, a wheel), so it never fights the user.
+ */
+export function animateViewport(target: Viewport, ms = 320) {
+    const start = useBoard.getState().viewport;
+    cancelAnimationFrame(viewportAnim);
+    if (typeof window === 'undefined' || window.matchMedia('(prefers-reduced-motion: reduce)').matches || ms <= 0) {
+        useBoard.getState().setViewport(target);
+        return;
+    }
+    const t0 = performance.now();
+    let last = start;
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3);
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+    const step = (now: number) => {
+        const current = useBoard.getState().viewport;
+        if (current !== last) return; // someone else moved the camera
+        const t = Math.min(1, (now - t0) / ms);
+        const k = ease(t);
+        // Interpolate scale geometrically so zooming feels even.
+        const scale = start.scale * Math.pow(target.scale / start.scale, k);
+        last = { scale, x: lerp(start.x, target.x, k), y: lerp(start.y, target.y, k) };
+        if (t >= 1) last = target;
+        useBoard.getState().setViewport(last);
+        if (t < 1) viewportAnim = requestAnimationFrame(step);
+    };
+    viewportAnim = requestAnimationFrame(step);
+}
+
 /** Undo/redo the local user's last change. */
 export const undoLast = () => undo((op) => useBoard.getState().dispatch(op), () => useBoard.getState().shapes);
 /** Reverts the AI's most recent batch of edits (as one undoable step for this user). */

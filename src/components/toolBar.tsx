@@ -55,7 +55,7 @@ const DockButton = React.forwardRef<
                     transition={{ type: 'spring', visualDuration: 0.26, bounce: 0.12 }}
                 />
             )}
-            <span className="relative transition-transform duration-150 group-active:scale-90">{children}</span>
+            <span className="relative z-10 transition-transform duration-150 group-active:scale-90">{children}</span>
             {shortcut && (
                 <span className="pointer-events-none absolute bottom-[3px] right-[4px] text-[9px] font-medium leading-none text-muted-foreground/80 [@media(hover:none)]:hidden">{shortcut}</span>
             )}

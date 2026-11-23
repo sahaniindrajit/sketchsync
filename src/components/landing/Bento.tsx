@@ -18,7 +18,7 @@ function Cell({ title, children, body, className, delay = 0, short }: { title: s
                     ref.current!.style.setProperty('--x', `${e.clientX - r.left}px`);
                     ref.current!.style.setProperty('--y', `${e.clientY - r.top}px`);
                 }}
-                className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-colors duration-300 hover:border-foreground/15"
+                className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-colors duration-300 hover:border-foreground/15 dark:bg-[hsl(228_9%_10.5%)] dark:shadow-[inset_0_1px_0_hsl(0_0%_100%/0.05)]"
             >
                 <div
                     className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -83,17 +83,38 @@ function MultiplayerDemo() {
     );
 }
 
+const LATEX = 'e^{i\\pi} + 1 = 0';
+
 function MathDemo() {
+    const ref = useRef<HTMLDivElement>(null);
+    const inView = useInView(ref, { once: true, amount: 0.6 });
+    const reduced = useReducedMotion();
+    const [n, setN] = useState(reduced ? LATEX.length : 0);
+    useEffect(() => {
+        if (!inView || reduced) return;
+        const timers = Array.from({ length: LATEX.length }, (_, i) => setTimeout(() => setN(i + 1), 300 + i * 55));
+        return () => timers.forEach(clearTimeout);
+    }, [inView, reduced]);
+    const done = n >= LATEX.length;
     return (
-        <div className="flex flex-col items-center gap-3 px-6 text-foreground">
-            <div className="text-[30px] leading-none" style={{ fontFamily: '"Latin Modern Math", "STIX Two Math", "Cambria Math", Georgia, serif' }}>
+        <div ref={ref} className="flex flex-col items-center gap-4 px-6 text-foreground">
+            <code className="flex h-8 min-w-[190px] items-center rounded-lg border border-border bg-card px-3 font-mono text-[12.5px] text-muted-foreground">
+                {LATEX.slice(0, n)}
+                {!done && <span className="ml-px inline-block h-4 w-[1.5px] animate-blink bg-foreground" />}
+            </code>
+            <motion.div
+                initial={false}
+                animate={{ opacity: done ? 1 : 0, y: done ? 0 : 6, filter: done ? 'blur(0px)' : 'blur(4px)' }}
+                transition={{ type: 'spring', visualDuration: 0.5, bounce: 0 }}
+                className="text-[34px] leading-none"
+                style={{ fontFamily: '"Latin Modern Math", "STIX Two Math", "Cambria Math", Georgia, serif' }}
+            >
                 <i>e</i>
                 <sup className="text-[0.6em]">
                     <i>iπ</i>
                 </sup>{' '}
                 + 1 = 0
-            </div>
-            <code className="rounded-md border border-border bg-card px-2 py-1 font-mono text-[11.5px] text-muted-foreground">e^{'{'}i\pi{'}'} + 1 = 0</code>
+            </motion.div>
         </div>
     );
 }
@@ -141,22 +162,44 @@ function LayoutDemo() {
 }
 
 function SeesSketchDemo() {
+    const ref = useRef<HTMLDivElement>(null);
+    const inView = useInView(ref, { once: true, amount: 0.5 });
+    const reduced = useReducedMotion();
+    const on = inView || !!reduced;
+    const stroke = (d: string, delay: number, color = 'currentColor') => (
+        <motion.path
+            d={d}
+            fill="none"
+            stroke={color}
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            initial={{ pathLength: reduced ? 1 : 0 }}
+            animate={{ pathLength: on ? 1 : 0 }}
+            transition={{ duration: 0.6, delay: reduced ? 0 : delay, ease: 'easeInOut' }}
+        />
+    );
     return (
-        <div className="flex w-full items-center justify-center gap-6 px-6">
+        <div ref={ref} className="flex w-full items-center justify-center gap-6 px-6">
             <svg viewBox="0 0 120 110" className="h-[120px] w-[130px] shrink-0 text-foreground" aria-hidden>
-                <path d="M18 52 L60 16 L102 50" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M26 48 C 25 70, 27 86, 26 98 C 50 99, 74 97, 96 99 C 95 80, 97 64, 95 47" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                <path d="M44 98 C 44 86, 44 78, 45 72 C 52 71, 58 72, 62 72 C 62 82, 62 90, 62 98" fill="none" stroke="#e03131" strokeWidth="3" strokeLinecap="round" />
-                <circle cx="80" cy="66" r="7" fill="none" stroke="#1971c2" strokeWidth="3" />
+                {stroke('M18 52 L60 16 L102 50', 0)}
+                {stroke('M26 48 C 25 70, 27 86, 26 98 C 50 99, 74 97, 96 99 C 95 80, 97 64, 95 47', 0.4)}
+                {stroke('M44 98 C 44 86, 44 78, 45 72 C 52 71, 58 72, 62 72 C 62 82, 62 90, 62 98', 0.9, '#e03131')}
+                {stroke('M87 66 a7 7 0 1 1 -14 0 a7 7 0 1 1 14 0', 1.2, '#1971c2')}
             </svg>
-            <div className="max-w-[260px] space-y-2">
+            <motion.div
+                className="max-w-[260px] space-y-2"
+                initial={reduced ? false : { opacity: 0, x: -8 }}
+                animate={on ? { opacity: 1, x: 0 } : undefined}
+                transition={{ delay: reduced ? 0 : 1.9, type: 'spring', visualDuration: 0.5, bounce: 0.1 }}
+            >
                 <div className="flex items-center gap-1.5 font-mono text-[10.5px] text-muted-foreground">
                     <Sparkles className="h-3 w-3 text-claude" /> get_board_image
                 </div>
                 <div className="rounded-2xl rounded-tl-sm border border-border bg-card px-3.5 py-2.5 text-[13px] leading-relaxed shadow-chrome">
                     A house with a red door and a round window. Want me to label the parts?
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 }
@@ -168,16 +211,16 @@ export function Bento() {
                 Everything below is in the app today. No sign-up, nothing to install.
             </SectionHeading>
             <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-3">
-                <Cell className="md:col-span-2" title="Real-time, in the same order for everyone" body="The server validates every change and broadcasts it in sequence, so every tab and every AI ends up with the same board.">
+                <Cell className="md:col-span-2" title="Everyone sees the same board, instantly" body="People and AIs edit together without conflicts. Every change lands in the same order for every tab.">
                     <MultiplayerDemo />
                 </Cell>
-                <Cell title="LaTeX that renders" body="Press M, type LaTeX, and get typeset math. The AI can write step-by-step solutions too." delay={0.05}>
+                <Cell title="Math that looks like math" body="Press M and type LaTeX. Ask the AI for a worked solution and it writes each step on the board." delay={0.05}>
                     <MathDemo />
                 </Cell>
-                <Cell title="Flowcharts that lay themselves out" body="Ask for a process and the nodes arrive already arranged and connected." delay={0.05}>
+                <Cell title="Diagrams that arrange themselves" body="Describe a process and the boxes arrive laid out and connected, ready to edit." delay={0.05}>
                     <LayoutDemo />
                 </Cell>
-                <Cell className="md:col-span-2" title="The AI can see what you sketch" body="Hand drawings are rendered to an image for the assistant, so it can read your scribbles and build on them." delay={0.1}>
+                <Cell className="md:col-span-2" title="Your AI can read your sketches" body="Draw something rough. The assistant sees it as an image, understands it, and builds on it." delay={0.1}>
                     <SeesSketchDemo />
                 </Cell>
             </div>

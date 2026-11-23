@@ -145,6 +145,8 @@ test.describe('single-user board', () => {
         await openNewBoard(page);
         await page.getByLabel('Zoom in').click();
         await expect(page.getByTestId('zoom-level')).toHaveText('120%');
+        // Zooming glides; wait for the camera to settle.
+        await expect.poll(async () => (await boardState<{ scale: number }>(page, 'viewport')).scale).toBe(1.2);
         await selectTool(page, 'hand');
         const zoomed = await boardState<{ x: number; y: number; scale: number }>(page, 'viewport');
         await drag(page, [600, 400], [700, 450]);
@@ -154,6 +156,7 @@ test.describe('single-user board', () => {
         expect(vp.scale).toBeCloseTo(1.2);
         // Shapes drawn while zoomed use board coordinates.
         await page.getByTestId('zoom-level').click();
+        await expect.poll(async () => (await boardState<{ scale: number }>(page, 'viewport')).scale).toBe(1);
         await selectTool(page, 'rect');
         const before = await boardState<{ x: number; y: number }>(page, 'viewport');
         await drag(page, [500, 500], [600, 600]);

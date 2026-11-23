@@ -12,6 +12,7 @@ import { AppMenu, type MenuActions } from './menu';
 
 export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand: () => void }) {
     const [showMenu, setShowMenu] = useState(false);
+    const [viaKeyboard, setViaKeyboard] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
     const roomId = useBoard((s) => s.roomId);
@@ -40,10 +41,11 @@ export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand
                     aria-haspopup="menu"
                     aria-expanded={showMenu}
                     className={cn(
-                        'flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground',
+                        'flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
                         showMenu && 'bg-secondary text-foreground',
                     )}
-                    onClick={() => {
+                    onClick={(e) => {
+                        setViaKeyboard(e.detail === 0);
                         if (!showMenu) window.dispatchEvent(new Event('sketchsync:menu-open'));
                         setShowMenu((v) => !v);
                     }}
@@ -79,6 +81,7 @@ export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand
             <AnimatePresence>{showMenu && (
                     <AppMenu
                         actions={actions}
+                        viaKeyboard={viaKeyboard}
                         onClose={(opts) => {
                             setShowMenu(false);
                             if (opts?.refocus) triggerRef.current?.focus();

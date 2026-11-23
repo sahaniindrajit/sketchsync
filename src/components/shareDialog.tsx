@@ -105,14 +105,14 @@ export function ShareDialog({ roomId, tab, onTab, onClose, aiPanel }: { roomId: 
                         exit={{ opacity: 0, transition: { duration: 0.15 } }}
                     />
                 </Dialog.Overlay>
-                <div className="pointer-events-none fixed inset-0 z-[61] flex items-start justify-center p-4 pt-[max(1rem,14vh)]">
+                <div className="pointer-events-none fixed inset-0 z-[61] flex items-end justify-center sm:items-start sm:p-4 sm:pt-[max(1rem,14vh)]">
                     <Dialog.Content asChild forceMount aria-describedby={undefined}>
                         <motion.div
                             initial={{ opacity: 0, scale: 0.96, y: 8 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.97, y: 4, transition: { duration: 0.14 } }}
                             transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.18 }}
-                            className="pointer-events-auto max-h-[90vh] w-full max-w-[460px] overflow-y-auto rounded-2xl border border-border bg-popover text-popover-foreground shadow-lift outline-none"
+                            className="pointer-events-auto max-h-[88vh] w-full max-w-[460px] overflow-y-auto rounded-t-2xl border border-border bg-popover pb-[env(safe-area-inset-bottom)] text-popover-foreground shadow-lift outline-none sm:rounded-2xl sm:pb-0"
                         >
                             <Dialog.Title className="sr-only">Share board</Dialog.Title>
                             <div className="flex items-center gap-2 border-b border-border/70 p-2">
@@ -140,8 +140,8 @@ export function ShareDialog({ roomId, tab, onTab, onClose, aiPanel }: { roomId: 
                                             onClick={() => onTab(id)}
                                         >
                                             {tab === id && <motion.span layoutId="share-tab" className="absolute inset-0 rounded-lg bg-secondary" transition={{ type: 'spring', visualDuration: 0.25, bounce: 0.15 }} />}
-                                            <Icon className={cn('relative h-3.5 w-3.5', id === 'ai' && 'text-claude')} />
-                                            <span className="relative">{label}</span>
+                                            <Icon className={cn('relative z-10 h-3.5 w-3.5', id === 'ai' && 'text-claude')} />
+                                            <span className="relative z-10">{label}</span>
                                         </button>
                                     ))}
                                 </div>

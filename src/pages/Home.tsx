@@ -26,7 +26,7 @@ function Hero() {
     const reduced = useReducedMotion();
     return (
         <section className="relative">
-            <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))] pb-8 pt-14 sm:pt-20">
+            <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))] pb-8 pt-10 sm:pt-14">
                 <motion.a
                     href="#mcp"
                     initial={{ opacity: 0, y: 8 }}
@@ -40,7 +40,7 @@ function Hero() {
                     <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
                 </motion.a>
 
-                <h1 className="mt-6 max-w-[15ch] text-balance text-[clamp(44px,8vw,92px)] font-semibold leading-[0.95] tracking-display" aria-label={HEADLINE.join(' ')}>
+                <h1 className="mt-5 max-w-[15ch] text-balance text-[clamp(40px,7.4vw,84px)] font-semibold leading-[0.95] tracking-display" aria-label={HEADLINE.join(' ')}>
                     {HEADLINE.map((w, i) => (
                         <motion.span
                             key={i}
@@ -55,7 +55,7 @@ function Hero() {
                             ) : w === 'on.' ? (
                                 <>
                                     on
-                                    <span className="ml-[0.06em] inline-block h-[0.78em] w-[0.07em] translate-y-[0.04em] animate-blink rounded-full bg-claude" />
+                                    <span className="ml-[0.1em] inline-block h-[0.78em] w-[0.07em] translate-y-[0.04em] animate-blink rounded-full bg-claude" />
                                 </>
                             ) : (
                                 w
@@ -68,7 +68,7 @@ function Hero() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.5 }}
-                    className="mt-7 max-w-[54ch] text-pretty text-[18px] leading-relaxed text-muted-foreground"
+                    className="mt-6 max-w-[54ch] text-pretty text-[17px] leading-relaxed text-muted-foreground sm:text-[18px]"
                 >
                     Sketch with your team in real time. Connect Claude or any MCP client and watch it add flowcharts, diagrams and math to the same board.
                 </motion.p>
@@ -76,7 +76,7 @@ function Hero() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.6 }}
-                    className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-4"
+                    className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3"
                 >
                     <div className="flex flex-wrap gap-2.5">
                         <Link
@@ -127,6 +127,52 @@ function WorksWith() {
     );
 }
 
+/** A hand-drawn arrow, drawn by Claude's cursor, pointing at the button. */
+function CtaSketch() {
+    const reduced = useReducedMotion();
+    return (
+        <div className="pointer-events-none absolute -right-[176px] -top-[30px] hidden h-[110px] w-[180px] sm:block" aria-hidden>
+            <svg viewBox="0 0 180 110" className="h-full w-full">
+                <motion.path
+                    d="M168 18 C 120 4, 74 18, 58 50 C 50 66, 52 78, 44 86"
+                    fill="none"
+                    style={{ stroke: 'hsl(var(--claude))' }}
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    initial={{ pathLength: reduced ? 1 : 0 }}
+                    whileInView={{ pathLength: 1 }}
+                    viewport={{ once: true, amount: 0.8 }}
+                    transition={{ duration: 1, ease: 'easeInOut', delay: 0.3 }}
+                />
+                <motion.path
+                    d="M34 74 L44 88 L58 78"
+                    fill="none"
+                    style={{ stroke: 'hsl(var(--claude))' }}
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    initial={{ opacity: reduced ? 1 : 0 }}
+                    whileInView={{ opacity: 1 }}
+                    viewport={{ once: true, amount: 0.8 }}
+                    transition={{ delay: 1.25, duration: 0.2 }}
+                />
+            </svg>
+            <motion.span
+                className="absolute right-0 top-0 flex items-start"
+                initial={reduced ? false : { opacity: 0, x: 10, y: -6 }}
+                whileInView={{ opacity: 1, x: 0, y: 0 }}
+                viewport={{ once: true, amount: 0.8 }}
+                transition={{ type: 'spring', visualDuration: 0.5, bounce: 0.2 }}
+            >
+                <svg width="14" height="18" viewBox="0 0 16 22">
+                    <path d="M0 0 L0 18 L4.8 13.5 L8 20.5 L11 19.2 L7.9 12.4 L14.3 12.2 Z" style={{ fill: 'hsl(var(--claude))' }} stroke="white" strokeWidth="1.4" />
+                </svg>
+                <span className="mt-3.5 rounded-md bg-[#c4623f] px-1.5 py-0.5 text-[11px] font-semibold text-white">Claude</span>
+            </motion.span>
+        </div>
+    );
+}
+
 function Cta() {
     const [ref, paused] = usePauseOffscreen<HTMLElement>();
     return (
@@ -139,10 +185,13 @@ function Cta() {
                         <LogoMark className="h-12 w-12" />
                         <h2 className="mt-6 max-w-[18ch] text-balance text-[clamp(30px,4.5vw,52px)] font-semibold leading-[1.02] tracking-[-0.04em]">Start a board. Invite a teammate. Or an AI.</h2>
                         <p className="mt-4 max-w-md text-[16px] text-muted-foreground">A new board takes one click and lives at its own link.</p>
-                        <Link to="/board" className="group mt-8 inline-flex h-12 items-center gap-2 rounded-xl bg-primary px-6 text-[15px] font-medium text-primary-foreground transition-transform active:scale-[0.97]">
-                            Open a board
-                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                        </Link>
+                        <div className="relative mt-8">
+                            <Link to="/board" className="group relative z-10 inline-flex h-12 items-center gap-2 rounded-xl bg-primary px-6 text-[15px] font-medium text-primary-foreground transition-transform active:scale-[0.97]">
+                                Open a board
+                                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                            </Link>
+                            <CtaSketch />
+                        </div>
                     </div>
                 </div>
             </Reveal>

@@ -11,7 +11,8 @@ import { AiActivityToast } from '@/components/aiActivity';
 import { CommandPalette } from '@/components/commandPalette';
 import { ConnectAiPanel } from '@/components/connectAi';
 import { LogoMark } from '@/components/logo';
-import { ConnectionBadge, ConnectionStatus, NoticeToast, ZoomControls } from '@/components/statusBar';
+import { ConnectionBadge, NoticeToast, ZoomControls } from '@/components/statusBar';
+import { PeerCursors } from '@/components/presence';
 import { Kbd } from '@/components/ui/kbd';
 import { MOD } from '@/lib/platform';
 import { Toolbar } from '@/components/toolBar';
@@ -145,13 +146,13 @@ function BoardScreen({ roomId }: { roomId: string }) {
         <TooltipProvider>
             <div className="fixed inset-0 overflow-hidden bg-background">
                 <Board onReady={onReady} />
+                <PeerCursors />
                 <AnimatePresence>{isEmpty && !hasEditor && <EmptyState />}</AnimatePresence>
                 <TopBar actions={actions} onCommand={() => setPalette(true)} />
                 <ConnectionBadge onShare={() => setShare('collaborate')} onConnectAi={() => setShare('ai')} />
                 <DrawingSettings />
                 <Toolbar onImage={onImage} onDownload={onDownload} />
                 <ZoomControls onFit={onFit} />
-                <ConnectionStatus />
                 <NoticeToast />
                 <AiActivityToast onJump={(box) => handle.current?.zoomToFit(box)} />
                 <CommandPalette open={palette} onOpenChange={setPalette} actions={actions} onFit={onFit} />

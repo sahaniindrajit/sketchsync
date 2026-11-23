@@ -75,10 +75,10 @@ export function CommandPalette({ open, onOpenChange, actions, onFit }: { open: b
                         <Redo2 /> <span className="flex-1">Redo</span> <Kbd>{MOD}</Kbd><Kbd>⇧</Kbd><Kbd>Z</Kbd>
                     </Command.Item>
                     <Command.Item className={itemClass} onSelect={run(onFit)} keywords={['zoom', 'fit']}>
-                        <Maximize /> <span className="flex-1">Zoom to fit</span> <Kbd>⇧1</Kbd>
+                        <Maximize /> <span className="flex-1">Zoom to fit</span> <Kbd>⇧</Kbd><Kbd>1</Kbd>
                     </Command.Item>
                     <Command.Item className={itemClass} onSelect={run(toggleTheme)} keywords={['theme', 'dark', 'light']}>
-                        {theme === 'dark' ? <Sun /> : <Moon />} <span className="flex-1">{theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}</span> <Kbd>⇧D</Kbd>
+                        {theme === 'dark' ? <Sun /> : <Moon />} <span className="flex-1">{theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}</span> <Kbd>⇧</Kbd><Kbd>D</Kbd>
                     </Command.Item>
                     <Command.Item className={itemClass} onSelect={run(actions.onNewBoard)}>
                         <FilePlus2 /> <span className="flex-1">New board</span>

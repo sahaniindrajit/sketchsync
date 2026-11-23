@@ -4,6 +4,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { AnimatePresence, motion } from 'motion/react';
 import React, { useMemo, useState } from 'react';
 import { Input } from '@/components/ui/input';
+import { Slider } from '@/components/ui/slider';
 import { useBoard, type BoardState, type Tool } from '@/board/store';
 import type { Shape, ShapePatch } from '@/shared/protocol';
 import { cn } from '@/lib/utils';
@@ -84,7 +85,6 @@ function applyStyle(key: StyleKey, value: string | number) {
 
 const isTransparent = (c: string) => c === 'transparent';
 
-const opacities = [0.25, 0.5, 0.75, 1];
 
 function selection() {
     const state = useBoard.getState();
@@ -185,8 +185,8 @@ function Section({ title, value, children }: { title: string; value?: React.Reac
     return (
         <motion.div layout="position" className="space-y-2">
             <div className="flex items-center justify-between">
-                <h3 className="font-mono text-[10.5px] font-medium uppercase tracking-[0.06em] text-muted-foreground">{title}</h3>
-                {value !== undefined && <span className="font-mono text-[11px] tabular-nums text-muted-foreground">{value}</span>}
+                <h3 className="text-[11.5px] font-medium text-muted-foreground">{title}</h3>
+                {value !== undefined && <span className="text-[11.5px] tabular-nums text-muted-foreground">{value}</span>}
             </div>
             {children}
         </motion.div>
@@ -206,7 +206,7 @@ function Segmented<T extends number>({ options, value, onChange, group, render, 
                     className={cn('relative flex h-7 items-center justify-center rounded-md text-[11.5px] font-medium transition-colors', o === value ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}
                 >
                     {o === value && <motion.span layoutId={`seg-${group}`} className="absolute inset-0 rounded-md bg-card shadow-[0_1px_2px_hsl(0_0%_0%/0.12)]" transition={{ type: 'spring', visualDuration: 0.25, bounce: 0.15 }} />}
-                    <span className="relative">{render(o)}</span>
+                    <span className="relative z-10">{render(o)}</span>
                 </button>
             ))}
         </div>
@@ -366,14 +366,7 @@ export const DrawingSettings = React.memo(function DrawingSettings() {
                         {selectedCount > 0 && (
                             <>
                                 <Section title="Opacity" value={`${Math.round(selOpacity * 100)}%`}>
-                                    <Segmented
-                                        group="opacity"
-                                        options={opacities}
-                                        value={opacities.includes(selOpacity) ? selOpacity : -1}
-                                        onChange={setOpacity}
-                                        labelOf={(v) => `Opacity ${Math.round(v * 100)}%`}
-                                        render={(v) => <span className="block h-3 w-3 rounded-[3px] bg-current" style={{ opacity: v }} />}
-                                    />
+                                    <Slider value={[Math.round(selOpacity * 100)]} min={10} max={100} step={5} onValueChange={(v) => setOpacity(v[0] / 100)} aria-label="Opacity" />
                                 </Section>
                                 <Section title="Actions">
                                     <div className="grid grid-cols-4 gap-1">

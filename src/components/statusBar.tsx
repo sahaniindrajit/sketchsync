@@ -4,10 +4,11 @@ import { useEffect, useRef } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Kbd } from '@/components/ui/kbd';
 import { MOD } from '@/lib/platform';
-import { redoLast, undoLast, useBoard } from '@/board/store';
+import { animateViewport, redoLast, undoLast, useBoard } from '@/board/store';
 import { useHistory } from '@/board/history';
 import { cn } from '@/lib/utils';
 import { useAiActivityClock } from './aiActivity';
+import { PresenceStack } from './presence';
 
 const AI_ACTIVE_MS = 2500;
 
@@ -21,6 +22,7 @@ export function ConnectionBadge({ onShare, onConnectAi }: { onShare: () => void;
             animate={{ y: 0, opacity: 1 }}
             className="fixed right-[max(12px,env(safe-area-inset-right))] top-[max(12px,env(safe-area-inset-top))] z-30 flex items-center gap-2"
         >
+            <PresenceStack />
             <Tooltip>
                 <TooltipTrigger asChild>
                     <button
@@ -32,7 +34,7 @@ export function ConnectionBadge({ onShare, onConnectAi }: { onShare: () => void;
                             working && 'border-claude/40',
                         )}
                     >
-                        <span className={cn('relative flex h-5 w-5 items-center justify-center rounded-full transition-colors', working ? 'ai-ping bg-claude text-white' : 'bg-secondary text-claude')}>
+                        <span className={cn('relative flex h-5 w-5 items-center justify-center rounded-full transition-colors', working ? 'bg-claude text-white' : 'bg-secondary text-claude')}>
                             <Sparkles className="h-3 w-3" strokeWidth={2} />
                         </span>
                         <span className="hidden whitespace-nowrap sm:inline">Connect AI</span>
@@ -49,34 +51,6 @@ export function ConnectionBadge({ onShare, onConnectAi }: { onShare: () => void;
                 Share
             </button>
         </motion.div>
-    );
-}
-
-/** Bottom-right: realtime connection state. */
-export function ConnectionStatus() {
-    const connection = useBoard((s) => s.connection);
-    const error = useBoard((s) => s.connectionError);
-    const styles = {
-        online: ['bg-success', 'Live'],
-        connecting: ['bg-warning animate-pulse', 'Connecting…'],
-        offline: ['bg-muted-foreground', 'Offline · saved locally'],
-        error: ['bg-destructive', error ?? 'Connection error'],
-    } as const;
-    const [dot, text] = styles[connection];
-    return (
-        <div
-            className="chrome fixed bottom-[calc(max(12px,env(safe-area-inset-bottom))+64px)] right-[max(12px,env(safe-area-inset-right))] z-10 flex h-9 items-center gap-2 rounded-xl px-3 text-xs text-muted-foreground xl:bottom-[max(12px,env(safe-area-inset-bottom))]"
-            data-testid="connection-status"
-            data-status={connection}
-            role="status"
-            aria-live="polite"
-        >
-            <span className="relative flex h-2 w-2">
-                {connection === 'online' && <span className="absolute inset-0 animate-ping rounded-full bg-success opacity-40 [animation-duration:2.4s]" />}
-                <span className={cn('relative h-2 w-2 rounded-full', dot)} />
-            </span>
-            <span className="hidden max-w-[14rem] truncate sm:inline">{text}</span>
-        </div>
     );
 }
 
@@ -137,7 +111,7 @@ export function ZoomControls({ onFit }: { onFit: () => void }) {
         const scale = factor === null ? 1 : Math.min(8, Math.max(0.1, vp.scale * factor));
         const cx = window.innerWidth / 2;
         const cy = window.innerHeight / 2;
-        state.setViewport({ scale, x: cx - ((cx - vp.x) / vp.scale) * scale, y: cy - ((cy - vp.y) / vp.scale) * scale });
+        animateViewport({ scale, x: cx - ((cx - vp.x) / vp.scale) * scale, y: cy - ((cy - vp.y) / vp.scale) * scale }, 220);
     };
     return (
         <div className="chrome fixed bottom-[calc(max(12px,env(safe-area-inset-bottom))+64px)] left-[max(12px,env(safe-area-inset-left))] z-10 flex items-center gap-0.5 rounded-xl p-0.5 xl:bottom-[max(12px,env(safe-area-inset-bottom))]">
@@ -164,7 +138,7 @@ export function ZoomControls({ onFit }: { onFit: () => void }) {
                 <Plus className="h-4 w-4" strokeWidth={1.75} />
             </ZoomButton>
             <div className="mx-0.5 h-4 w-px bg-border" />
-            <ZoomButton label="Zoom to fit" hint={<Kbd>⇧1</Kbd>} onClick={onFit}>
+            <ZoomButton label="Zoom to fit" hint={<><Kbd>⇧</Kbd><Kbd>1</Kbd></>} onClick={onFit}>
                 <Maximize className="h-[15px] w-[15px]" strokeWidth={1.75} />
             </ZoomButton>
         </div>

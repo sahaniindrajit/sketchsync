@@ -181,7 +181,44 @@ export const EVENTS = {
     join: 'room:join',
     op: 'op',
     error: 'room:error',
+    /** Live cursors and names. Relayed to the room as-is; never stored. */
+    presence: 'presence',
+    presenceLeave: 'presence:leave',
 } as const;
+
+/** Client → server: where this person's pointer is on the board (board coordinates), or null when it left the canvas. */
+export interface PresenceUpdate {
+    roomId: string;
+    name: string;
+    color: string;
+    x: number | null;
+    y: number | null;
+}
+
+/** Server → other members of the room. `id` is the sender's client id. */
+export interface PresenceBroadcast {
+    id: string;
+    name: string;
+    color: string;
+    x: number | null;
+    y: number | null;
+}
+
+export const PRESENCE_NAME_MAX = 32;
+
+/** Validates a presence update; returns the cleaned value or null. */
+export function cleanPresence(p: unknown): Omit<PresenceUpdate, 'roomId'> | null {
+    if (!p || typeof p !== 'object') return null;
+    const v = p as Record<string, unknown>;
+    if (typeof v.name !== 'string' || typeof v.color !== 'string') return null;
+    const name = v.name.trim().slice(0, PRESENCE_NAME_MAX);
+    if (!name || !/^#[0-9a-fA-F]{6}$/.test(v.color)) return null;
+    const coord = (n: unknown) => (n === null ? null : typeof n === 'number' && Number.isFinite(n) && Math.abs(n) < 1e7 ? n : undefined);
+    const x = coord(v.x);
+    const y = coord(v.y);
+    if (x === undefined || y === undefined) return null;
+    return { name, color: v.color, x, y };
+}
 
 export interface JoinPayload {
     roomId: string;

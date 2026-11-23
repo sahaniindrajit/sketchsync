@@ -27,7 +27,7 @@ export default function NotFound() {
                     <div className="dot-grid relative aspect-[5/4] w-full overflow-hidden rounded-2xl border border-border bg-card">
                         <svg viewBox="0 0 500 400" className="absolute inset-0 h-full w-full text-foreground" aria-hidden>
                             <motion.path
-                                d="M60 300 C 120 200, 190 330, 250 230 S 380 120, 470 150 L 560 170"
+                                d="M60 300 C 120 200, 190 330, 250 230 S 360 140, 440 200"
                                 fill="none"
                                 stroke="currentColor"
                                 strokeWidth="3"
@@ -36,13 +36,17 @@ export default function NotFound() {
                                 animate={{ pathLength: 1 }}
                                 transition={{ duration: 1.4, ease: 'easeInOut' }}
                             />
+                            <motion.path d="M424 186 L442 202 L420 210" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" initial={{ opacity: reduced ? 1 : 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.35 }} />
+                            <text x="440" y="236" textAnchor="middle" fontSize="13" className="fill-muted-foreground" fontFamily="Inter, sans-serif">
+                                ?
+                            </text>
                             <rect x="40" y="280" width="40" height="40" rx="9" fill="none" stroke="currentColor" strokeWidth="2.5" />
                             <text x="60" y="345" textAnchor="middle" fontSize="13" className="fill-muted-foreground" fontFamily="Inter, sans-serif">
                                 you are here
                             </text>
                         </svg>
                         <motion.div
-                            className="absolute right-[6%] top-[30%] flex items-start gap-0.5"
+                            className="absolute right-[8%] top-[10%] flex items-start gap-0.5"
                             initial={reduced ? false : { opacity: 0, x: -30, y: 10 }}
                             animate={{ opacity: 1, x: 0, y: 0 }}
                             transition={{ delay: 1.2, type: 'spring', visualDuration: 0.6, bounce: 0.2 }}
@@ -50,7 +54,7 @@ export default function NotFound() {
                             <svg width="16" height="20" viewBox="0 0 16 22" aria-hidden>
                                 <path d="M0 0 L0 18 L4.8 13.5 L8 20.5 L11 19.2 L7.9 12.4 L14.3 12.2 Z" className="fill-claude" stroke="white" strokeWidth="1.4" />
                             </svg>
-                            <span className="mt-4 flex items-center gap-1.5 rounded-lg rounded-tl-sm bg-claude px-2.5 py-1.5 text-[12.5px] font-medium text-white shadow-chrome">
+                            <span className="mt-4 flex items-center gap-1.5 rounded-lg rounded-tl-sm bg-[#b4532f] px-2.5 py-1.5 text-[12.5px] font-medium text-white shadow-chrome">
                                 <Sparkles className="h-3 w-3" /> I couldn't find it either.
                             </span>
                         </motion.div>

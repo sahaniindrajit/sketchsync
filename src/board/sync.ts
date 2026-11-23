@@ -12,12 +12,14 @@ import {
     type Op,
     type OpAck,
     type OpBroadcast,
+    type PresenceBroadcast,
     type Shape,
 } from '@/shared/protocol';
 import { canMerge, isUrgent, mergeOps } from './opQueue';
 import { adoptOrphanPending, holdTabLock, loadBoard, saveBoard, savePending } from './persistence';
 import { setShapes, useBoard } from './store';
 import { inverseOf, recordOp } from './history';
+import { usePresence } from './presence';
 
 const FLUSH_INTERVAL_MS = 40;
 const SAVE_DEBOUNCE_MS = 400;
@@ -125,7 +127,51 @@ export class RoomSync {
             if (!this.stopped) useBoard.setState({ connection: 'offline' });
         });
         socket.on(EVENTS.op, (payload: OpBroadcast) => this.onServerOp(payload));
+        socket.on(EVENTS.presence, (p: PresenceBroadcast) => {
+            if (!p || typeof p.id !== 'string' || this.stopped) return;
+            usePresence.setState((s) => ({ peers: { ...s.peers, [p.id]: { ...p, at: Date.now() } } }));
+        });
+        socket.on(EVENTS.presenceLeave, (p: { id: string }) => {
+            usePresence.setState((s) => {
+                const peers = { ...s.peers };
+                delete peers[p?.id];
+                return { peers };
+            });
+        });
+        this.startPresence();
         if (socket.connected) this.join();
+    }
+
+    private presenceTimer: ReturnType<typeof setInterval> | null = null;
+    private lastPointer: { x: number | null; y: number | null } = { x: null, y: null };
+    private lastSentAt = 0;
+    private sendQueued: ReturnType<typeof setTimeout> | null = null;
+
+    /** Throttled pointer updates plus a heartbeat, so late joiners see everyone; quiet peers are dropped. */
+    private startPresence() {
+        const emit = () => {
+            this.sendQueued = null;
+            if (!this.joined || !this.socket) return;
+            this.lastSentAt = Date.now();
+            const { me } = usePresence.getState();
+            this.socket.emit(EVENTS.presence, { roomId: this.roomId, name: me.name, color: me.color, ...this.lastPointer });
+        };
+        usePresence.setState({
+            peers: {},
+            send: (x, y) => {
+                this.lastPointer = { x, y };
+                if (this.sendQueued) return;
+                this.sendQueued = setTimeout(emit, Math.max(0, 60 - (Date.now() - this.lastSentAt)));
+            },
+        });
+        this.presenceTimer = setInterval(() => {
+            if (Date.now() - this.lastSentAt > 4000) emit();
+            const cutoff = Date.now() - 15000;
+            const { peers } = usePresence.getState();
+            if (Object.values(peers).some((p) => p.at < cutoff)) {
+                usePresence.setState({ peers: Object.fromEntries(Object.entries(peers).filter(([, p]) => p.at >= cutoff)) });
+            }
+        }, 2000);
     }
 
     stop() {
@@ -133,7 +179,9 @@ export class RoomSync {
         this.stopped = true;
         this.saveNow(true);
         window.removeEventListener('pagehide', this.saveNow);
-        for (const timer of [this.flushTimer, this.saveTimer, this.joinTimer]) if (timer) clearTimeout(timer);
+        for (const timer of [this.flushTimer, this.saveTimer, this.joinTimer, this.sendQueued]) if (timer) clearTimeout(timer);
+        if (this.presenceTimer) clearInterval(this.presenceTimer);
+        usePresence.setState({ peers: {}, send: () => {} });
         this.socket?.removeAllListeners();
         this.socket?.disconnect();
         this.socket = null;

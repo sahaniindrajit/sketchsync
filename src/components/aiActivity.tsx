@@ -66,12 +66,12 @@ export function AiActivityToast({ onJump }: { onJump: (box: Box) => void }) {
                         </span>
                         <motion.span layout="position" className="flex items-center gap-1">
                             <b className="font-semibold text-foreground">{activity!.name}</b>
-                            <AnimatePresence mode="popLayout" initial={false}>
+                            <AnimatePresence mode="wait" initial={false}>
                                 <motion.span
                                     key={active ? 'on' : 'off'}
                                     initial={{ opacity: 0, y: 4 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -4 }}
+                                    exit={{ opacity: 0, y: -4, transition: { duration: 0.1 } }}
                                     className={cn(active && 'text-shimmer')}
                                 >
                                     {active ? 'is drawing…' : done}
@@ -81,7 +81,7 @@ export function AiActivityToast({ onJump }: { onJump: (box: Box) => void }) {
                         <motion.button
                             layout="position"
                             type="button"
-                            className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-transform active:scale-95"
+                            className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-foreground transition-[transform,background-color] hover:bg-secondary/70 active:scale-95"
                             onClick={() => {
                                 const box = aiActivityBounds();
                                 if (box) onJump(box);
@@ -97,9 +97,10 @@ export function AiActivityToast({ onJump }: { onJump: (box: Box) => void }) {
                                 aria-label={`Undo ${activity.name}'s changes`}
                                 title={`Undo ${activity.name}'s changes`}
                                 onClick={undoAiBatch}
-                                className="-ml-1 flex h-[30px] w-[30px] items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground active:scale-95"
+                                className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground active:scale-95"
                             >
                                 <Undo2 className="h-3.5 w-3.5" />
+                                Undo
                             </motion.button>
                         )}
                     </motion.div>

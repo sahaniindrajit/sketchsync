@@ -55,8 +55,8 @@ test('an AI client draws on the board and viewers see it live', async ({ page, b
         w.__board.getState().setViewport({ x: -5000, y: -5000, scale: 1 });
     });
     await viewer.getByTestId('ai-activity').getByRole('button', { name: 'Show' }).click();
-    const vp = await boardState<{ x: number; y: number }>(viewer, 'viewport');
-    expect(vp.x).toBeGreaterThan(-2000);
+    // The camera glides to the AI's shapes.
+    await expect.poll(async () => (await boardState<{ x: number; y: number }>(viewer, 'viewport')).x).toBeGreaterThan(-2000);
 
     await client.close();
 });

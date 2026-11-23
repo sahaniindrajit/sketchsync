@@ -79,7 +79,7 @@ export function ConnectAiPanel({ roomId }: { roomId: string }) {
                             onClick={() => setClient(c.id)}
                         >
                             {client === c.id && <motion.span layoutId="client-pill" className="absolute inset-0 rounded-full bg-primary" transition={{ type: 'spring', visualDuration: 0.25, bounce: 0.15 }} />}
-                            <span className="relative">{c.name}</span>
+                            <span className="relative z-10">{c.name}</span>
                         </button>
                     ))}
                 </div>

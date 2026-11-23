@@ -7,37 +7,92 @@ import type { EllipseShape, FreehandShape, ImageShape, LineShape, RectShape, Dia
 import { browserMeasurer } from './measure';
 import { fileToImageData, makeShape } from './shapeFactory';
 import { ShapeNode } from './shapes/ShapeNode';
-import { redoLast, undoLast, useBoard, type Tool } from './store';
+import { animateViewport, redoLast, undoLast, useBoard, type Tool } from './store';
 import { TextEditor } from './TextEditor';
-import { useAiActivityClock } from '@/components/aiActivity';
+import { usePresence } from './presence';
 import { useTheme } from '@/lib/theme';
 
-/** The AI's cursor: glides to each shape it touches, then fades out. */
-function AiCursor({ target, name, color, scale }: { target: { x: number; y: number } | null; name: string; color: string; scale: number }) {
+const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** The AI's cursor: visits each shape it touches in turn, then fades out. */
+function AiCursor({ targets, name, color, scale, batch }: { targets: { x: number; y: number }[]; name: string; color: string; scale: number; batch: string }) {
     const ref = useRef<Konva.Group>(null);
-    const visible = useRef(false);
+    const label = useRef<Konva.Text>(null);
+    const bg = useRef<Konva.Rect>(null);
+    const latest = useRef(targets);
+    latest.current = targets;
+    const index = useRef(0);
+    const moving = useRef(false);
+    const hide = useRef<ReturnType<typeof setTimeout>>();
+
+    useEffect(() => {
+        // Size the name tag to the rendered text.
+        if (label.current && bg.current) bg.current.width(label.current.width() + 18);
+    }, [name]);
+
+    useEffect(() => {
+        index.current = 0;
+    }, [batch]);
+
     useEffect(() => {
         const node = ref.current;
-        if (!node) return;
-        if (target) {
-            if (!visible.current) {
-                node.position({ x: target.x + 60 / scale, y: target.y + 40 / scale });
-                node.to({ opacity: 1, duration: 0.18 });
-                visible.current = true;
-            }
-            node.to({ x: target.x, y: target.y, duration: 0.45, easing: Konva.Easings.EaseInOut });
-        } else if (visible.current) {
-            visible.current = false;
-            node.to({ opacity: 0, duration: 0.35 });
+        if (!node || !targets.length) return;
+        const scheduleHide = () => {
+            clearTimeout(hide.current);
+            hide.current = setTimeout(() => node.to({ opacity: 0, duration: 0.35 }), 1800);
+        };
+        if (node.opacity() < 0.01 && index.current === 0) {
+            const first = targets[0];
+            node.position({ x: first.x + 60 / scale, y: first.y + 40 / scale });
         }
-    }, [target?.x, target?.y, scale]); // eslint-disable-line react-hooks/exhaustive-deps
+        node.to({ opacity: 1, duration: 0.15 });
+        if (reducedMotion()) {
+            const last = targets[targets.length - 1];
+            node.position(last);
+            index.current = targets.length;
+            scheduleHide();
+            return;
+        }
+        const next = () => {
+            const list = latest.current;
+            if (index.current >= list.length) {
+                moving.current = false;
+                scheduleHide();
+                return;
+            }
+            moving.current = true;
+            const t = list[index.current++];
+            node.to({ x: t.x, y: t.y, duration: index.current === 1 ? 0.4 : 0.22, easing: Konva.Easings.EaseInOut, onFinish: next });
+        };
+        if (!moving.current) next();
+    }, [targets.length, batch]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => () => clearTimeout(hide.current), []);
     const k = 1 / scale;
-    const width = name.length * 7 + 18;
     return (
         <Group ref={ref} listening={false} opacity={0} scaleX={k} scaleY={k}>
             <Path data="M0 0 L0 18 L4.8 13.5 L8 20.5 L11 19.2 L7.9 12.4 L14.3 12.2 Z" fill={color} stroke="#ffffff" strokeWidth={1.4} lineJoin="round" />
-            <Rect x={14} y={21} width={width} height={22} cornerRadius={7} fill={color} />
-            <Text x={23} y={26.5} text={name} fontSize={12.5} fontStyle="bold" fill="#ffffff" fontFamily="Inter, sans-serif" />
+            <Rect ref={bg} x={14} y={21} width={name.length * 7 + 18} height={22} cornerRadius={7} fill={color} />
+            <Text ref={label} x={23} y={26.5} text={name} fontSize={12.5} fontStyle="bold" fill="#ffffff" fontFamily="Inter, sans-serif" />
+        </Group>
+    );
+}
+
+/** A dashed outline around everything the AI just touched; fades with a tween, not re-renders. */
+function AiHalo({ box, color, scale, batch }: { box: Box | null; color: string; scale: number; batch: number }) {
+    const ref = useRef<Konva.Group>(null);
+    useEffect(() => {
+        const node = ref.current;
+        if (!node || !box) return;
+        node.opacity(1);
+        const t = setTimeout(() => node.to({ opacity: 0, duration: reducedMotion() ? 0 : 0.8 }), 1800);
+        return () => clearTimeout(t);
+    }, [batch, box?.x, box?.y, box?.width, box?.height]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!box) return null;
+    const k = 1 / scale;
+    return (
+        <Group ref={ref} listening={false}>
+            <Rect x={box.x - 10 * k} y={box.y - 10 * k} width={box.width + 20 * k} height={box.height + 20 * k} stroke={color} strokeWidth={1.5 * k} dash={[6 * k, 5 * k]} cornerRadius={8 * k} />
         </Group>
     );
 }
@@ -173,22 +228,25 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
         const target =
             box ?? unionBoxes(Array.from(state.shapes.values()).map((s) => getShapeBounds(s, (id) => state.shapes.get(id), browserMeasurer)));
         if (!target) {
-            state.setViewport({ x: 0, y: 0, scale: 1 });
+            animateViewport({ x: 0, y: 0, scale: 1 });
             return;
         }
-        // Keep content clear of the toolbar (top) and the style panel (left) on wide screens.
-        const padLeft = window.innerWidth >= 768 ? 280 : 24;
-        const padRight = window.innerWidth >= 768 ? 60 : 24;
+        // Keep content clear of the top bars, the dock (bottom) and the style panel (right) on wide screens.
+        const padLeft = window.innerWidth >= 768 ? 60 : 24;
+        const padRight = window.innerWidth >= 768 ? 280 : 24;
         const padTop = 90;
-        const padBottom = 80;
+        const padBottom = 100;
         const availW = Math.max(100, window.innerWidth - padLeft - padRight);
         const availH = Math.max(100, window.innerHeight - padTop - padBottom);
         const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.min(availW / Math.max(target.width, 1), availH / Math.max(target.height, 1), 1)));
-        state.setViewport({
-            scale,
-            x: padLeft + availW / 2 - (target.x + target.width / 2) * scale,
-            y: padTop + availH / 2 - (target.y + target.height / 2) * scale,
-        });
+        animateViewport(
+            {
+                scale,
+                x: padLeft + availW / 2 - (target.x + target.width / 2) * scale,
+                y: padTop + availH / 2 - (target.y + target.height / 2) * scale,
+            },
+            450,
+        );
     }, []);
 
     /* ---------- export / images ---------- */
@@ -529,7 +587,7 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
         const vp = state.viewport;
         if (e.evt.ctrlKey || e.evt.metaKey) {
             const pointer = stageRef.current?.getPointerPosition() ?? { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-            const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, vp.scale * Math.exp(-e.evt.deltaY * 0.01)));
+            const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, vp.scale * Math.exp(-Math.max(-30, Math.min(30, e.evt.deltaY)) * 0.01)));
             const bx = (pointer.x - vp.x) / vp.scale;
             const by = (pointer.y - vp.y) / vp.scale;
             state.setViewport({ scale, x: pointer.x - bx * scale, y: pointer.y - by * scale });
@@ -663,7 +721,7 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
                 const scale = e.key === '0' ? 1 : Math.min(MAX_SCALE, Math.max(MIN_SCALE, vp.scale * (e.key === '-' ? 1 / 1.2 : 1.2)));
                 const cx = window.innerWidth / 2;
                 const cy = window.innerHeight / 2;
-                state.setViewport({ scale, x: cx - ((cx - vp.x) / vp.scale) * scale, y: cy - ((cy - vp.y) / vp.scale) * scale });
+                animateViewport({ scale, x: cx - ((cx - vp.x) / vp.scale) * scale, y: cy - ((cy - vp.y) / vp.scale) * scale }, 200);
                 return;
             }
             if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === 'd') {
@@ -692,13 +750,13 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
     /* ---------- render ---------- */
 
     // Briefly outline shapes the AI just added or changed.
-    const { activity: aiActivity, now: aiNow } = useAiActivityClock(2500);
-    const aiShapes =
-        aiActivity && aiNow - aiActivity.at < 2500 ? aiActivity.shapeIds.map((id) => shapes.get(id)).filter((x): x is NonNullable<typeof x> => !!x) : [];
-    const aiBox = aiShapes.length ? unionBoxes(aiShapes.map((x) => getShapeBounds(x, (id) => shapes.get(id), browserMeasurer))) : null;
-    const lastAi = aiShapes[aiShapes.length - 1];
-    const lastBox = lastAi ? getShapeBounds(lastAi, (id) => shapes.get(id), browserMeasurer) : null;
-    const aiTarget = lastBox ? { x: lastBox.x + lastBox.width * 0.75, y: lastBox.y + lastBox.height * 0.8 } : null;
+    const aiActivity = useBoard((s) => s.aiActivity);
+    const aiShapes = aiActivity ? aiActivity.shapeIds.map((id) => shapes.get(id)).filter((x): x is NonNullable<typeof x> => !!x) : [];
+    const aiBoxes = aiShapes.map((x) => getShapeBounds(x, (id) => shapes.get(id), browserMeasurer));
+    const aiBox = aiBoxes.length ? unionBoxes(aiBoxes) : null;
+    const aiTargets = aiBoxes.map((b) => ({ x: b.x + b.width * 0.75, y: b.y + b.height * 0.8 }));
+    // A new batch starts when the AI's shape list is replaced rather than extended.
+    const aiBatch = aiActivity?.shapeIds[0] ?? '';
 
     const hiddenId = editing && (editing.kind === 'text' || editing.kind === 'math') ? editing.shapeId : null;
     const labelHiddenId = editing && editing.kind === 'label' ? editing.shapeId : null;
@@ -709,6 +767,13 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
             className="dot-grid absolute inset-0 overflow-hidden bg-background"
             style={{ cursor, touchAction: 'none', backgroundSize: `${gridStep(viewport.scale)}px ${gridStep(viewport.scale)}px`, backgroundPosition: `${viewport.x}px ${viewport.y}px` }}
             data-testid="board"
+            onPointerMove={(e) => {
+                if (e.pointerType === 'touch') return;
+                const r = e.currentTarget.getBoundingClientRect();
+                const vp = useBoard.getState().viewport;
+                usePresence.getState().send(Math.round((e.clientX - r.left - vp.x) / vp.scale), Math.round((e.clientY - r.top - vp.y) / vp.scale));
+            }}
+            onPointerLeave={() => usePresence.getState().send(null, null)}
         >
             <Stage
                 ref={stageRef}
@@ -754,21 +819,8 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
                         anchorCornerRadius={2}
                         boundBoxFunc={(oldBox, newBox) => (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5 ? oldBox : newBox)}
                     />
-                    {aiBox && (
-                        <Group listening={false} opacity={Math.max(0, 1 - (aiNow - aiActivity!.at) / 2500)}>
-                            <Rect
-                                x={aiBox.x - 10 / viewport.scale}
-                                y={aiBox.y - 10 / viewport.scale}
-                                width={aiBox.width + 20 / viewport.scale}
-                                height={aiBox.height + 20 / viewport.scale}
-                                stroke={AI_COLOR[theme]}
-                                strokeWidth={1.5 / viewport.scale}
-                                dash={[6 / viewport.scale, 5 / viewport.scale]}
-                                cornerRadius={8 / viewport.scale}
-                            />
-                        </Group>
-                    )}
-                    <AiCursor target={aiTarget} name={aiActivity?.name ?? ''} color={AI_COLOR[theme]} scale={viewport.scale} />
+                    <AiHalo box={aiBox} color={AI_COLOR[theme]} scale={viewport.scale} batch={aiActivity?.at ?? 0} />
+                    <AiCursor targets={aiTargets} name={aiActivity?.name ?? ''} color={AI_COLOR[theme]} scale={viewport.scale} batch={aiBatch} />
                     {marquee && (
                         <Rect
                             x={marquee.x}

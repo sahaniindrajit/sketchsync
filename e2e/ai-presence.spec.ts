@@ -46,13 +46,30 @@ test('selection actions: duplicate, reorder, opacity, delete', async ({ page }) 
 
     await page.getByLabel('Duplicate').click();
     await waitForShapes(page, (l) => l.length === 2 && l[1].x === l[0].x + 20);
-    await page.getByLabel('Opacity 50%').click();
-    await waitForShapes(page, (l) => l.some((s) => s.opacity === 0.5));
+    // Opacity is a slider: Home jumps to its minimum (10%).
+    await page.getByTestId('style-panel').getByRole('slider').focus();
+    await page.keyboard.press('Home');
+    await waitForShapes(page, (l) => l.some((s) => Math.abs(s.opacity - 0.1) < 1e-9));
     await page.getByLabel('Send to back').click();
     await waitForShapes(page, (l) => {
-        const copy = l.find((s) => s.opacity === 0.5)!;
+        const copy = l.find((s) => Math.abs(s.opacity - 0.1) < 1e-9)!;
         return l.every((s) => s === copy || s.z > copy.z);
     });
     await page.getByLabel('Delete', { exact: true }).click();
     await waitForShapes(page, (l) => l.length === 1);
+});
+
+test('people on the same board see each other’s cursors and avatars', async ({ page, browser }) => {
+    const roomId = await openNewBoard(page);
+    const other = await (await browser.newContext({ viewport: { width: 1400, height: 900 } })).newPage();
+    await other.goto(`/board/${roomId}`);
+    await other.getByTestId('connection-status').and(other.locator('[data-status="online"]')).waitFor();
+    const otherName = await other.evaluate(() => JSON.parse(localStorage.getItem('sketchsync:identity')!).name as string);
+    await other.mouse.move(700, 450);
+    await other.mouse.move(720, 470, { steps: 5 });
+    // The cursor carries the other person's name; their avatar joins the stack.
+    await expect(page.getByText(otherName, { exact: true })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByLabel(otherName, { exact: true })).toBeVisible();
+    await other.close();
+    await expect(page.getByLabel(otherName, { exact: true })).toBeHidden({ timeout: 5000 });
 });

@@ -67,7 +67,7 @@ test('dark mode toggles from the keyboard and the menu, and persists', async ({ 
     await page.reload();
     expect(await isDark()).toBe(!start);
     await page.getByLabel('Menu').click();
-    await page.getByRole('menuitem', { name: start ? 'Dark mode' : 'Light mode' }).click();
+    await page.getByRole('menuitemcheckbox', { name: start ? 'Dark mode' : 'Light mode' }).click();
     expect(await isDark()).toBe(start);
 });
 

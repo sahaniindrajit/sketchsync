@@ -20,15 +20,15 @@ const TOOLS = ['get_board', 'get_board_image', 'add_shapes', 'update_shapes', 'd
 function Beam({ d, delay, reduced }: { d: string; delay: number; reduced: boolean }) {
     return (
         <g>
-            <path d={d} fill="none" className="stroke-border" strokeWidth="1.5" />
+            <path d={d} fill="none" className="stroke-foreground/15" strokeWidth="1.5" strokeDasharray="3 4" />
             {!reduced && (
                 <motion.path
                     d={d}
                     fill="none"
                     stroke="url(#beam)"
-                    strokeWidth="2"
+                    strokeWidth="3"
                     strokeLinecap="round"
-                    initial={{ pathLength: 0.18, pathOffset: -0.2 }}
+                    initial={{ pathLength: 0.22, pathOffset: -0.25 }}
                     animate={{ pathOffset: 1.05 }}
                     transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', delay, repeatDelay: 0.6 }}
                 />
@@ -54,7 +54,7 @@ function Diagram() {
             {clients.map((_, i) => (
                 <Beam key={i} d={`M150 ${60 + i * 90} C 210 ${60 + i * 90}, 200 150, 250 150`} delay={i * 0.5} reduced={reduced} />
             ))}
-            <Beam d="M370 150 H 420" delay={1.2} reduced={reduced} />
+            <Beam d="M370 150 H 410" delay={1.2} reduced={reduced} />
             {clients.map((c, i) => (
                 <g key={c} transform={`translate(20 ${38 + i * 90})`}>
                     <rect width="130" height="44" rx="12" className="fill-card stroke-border" strokeWidth="1" />
@@ -73,16 +73,28 @@ function Diagram() {
                     /mcp/&lt;board&gt;
                 </text>
             </g>
-            <g transform="translate(420 92)">
-                <rect width="124" height="116" rx="14" className="fill-card stroke-border" strokeWidth="1" />
-                <rect x="18" y="26" width="46" height="26" rx="6" fill="none" stroke="currentColor" strokeWidth="1.6" />
-                <path d="M64 39 H 82" stroke="currentColor" strokeWidth="1.6" />
-                <path d="M93 28 L106 39 L93 50 L80 39 Z" fill="#a5d8ff" stroke="currentColor" strokeWidth="1.6" />
-                <rect x="18" y="68" width="88" height="26" rx="6" fill="#b2f2bb" stroke="currentColor" strokeWidth="1.6" />
+            <g transform="translate(410 70)">
+                <rect width="140" height="160" rx="16" className="fill-background stroke-border" strokeWidth="1" />
+                <text x="12" y="22" fontSize="10.5" className="fill-muted-foreground" fontFamily="Geist Mono Variable, monospace">
+                    your board
+                </text>
+                {[
+                    <rect key="a" x="18" y="40" width="50" height="28" rx="7" className="fill-card" stroke="currentColor" strokeWidth="1.6" />,
+                    <path key="b" d="M68 54 H 84" stroke="currentColor" strokeWidth="1.6" />,
+                    <path key="c" d="M100 40 L116 54 L100 68 L84 54 Z" fill="#a5d8ff" stroke="currentColor" strokeWidth="1.6" />,
+                    <path key="d" d="M100 68 V 92" stroke="currentColor" strokeWidth="1.6" />,
+                    <rect key="e" x="56" y="94" width="66" height="28" rx="7" fill="#b2f2bb" stroke="currentColor" strokeWidth="1.6" />,
+                    <rect key="f" x="18" y="134" width="60" height="6" rx="3" style={{ fill: 'hsl(var(--claude))' }} opacity="0.5" />,
+                ].map((el, i) =>
+                    reduced ? (
+                        el
+                    ) : (
+                        <motion.g key={i} animate={{ opacity: [0, 0, 1, 1, 0] }} transition={{ duration: 6, times: [0, 0.18 + i * 0.07, 0.24 + i * 0.07, 0.92, 1], repeat: Infinity, ease: 'easeOut' }}>
+                            {el}
+                        </motion.g>
+                    ),
+                )}
             </g>
-            <text x="482" y="232" textAnchor="middle" fontSize="12" className="fill-muted-foreground" fontFamily="Geist Mono Variable, monospace">
-                your board
-            </text>
         </svg>
     );
 }
@@ -140,7 +152,7 @@ export function McpSection() {
                                 className={cn('relative whitespace-nowrap rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors', tab === s.id ? 'text-white' : 'text-white/50 hover:text-white/80')}
                             >
                                 {tab === s.id && <motion.span layoutId="mcp-tab" className="absolute inset-0 rounded-lg bg-white/10" transition={{ type: 'spring', visualDuration: 0.25, bounce: 0.15 }} />}
-                                <span className="relative">{s.name}</span>
+                                <span className="relative z-10">{s.name}</span>
                             </button>
                         ))}
                     </div>
@@ -149,12 +161,12 @@ export function McpSection() {
                             <span>{setup.file}</span>
                             <CopyButton value={setup.code.replace(/\\\n\s+/g, '')} label="Copy snippet" dense className="text-white/60 hover:bg-white/10 hover:text-white" />
                         </div>
-                        <motion.pre key={setup.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="px-5 pb-6 pt-2 font-mono text-[12.5px] leading-[1.75]">
+                        <motion.pre key={setup.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="overflow-x-auto px-5 pb-6 pt-2 font-mono text-[12.5px] leading-[1.75] [scrollbar-width:thin]">
                             <code>
                                 {setup.code.split('\n').map((line, i) => (
                                     <div key={i} className="flex">
                                         <span className="mr-4 inline-block w-4 shrink-0 select-none text-right text-white/25">{i + 1}</span>
-                                        <span className="min-w-0 whitespace-pre-wrap break-all">{colorize(line)}</span>
+                                        <span className="whitespace-pre">{colorize(line)}</span>
                                     </div>
                                 ))}
                             </code>
@@ -212,11 +224,13 @@ function Session() {
                 <AnimatePresence initial={false}>
                     {SESSION.slice(0, n).map((step, i) => (
                         <motion.div key={step.tool} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2">
-                            {i === n - 1 && n <= SESSION.length ? (
-                                <span className="h-3.5 w-3.5 animate-spin rounded-full border-[1.5px] border-[#f0b49a] border-t-transparent" />
-                            ) : (
-                                <Check className="h-3.5 w-3.5 text-[#8ce99a]" strokeWidth={2.5} />
-                            )}
+                            <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+                                {i === n - 1 && n <= SESSION.length ? (
+                                    <span className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-[#f0b49a] border-t-transparent" />
+                                ) : (
+                                    <Check className="h-3.5 w-3.5 text-[#8ce99a]" strokeWidth={2.5} />
+                                )}
+                            </span>
                             <span className="text-[#f0b49a]">sketchsync</span>
                             <span className="text-white/80">{step.tool}</span>
                             <span className="truncate text-white/40">{step.out}</span>

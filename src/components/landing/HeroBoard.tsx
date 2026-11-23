@@ -17,7 +17,6 @@ const TIMELINE = [0, 1500, 2100, 2800, 3500, 4200, 4900, 6000, 7100, 7900];
 const FINAL = TIMELINE.length - 1;
 const HOLD_MS = 3400;
 const FADE_MS = 900;
-const BEAT_MS = 600;
 
 type Pt = [number, number];
 type Box = { x: number; y: number; w: number; h: number };
@@ -42,8 +41,8 @@ const LAYOUTS = {
         circle: 'M590 236 C 560 196, 400 192, 362 236 C 330 274, 372 318, 470 320 C 560 322, 608 296, 596 250',
         pointer: 'M470 330 C 472 350, 476 362, 480 372',
         note: [430, 400] as Pt,
-        ai: [[960, 110], [700, 160], [195, 120], [195, 265], [472, 265], [752, 265], [195, 430], [300, 470], [560, 150], [900, 110]] as Pt[],
-        me: [[250, 32], [300, 60], [330, 70], [360, 90], [840, 430], [800, 440], [700, 300], [590, 230], [470, 372], [560, 420]] as Pt[],
+        ai: [[960, 120], [700, 170], [272, 142], [262, 292], [552, 286], [842, 286], [270, 450], [320, 490], [600, 150], [900, 120]] as Pt[],
+        me: [[470, 90], [480, 100], [490, 110], [500, 120], [840, 430], [800, 440], [700, 300], [590, 230], [470, 372], [560, 420]] as Pt[],
     },
     tall: {
         viewBox: '0 0 400 560',
@@ -63,8 +62,8 @@ const LAYOUTS = {
         circle: 'M306 318 C 296 284, 116 282, 92 322 C 74 356, 128 378, 200 377 C 278 377, 318 360, 308 328',
         pointer: 'M318 372 C 330 420, 334 456, 330 486',
         note: [236, 514] as Pt,
-        ai: [[380, 40], [330, 50], [200, 96], [200, 214], [200, 332], [200, 424], [320, 470], [340, 500], [360, 120], [360, 100]] as Pt[],
-        me: [[40, 70], [40, 80], [50, 90], [60, 100], [40, 520], [30, 500], [330, 300], [300, 320], [320, 470], [250, 540]] as Pt[],
+        ai: [[380, 90], [330, 90], [276, 116], [270, 240], [282, 352], [292, 444], [320, 470], [340, 500], [360, 140], [360, 120]] as Pt[],
+        me: [[30, 150], [30, 160], [36, 170], [40, 180], [40, 520], [30, 500], [330, 300], [300, 320], [320, 470], [250, 540]] as Pt[],
     },
 };
 
@@ -152,28 +151,33 @@ export function HeroBoard({ className }: { className?: string }) {
     const [paused, setPaused] = useState(false);
     const [ran, setRan] = useState(false);
 
+    const stepRef = useRef(step);
+    stepRef.current = step;
     useEffect(() => {
-        if (reduced || paused) {
+        if (reduced) {
             setStep(FINAL);
             setTyped(PROMPT.length);
             return;
         }
         if (!inView || paused) return;
         let timers: ReturnType<typeof setTimeout>[] = [];
-        const loopMs = TIMELINE[FINAL] + HOLD_MS + FADE_MS + BEAT_MS;
-        const run = () => {
+        const holdEnd = TIMELINE[FINAL] + HOLD_MS;
+        // Runs the timeline from `from` (ms into the loop); the prompt types while the last drawing fades.
+        const run = (from: number) => {
             timers.forEach(clearTimeout);
             timers = [];
-            setTyped(0);
-            TIMELINE.forEach((ms, i) => timers.push(setTimeout(() => setStep(i), BEAT_MS + ms)));
-            for (let c = 1; c <= PROMPT.length; c++) timers.push(setTimeout(() => setTyped(c), BEAT_MS + 150 + c * 38));
-            timers.push(setTimeout(() => {
+            const at = (ms: number, fn: () => void) => ms >= from && timers.push(setTimeout(fn, ms - from));
+            if (from === 0) setTyped(0);
+            TIMELINE.forEach((ms, i) => at(ms, () => setStep(i)));
+            for (let c = 1; c <= PROMPT.length; c++) at(150 + c * 38, () => setTyped(c));
+            at(holdEnd, () => {
                 setRan(true);
                 setStep(-1);
-            }, BEAT_MS + TIMELINE[FINAL] + HOLD_MS));
-            timers.push(setTimeout(run, loopMs));
+            });
+            timers.push(setTimeout(() => run(0), holdEnd + FADE_MS - from));
         };
-        run();
+        const current = stepRef.current;
+        run(current > 0 ? TIMELINE[current] : 0);
         return () => timers.forEach(clearTimeout);
     }, [inView, reduced, paused]);
 
@@ -181,7 +185,7 @@ export function HeroBoard({ className }: { className?: string }) {
     const aiWorking = step >= 1 && step < FINAL - 1;
     const meDrawing = step >= 7 && step < FINAL;
     const fill = (c: string) => displayFill(c, theme);
-    const showPrompt = step >= 0;
+    const showPrompt = step >= 0 || typed > 0;
     const at = (path: Pt[]) => path[Math.max(0, step)];
     const L = compact ? LAYOUTS.tall : LAYOUTS.wide;
     const { cx, cy, rx, ry } = L.diamond;
@@ -247,7 +251,7 @@ export function HeroBoard({ className }: { className?: string }) {
                             className="pointer-events-none absolute left-3 top-3 flex items-center gap-2 rounded-xl border border-border/80 bg-[hsl(var(--chrome)/0.95)] py-1.5 pl-1.5 pr-1.5 text-[13px] shadow-chrome backdrop-blur sm:left-[168px] sm:top-4"
                         >
                             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1971c2] text-[11px] font-semibold text-white">M</span>
-                            <span className="min-w-[13ch] font-medium">
+                            <span className="w-[23ch] whitespace-nowrap font-medium">
                                 <span className="text-claude">{PROMPT.slice(0, Math.min(typed, 7))}</span>
                                 {PROMPT.slice(7, typed)}
                                 {typed < PROMPT.length && <span className="ml-px inline-block h-[1em] w-[1.5px] translate-y-[2px] animate-blink bg-foreground" />}

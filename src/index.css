@@ -1,3 +1,4 @@
+/* Canvas text keeps Inter so server-side renders (resvg + Inter) match what users see. */
 @font-face {
   font-family: 'Inter';
   src: url('/fonts/Inter-Regular.ttf') format('truetype');
@@ -15,66 +16,144 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Ink on paper, with one blue. Neutrals lean slightly cool; the only accent is the
+ * board's own selection blue. `--claude` is reserved for AI agents.
+ */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --background: 60 9% 98%;
+    --foreground: 225 8% 8%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 225 8% 8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem
+    --popover-foreground: 225 8% 8%;
+    --primary: 225 8% 8%;
+    --primary-foreground: 60 9% 98%;
+    --secondary: 225 10% 95%;
+    --secondary-foreground: 225 8% 8%;
+    --muted: 225 10% 95%;
+    --muted-foreground: 225 6% 44%;
+    --accent: 209 77% 43%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 225 10% 89%;
+    --input: 225 10% 86%;
+    --ring: 209 77% 43%;
+    --claude: 15 63% 60%;
+    --success: 134 53% 36%;
+    --warning: 33 100% 47%;
+    --chrome: 0 0% 100%;
+    --dot: 225 8% 8%;
+    --radius: 0.75rem;
   }
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%
+    --background: 228 9% 6%;
+    --foreground: 240 6% 92%;
+    --card: 228 9% 9%;
+    --card-foreground: 240 6% 92%;
+    --popover: 228 9% 10%;
+    --popover-foreground: 240 6% 92%;
+    --primary: 240 6% 93%;
+    --primary-foreground: 228 9% 7%;
+    --secondary: 228 7% 14%;
+    --secondary-foreground: 240 6% 92%;
+    --muted: 228 7% 14%;
+    --muted-foreground: 228 5% 60%;
+    --accent: 209 75% 60%;
+    --accent-foreground: 228 9% 6%;
+    --destructive: 0 84% 66%;
+    --destructive-foreground: 228 9% 6%;
+    --border: 228 7% 17%;
+    --input: 228 7% 22%;
+    --ring: 209 75% 60%;
+    --claude: 15 70% 66%;
+    --success: 134 55% 58%;
+    --warning: 33 100% 62%;
+    --chrome: 228 9% 11%;
+    --dot: 240 6% 92%;
   }
 }
+
 @layer base {
   * {
     @apply border-border;
   }
-  body {
-    @apply bg-background text-foreground;
+  html {
+    color-scheme: light;
   }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: hsl(var(--accent) / 0.22);
+  }
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /** Floating board chrome: one surface style for every panel. */
+  .chrome {
+    @apply border border-border/80 bg-[hsl(var(--chrome)/0.88)] shadow-chrome backdrop-blur-xl;
+  }
+  .kbd {
+    @apply inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[5px] border border-b-2 border-border bg-card px-1 font-mono text-[10.5px] font-medium leading-none text-muted-foreground;
+  }
+  .dot-grid {
+    background-image: radial-gradient(hsl(var(--dot) / 0.13) 1px, transparent 1.2px);
+    background-size: 20px 20px;
+  }
+  .text-shimmer {
+    background: linear-gradient(90deg, hsl(var(--muted-foreground)) 0%, hsl(var(--foreground)) 40%, hsl(var(--muted-foreground)) 80%);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 2.2s linear infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* A light that travels around a card's border (used once, on the closing CTA). */
+@property --angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes border-spin {
+  to {
+    --angle: 360deg;
+  }
+}
+.border-beam::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from var(--angle), transparent 0 62%, hsl(var(--claude)) 80%, hsl(var(--accent)) 92%, transparent 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: border-spin 7s linear infinite;
+  pointer-events: none;
 }

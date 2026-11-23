@@ -4,8 +4,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#fafaf9" />
+  <script>
+    // Apply the saved or system theme before first paint to avoid a flash.
+    try {
+      var t = localStorage.getItem('sketchsync:theme');
+      if (t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');
+    } catch (e) {}
+  </script>
   <meta name="description"
-    content="SketchSync - A collaborative online whiteboard for seamless brainstorming, diagramming, and creative collaboration." />
+    content="SketchSync is a realtime whiteboard your AI can draw on. Sketch with your team and connect Claude, Cursor or any MCP client to add diagrams, flowcharts and math live." />
   <meta name="keywords"
     content="whiteboard app, online whiteboard, collaborative drawing, diagram tool, brainstorming app, SketchSync" />
   <meta name="author" content="Indrajit sahani" />
@@ -33,7 +41,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
   <link rel="manifest" href="/site.webmanifest" />
 
-  <title>SketchSync - Online Collaborative Whiteboard</title>
+  <title>SketchSync · The whiteboard your AI can draw on</title>
 </head>
 
 <body>

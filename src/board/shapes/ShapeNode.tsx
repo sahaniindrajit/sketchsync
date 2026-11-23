@@ -5,6 +5,7 @@ import { arrowHeadSize, diamondPoints, isDotStroke, polylineMidpoint, resolveLin
 import { DEFAULTS, type LineShape, type Shape, type TextLabel } from '@/shared/protocol';
 import { FONT_FAMILY, measureTextWidth } from '../measure';
 import { MathNode } from './MathNode';
+import { displayInk, useTheme } from '@/lib/theme';
 
 export interface ShapeNodeProps {
     shape: Shape;
@@ -20,6 +21,17 @@ export interface ShapeNodeProps {
 }
 
 const fillOf = (fill: string) => (fill === 'transparent' ? 'rgba(0,0,0,0)' : fill);
+
+/** The shape as displayed: near-black ink is lifted on the dark board; stored colours never change. */
+function useInked<T extends Shape>(shape: T, theme: 'light' | 'dark'): T {
+    return React.useMemo(() => {
+        if (theme === 'light') return shape;
+        const strokeColor = displayInk(shape.strokeColor, theme);
+        const label = 'label' in shape && shape.label?.color ? { ...shape.label, color: displayInk(shape.label.color, theme) } : undefined;
+        if (strokeColor === shape.strokeColor && !label) return shape;
+        return { ...shape, strokeColor, ...(label ? { label } : {}) };
+    }, [shape, theme]);
+}
 
 /** Group origin for a shape; bound lines draw in absolute coordinates. */
 export function shapeOrigin(shape: Shape): { x: number; y: number } {
@@ -50,7 +62,9 @@ export const ShapeNode = React.memo(function ShapeNode(props: ShapeNodeProps) {
     );
 });
 
-function ShapeBody({ shape, startTarget, endTarget, hideLabel }: ShapeNodeProps) {
+function ShapeBody({ shape: stored, startTarget, endTarget, hideLabel }: ShapeNodeProps) {
+    const theme = useTheme((s) => s.resolved);
+    const shape = useInked(stored, theme);
     const getShape = (id: string) => (id === startTarget?.id ? startTarget : id === endTarget?.id ? endTarget : undefined);
     switch (shape.type) {
         case 'rect':
@@ -168,6 +182,7 @@ function BoxLabel({ label, width, height, fallbackColor, inset = 0 }: { label?: 
 }
 
 function LinearBody({ shape, getShape, hideLabel }: { shape: LineShape; getShape: (id: string) => Shape | undefined; hideLabel: boolean }) {
+    const dark = useTheme((s) => s.resolved) === 'dark';
     const bound = !!(shape.startBinding || shape.endBinding);
     const points = bound ? resolveLinePoints(shape, getShape) : shape.points;
     const head = arrowHeadSize(shape.strokeWidth);
@@ -189,7 +204,7 @@ function LinearBody({ shape, getShape, hideLabel }: { shape: LineShape; getShape
         const h = lines.length * fontSize * DEFAULTS.lineHeight + 4;
         labelNode = (
             <Group x={mid.x - w / 2} y={mid.y - h / 2} listening={false}>
-                <Rect width={w} height={h} fill="#ffffff" cornerRadius={3} />
+                <Rect width={w} height={h} fill={dark ? '#0e0f11' : '#ffffff'} cornerRadius={3} />
                 <Text
                     x={4}
                     y={2}

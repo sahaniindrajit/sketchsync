@@ -1,97 +1,148 @@
-import { Check, Copy, X } from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { Check, Copy, Link2, Sparkles, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { boardUrl } from '@/config';
+import { cn } from '@/lib/utils';
 
 export type ShareTab = 'collaborate' | 'ai';
 
-export function CopyField({ value, label, testId, dense, copyLabel = 'Copy' }: { value: string; label: string; testId?: string; dense?: boolean; copyLabel?: string }) {
+export function CopyButton({ value, label, dense, className }: { value: string; label: string; dense?: boolean; className?: string }) {
     const [copied, setCopied] = useState(false);
     useEffect(() => {
         if (!copied) return;
         const t = setTimeout(() => setCopied(false), 1500);
         return () => clearTimeout(t);
     }, [copied]);
-    const Icon = copied ? Check : Copy;
     return (
-        <div className={`flex gap-1.5 ${dense ? 'text-[11px]' : 'text-xs'}`}>
-            <Input
+        <button
+            type="button"
+            aria-label={copied ? 'Copied' : label}
+            title={copied ? 'Copied' : label}
+            onClick={async () => {
+                try {
+                    await navigator.clipboard.writeText(value);
+                    setCopied(true);
+                } catch {
+                    /* clipboard unavailable (e.g. insecure context) */
+                }
+            }}
+            className={cn(
+                'relative flex shrink-0 items-center justify-center gap-1.5 overflow-hidden rounded-md font-medium transition-[background-color,transform] active:scale-95',
+                dense ? 'h-8 w-8 text-muted-foreground hover:bg-secondary hover:text-foreground' : 'h-9 min-w-[84px] bg-primary px-3 text-[13px] text-primary-foreground',
+                copied && !dense && 'bg-success text-white',
+                copied && dense && 'text-success',
+                className,
+            )}
+        >
+            <AnimatePresence mode="popLayout" initial={false}>
+                <motion.span
+                    key={copied ? 'y' : 'n'}
+                    initial={{ opacity: 0, scale: 0.6, filter: 'blur(2px)' }}
+                    animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                    exit={{ opacity: 0, scale: 0.6, filter: 'blur(2px)' }}
+                    transition={{ type: 'spring', visualDuration: 0.2, bounce: 0.3 }}
+                    className="flex items-center gap-1.5"
+                >
+                    {copied ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> : <Copy className="h-3.5 w-3.5" />}
+                    {!dense && <span>{copied ? 'Copied' : 'Copy'}</span>}
+                </motion.span>
+            </AnimatePresence>
+        </button>
+    );
+}
+
+export function CopyField({ value, label, testId, dense, copyLabel = 'Copy', icon }: { value: string; label: string; testId?: string; dense?: boolean; copyLabel?: string; icon?: React.ReactNode }) {
+    return (
+        <div className={cn('flex items-center gap-1 rounded-lg border border-border bg-secondary/50 p-1 transition-colors focus-within:border-ring', dense && 'rounded-md')}>
+            {icon && <span className="pl-1.5 text-muted-foreground">{icon}</span>}
+            <input
                 value={value}
                 readOnly
                 aria-label={label}
-                className={`bg-gray-50 font-mono ${dense ? 'h-8 text-[11px]' : 'h-9 text-xs'}`}
+                className={cn('min-w-0 flex-1 bg-transparent px-1.5 font-mono text-foreground outline-none', dense ? 'h-7 text-[11px]' : 'h-8 text-xs')}
                 onFocus={(e) => e.target.select()}
                 data-testid={testId}
+                spellCheck={false}
             />
-            <Button
-                size={dense ? 'icon' : 'sm'}
-                variant={dense ? 'outline' : 'default'}
-                aria-label={copied ? 'Copied' : copyLabel}
-                title={copied ? 'Copied' : label}
-                onClick={async () => {
-                    try {
-                        await navigator.clipboard.writeText(value);
-                        setCopied(true);
-                    } catch {
-                        /* clipboard unavailable (e.g. insecure context) */
-                    }
-                }}
-                className={dense ? 'h-8 w-8 shrink-0 text-gray-600' : 'h-9 shrink-0 bg-indigo-500 px-3 hover:bg-indigo-600'}
-            >
-                <Icon className="h-3.5 w-3.5" />
-                {!dense && <span>{copied ? 'Copied' : 'Copy'}</span>}
-            </Button>
+            <CopyButton value={value} label={copyLabel} dense={dense} />
         </div>
     );
 }
 
+const tabs = [
+    ['collaborate', 'Collaborate', Link2],
+    ['ai', 'Connect your AI', Sparkles],
+] as const;
+
 export function ShareDialog({ roomId, tab, onTab, onClose, aiPanel }: { roomId: string; tab: ShareTab; onTab: (tab: ShareTab) => void; onClose: () => void; aiPanel?: React.ReactNode }) {
-    useEffect(() => {
-        const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, [onClose]);
-
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/30 p-4" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-            <Card className="max-h-[90vh] w-full max-w-md overflow-y-auto" role="dialog" aria-label="Share board">
-                <CardContent className="space-y-3 p-4">
-                    <div className="flex items-center gap-2">
-                        <div className="flex flex-1 gap-1 rounded-lg bg-gray-100 p-0.5 text-xs font-medium" role="tablist">
-                            {(
-                                [
-                                    ['collaborate', 'Collaborate'],
-                                    ['ai', 'Connect your AI'],
-                                ] as const
-                            ).map(([id, label]) => (
-                                <button
-                                    key={id}
-                                    role="tab"
-                                    aria-selected={tab === id}
-                                    className={`flex-1 rounded-md px-3 py-1.5 ${tab === id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
-                                    onClick={() => onTab(id)}
+        <Dialog.Root open onOpenChange={(o) => !o && onClose()}>
+            <Dialog.Portal forceMount>
+                <Dialog.Overlay asChild forceMount>
+                    <motion.div
+                        className="fixed inset-0 z-[60] bg-[hsl(225_15%_6%/0.28)] backdrop-blur-[3px]"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                    />
+                </Dialog.Overlay>
+                <div className="pointer-events-none fixed inset-0 z-[61] flex items-center justify-center p-4">
+                    <Dialog.Content asChild forceMount aria-describedby={undefined}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.96, y: 8 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.97, y: 4, transition: { duration: 0.14 } }}
+                            transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.18 }}
+                            className="pointer-events-auto max-h-[90vh] w-full max-w-[460px] overflow-y-auto rounded-2xl border border-border bg-popover text-popover-foreground shadow-lift outline-none"
+                        >
+                            <Dialog.Title className="sr-only">Share board</Dialog.Title>
+                            <div className="flex items-center gap-2 border-b border-border/70 p-2">
+                                <div className="flex flex-1 gap-0.5" role="tablist">
+                                    {tabs.map(([id, label, Icon]) => (
+                                        <button
+                                            key={id}
+                                            role="tab"
+                                            aria-selected={tab === id}
+                                            className={cn('relative flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors', tab === id ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}
+                                            onClick={() => onTab(id)}
+                                        >
+                                            {tab === id && <motion.span layoutId="share-tab" className="absolute inset-0 rounded-lg bg-secondary" transition={{ type: 'spring', visualDuration: 0.25, bounce: 0.15 }} />}
+                                            <Icon className={cn('relative h-3.5 w-3.5', id === 'ai' && 'text-claude')} />
+                                            <span className="relative">{label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <Dialog.Close aria-label="Close" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
+                                    <X className="h-4 w-4" />
+                                </Dialog.Close>
+                            </div>
+                            <AnimatePresence mode="wait" initial={false}>
+                                <motion.div
+                                    key={tab}
+                                    initial={{ opacity: 0, x: tab === 'ai' ? 12 : -12 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: tab === 'ai' ? -12 : 12, transition: { duration: 0.1 } }}
+                                    transition={{ type: 'spring', visualDuration: 0.22, bounce: 0 }}
+                                    className="p-5"
                                 >
-                                    {label}
-                                </button>
-                            ))}
-                        </div>
-                        <Button variant="ghost" size="icon" aria-label="Close" className="h-7 w-7 shrink-0 text-gray-400 hover:text-gray-700" onClick={onClose}>
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </div>
-
-                    {tab === 'collaborate' ? (
-                        <div className="space-y-3">
-                            <p className="text-sm text-gray-500">Anyone with this link can view and edit this board in real time.</p>
-                            <CopyField value={boardUrl(roomId)} label="Board link" testId="board-link" />
-                        </div>
-                    ) : (
-                        aiPanel
-                    )}
-                </CardContent>
-            </Card>
-        </div>
+                                    {tab === 'collaborate' ? (
+                                        <div className="space-y-4">
+                                            <div className="space-y-1">
+                                                <h2 className="text-[15px] font-semibold tracking-tightish">Invite people to this board</h2>
+                                                <p className="text-[13px] leading-relaxed text-muted-foreground">Anyone with the link can view and edit in real time. No account needed.</p>
+                                            </div>
+                                            <CopyField value={boardUrl(roomId)} label="Board link" testId="board-link" icon={<Link2 className="h-3.5 w-3.5" />} />
+                                        </div>
+                                    ) : (
+                                        aiPanel
+                                    )}
+                                </motion.div>
+                            </AnimatePresence>
+                        </motion.div>
+                    </Dialog.Content>
+                </div>
+            </Dialog.Portal>
+        </Dialog.Root>
     );
 }

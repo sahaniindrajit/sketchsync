@@ -1,6 +1,6 @@
 import type Konva from 'konva';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Layer, Rect, Stage, Transformer } from 'react-konva';
+import { Group, Layer, Rect, Stage, Text, Transformer } from 'react-konva';
 import { getShapeBounds, isBindable, isLinear, resolveLinePoints, unionBoxes, type Box } from '@/shared/geometry';
 import { sortByZ } from '@/shared/ops';
 import type { EllipseShape, FreehandShape, ImageShape, LineShape, RectShape, DiamondShape, ShapePatch } from '@/shared/protocol';
@@ -10,6 +10,18 @@ import { ShapeNode } from './shapes/ShapeNode';
 import { useBoard, type Tool } from './store';
 import { TextEditor } from './TextEditor';
 import { useAiActivityClock } from '@/components/aiActivity';
+import { useTheme } from '@/lib/theme';
+
+const SELECTION = { light: '#1971c2', dark: '#5aa5ea' } as const;
+const AI_COLOR = { light: '#d97757', dark: '#e58a6b' } as const;
+
+/** Dot-grid spacing in screen pixels, doubled when zoomed far out so it never turns to noise. */
+function gridStep(scale: number) {
+    let step = 20 * scale;
+    while (step < 12) step *= 2;
+    while (step > 48) step /= 2;
+    return step;
+}
 
 type Interaction =
     | { kind: 'create-box'; id: string; startX: number; startY: number }
@@ -68,6 +80,7 @@ function findShapeId(target: Konva.Node | null): string | null {
 export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) {
     const shapes = useBoard((s) => s.shapes);
     const tool = useBoard((s) => s.tool);
+    const theme = useTheme((s) => s.resolved);
     const viewport = useBoard((s) => s.viewport);
     const selectedIds = useBoard((s) => s.selectedIds);
     const editing = useBoard((s) => s.editing);
@@ -169,7 +182,7 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
         out.width = content.width;
         out.height = content.height;
         const ctx = out.getContext('2d')!;
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = useTheme.getState().resolved === 'dark' ? '#0e0f11' : '#ffffff';
         ctx.fillRect(0, 0, out.width, out.height);
         ctx.drawImage(content, 0, 0);
         return out.toDataURL('image/png');
@@ -617,6 +630,10 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
                 state.setViewport({ scale, x: cx - ((cx - vp.x) / vp.scale) * scale, y: cy - ((cy - vp.y) / vp.scale) * scale });
                 return;
             }
+            if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.toLowerCase() === 'd') {
+                useTheme.getState().toggle();
+                return;
+            }
             if (e.shiftKey && e.key === '!') {
                 zoomToFit();
                 return;
@@ -653,7 +670,11 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
     const cursor = panning ? 'grabbing' : spaceHeld ? 'grab' : TOOL_CURSORS[tool];
 
     return (
-        <div className="absolute inset-0 overflow-hidden bg-white" style={{ cursor, touchAction: 'none' }} data-testid="board">
+        <div
+            className="dot-grid absolute inset-0 overflow-hidden bg-background"
+            style={{ cursor, touchAction: 'none', backgroundSize: `${gridStep(viewport.scale)}px ${gridStep(viewport.scale)}px`, backgroundPosition: `${viewport.x}px ${viewport.y}px` }}
+            data-testid="board"
+        >
             <Stage
                 ref={stageRef}
                 width={size.width}
@@ -692,34 +713,44 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
                         flipEnabled={false}
                         ignoreStroke
                         anchorSize={9}
-                        borderStroke="#6366f1"
-                        anchorStroke="#6366f1"
+                        borderStroke={SELECTION[theme]}
+                        anchorStroke={SELECTION[theme]}
+                        anchorFill={theme === 'dark' ? '#16171b' : '#ffffff'}
                         anchorCornerRadius={2}
                         boundBoxFunc={(oldBox, newBox) => (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5 ? oldBox : newBox)}
                     />
-                    {aiHighlights.map(({ id, box }) => (
-                        <Rect
-                            key={`ai-${id}`}
-                            x={box.x - 6 / viewport.scale}
-                            y={box.y - 6 / viewport.scale}
-                            width={box.width + 12 / viewport.scale}
-                            height={box.height + 12 / viewport.scale}
-                            stroke="#818cf8"
-                            strokeWidth={2 / viewport.scale}
-                            dash={[6 / viewport.scale, 4 / viewport.scale]}
-                            cornerRadius={4 / viewport.scale}
-                            opacity={Math.max(0, 1 - (aiNow - aiActivity!.at) / 2500)}
-                            listening={false}
-                        />
-                    ))}
+                    {aiHighlights.map(({ id, box }, i) => {
+                        const k = 1 / viewport.scale;
+                        const opacity = Math.max(0, 1 - (aiNow - aiActivity!.at) / 2500);
+                        return (
+                            <Group key={`ai-${id}`} listening={false} opacity={opacity}>
+                                <Rect
+                                    x={box.x - 6 * k}
+                                    y={box.y - 6 * k}
+                                    width={box.width + 12 * k}
+                                    height={box.height + 12 * k}
+                                    stroke={AI_COLOR[theme]}
+                                    strokeWidth={1.5 * k}
+                                    dash={[5 * k, 4 * k]}
+                                    cornerRadius={6 * k}
+                                />
+                                {i === 0 && (
+                                    <Group x={box.x - 6 * k} y={box.y - 6 * k - 20 * k}>
+                                        <Rect width={(aiActivity!.name.length * 6.4 + 16) * k} height={17 * k} cornerRadius={[5 * k, 5 * k, 5 * k, 1 * k]} fill={AI_COLOR[theme]} />
+                                        <Text x={8 * k} y={3.5 * k} text={aiActivity!.name} fontSize={11 * k} fontStyle="bold" fill="#ffffff" fontFamily="Inter, sans-serif" />
+                                    </Group>
+                                )}
+                            </Group>
+                        );
+                    })}
                     {marquee && (
                         <Rect
                             x={marquee.x}
                             y={marquee.y}
                             width={marquee.width}
                             height={marquee.height}
-                            fill="rgba(99,102,241,0.08)"
-                            stroke="#6366f1"
+                            fill={theme === 'dark' ? 'rgba(90,165,234,0.10)' : 'rgba(25,113,194,0.07)'}
+                            stroke={SELECTION[theme]}
                             strokeWidth={1 / viewport.scale}
                             listening={false}
                         />

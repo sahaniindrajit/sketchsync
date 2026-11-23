@@ -4,11 +4,16 @@ import { Board, type BoardHandle } from '@/board/Board';
 import { createBoard, getLastBoardId } from '@/board/persistence';
 import { resetBoardState, useBoard } from '@/board/store';
 import { RoomSync } from '@/board/sync';
+import { AnimatePresence, motion } from 'motion/react';
 import { DrawingSettings } from '@/components/drawingSetting';
 import { ShareDialog, type ShareTab } from '@/components/shareDialog';
 import { AiActivityToast } from '@/components/aiActivity';
+import { CommandPalette } from '@/components/commandPalette';
 import { ConnectAiPanel } from '@/components/connectAi';
-import { ConnectionBadge, NoticeToast, ZoomControls } from '@/components/statusBar';
+import { LogoMark } from '@/components/logo';
+import { ConnectionBadge, ConnectionStatus, NoticeToast, ZoomControls } from '@/components/statusBar';
+import { Kbd } from '@/components/ui/kbd';
+import { MOD } from '@/lib/platform';
 import { Toolbar } from '@/components/toolBar';
 import { TopBar } from '@/components/topBar';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -48,6 +53,7 @@ function BoardScreen({ roomId }: { roomId: string }) {
     const navigate = useNavigate();
     const handle = useRef<BoardHandle | null>(null);
     const [share, setShare] = useState<ShareTab | null>(null);
+    const [palette, setPalette] = useState(false);
     const isEmpty = useBoard((s) => s.shapes.size === 0);
     const hasEditor = useBoard((s) => s.editing !== null);
 
@@ -59,10 +65,21 @@ function BoardScreen({ roomId }: { roomId: string }) {
     }, [roomId]);
 
     useEffect(() => {
-        document.title = 'SketchSync - Board';
+        document.title = 'Board · SketchSync';
         return () => {
-            document.title = 'SketchSync - Online Collaborative Whiteboard';
+            document.title = 'SketchSync · The whiteboard your AI can draw on';
         };
+    }, []);
+
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                setPalette((v) => !v);
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
     }, []);
 
     const onReady = useCallback((h: BoardHandle) => {
@@ -78,6 +95,8 @@ function BoardScreen({ roomId }: { roomId: string }) {
     const onImage = useCallback((file: File) => {
         void handle.current?.addImage(file);
     }, []);
+
+    const onFit = useCallback(() => handle.current?.zoomToFit(), []);
 
     const actions = useMemo(
         () => ({
@@ -96,35 +115,71 @@ function BoardScreen({ roomId }: { roomId: string }) {
 
     return (
         <TooltipProvider>
-            <div className="fixed inset-0 overflow-hidden">
+            <div className="fixed inset-0 overflow-hidden bg-background">
                 <Board onReady={onReady} />
-                <TopBar actions={actions} />
-                <Toolbar onImage={onImage} onDownload={onDownload} />
+                <AnimatePresence>{isEmpty && !hasEditor && <EmptyState />}</AnimatePresence>
+                <TopBar actions={actions} onCommand={() => setPalette(true)} />
                 <ConnectionBadge onShare={() => setShare('collaborate')} onConnectAi={() => setShare('ai')} />
-                <div className="absolute left-4 top-1/2 z-10 -translate-y-1/2">
-                    <DrawingSettings />
-                </div>
-                <ZoomControls onFit={() => handle.current?.zoomToFit()} />
+                <DrawingSettings />
+                <Toolbar onImage={onImage} onDownload={onDownload} />
+                <ZoomControls onFit={onFit} />
+                <ConnectionStatus />
                 <NoticeToast />
                 <AiActivityToast onJump={(box) => handle.current?.zoomToFit(box)} />
-                {isEmpty && !hasEditor && (
-                    <div className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center text-gray-400">
-                        <div className="text-center">
-                            <div className="mb-2 text-2xl font-bold">Welcome to SketchSync</div>
-                            <div className="text-sm">Pick a tool &amp; start drawing, or share the board to collaborate.</div>
-                        </div>
-                    </div>
-                )}
-                {share && (
-                    <ShareDialog
-                        roomId={roomId}
-                        tab={share}
-                        onTab={setShare}
-                        onClose={() => setShare(null)}
-                        aiPanel={<ConnectAiPanel roomId={roomId} />}
-                    />
-                )}
+                <CommandPalette open={palette} onOpenChange={setPalette} actions={actions} onFit={onFit} />
+                <AnimatePresence>
+                    {share && (
+                        <ShareDialog
+                            key="share"
+                            roomId={roomId}
+                            tab={share}
+                            onTab={setShare}
+                            onClose={() => setShare(null)}
+                            aiPanel={<ConnectAiPanel roomId={roomId} />}
+                        />
+                    )}
+                </AnimatePresence>
             </div>
         </TooltipProvider>
+    );
+}
+
+const hints = [
+    ['P', 'Draw'],
+    ['R', 'Shapes'],
+    ['T', 'Text'],
+    ['M', 'Math'],
+] as const;
+
+function EmptyState() {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 8, filter: 'blur(4px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: -6, filter: 'blur(4px)', transition: { duration: 0.2 } }}
+            transition={{ type: 'spring', visualDuration: 0.5, bounce: 0.1, delay: 0.15 }}
+            className="pointer-events-none absolute inset-0 z-[5] flex items-center justify-center px-6"
+        >
+            <div className="flex max-w-sm flex-col items-center text-center">
+                <LogoMark className="mb-5 h-10 w-10 opacity-90" />
+                <h1 className="text-[22px] font-semibold tracking-tightish text-foreground">Welcome to SketchSync</h1>
+                <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+                    Pick a tool and start drawing. Share the link to sketch together, or connect an AI to draw with you.
+                </p>
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[12px] text-muted-foreground">
+                    {hints.map(([k, label]) => (
+                        <span key={k} className="flex items-center gap-1.5">
+                            <Kbd>{k}</Kbd>
+                            {label}
+                        </span>
+                    ))}
+                    <span className="hidden items-center gap-1.5 sm:flex">
+                        <Kbd>{MOD}</Kbd>
+                        <Kbd>K</Kbd>
+                        Commands
+                    </span>
+                </div>
+            </div>
+        </motion.div>
     );
 }

@@ -1,39 +1,137 @@
-import { Bot, Maximize, Minus, Plus, Share2 } from 'lucide-react';
-import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import { Maximize, Minus, Plus, Share2, Sparkles } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { useEffect, useRef } from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Kbd } from '@/components/ui/kbd';
+import { MOD } from '@/lib/platform';
 import { useBoard } from '@/board/store';
+import { cn } from '@/lib/utils';
+import { useAiActivityClock } from './aiActivity';
 
+const AI_ACTIVE_MS = 2500;
+
+/** Top-right cluster: AI agent status and Share. */
 export function ConnectionBadge({ onShare, onConnectAi }: { onShare: () => void; onConnectAi: () => void }) {
+    const { activity, now } = useAiActivityClock(AI_ACTIVE_MS);
+    const working = !!activity && now - activity.at < AI_ACTIVE_MS;
+    return (
+        <motion.div
+            initial={{ y: -12, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="fixed right-[max(12px,env(safe-area-inset-right))] top-[max(12px,env(safe-area-inset-top))] z-30 flex items-center gap-2"
+        >
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <button
+                        type="button"
+                        onClick={onConnectAi}
+                        aria-label="Connect your AI"
+                        className={cn(
+                            'chrome flex h-11 items-center gap-2 rounded-xl pl-2.5 pr-3 text-[13px] text-muted-foreground transition-colors hover:text-foreground',
+                            working && 'border-claude/40',
+                        )}
+                    >
+                        <span className={cn('relative flex h-5 w-5 items-center justify-center rounded-full', working ? 'animate-ping2 bg-claude text-white' : 'bg-secondary text-claude')}>
+                            <Sparkles className="h-3 w-3" strokeWidth={2} />
+                        </span>
+                        <AnimatePresence mode="popLayout" initial={false}>
+                            <motion.span
+                                key={working ? 'working' : 'idle'}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -6 }}
+                                className={cn('hidden whitespace-nowrap sm:inline', working && 'text-shimmer font-medium')}
+                            >
+                                {working ? `${activity!.name} is drawing` : 'Connect AI'}
+                            </motion.span>
+                        </AnimatePresence>
+                    </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Let Claude, Cursor or any MCP client draw here</TooltipContent>
+            </Tooltip>
+            <button
+                type="button"
+                onClick={onShare}
+                className="relative flex h-11 items-center gap-2 overflow-hidden rounded-xl bg-primary px-4 text-[13px] font-medium text-primary-foreground shadow-chrome transition-transform active:scale-[0.97]"
+            >
+                <Share2 className="h-4 w-4" strokeWidth={2} />
+                Share
+            </button>
+        </motion.div>
+    );
+}
+
+/** Bottom-right: realtime connection state. */
+export function ConnectionStatus() {
     const connection = useBoard((s) => s.connection);
     const error = useBoard((s) => s.connectionError);
     const styles = {
-        online: ['bg-emerald-500', 'Live'],
-        connecting: ['bg-amber-400 animate-pulse', 'Connecting…'],
-        offline: ['bg-gray-400', 'Offline · saved locally'],
-        error: ['bg-red-500', error ?? 'Connection error'],
+        online: ['bg-success', 'Live'],
+        connecting: ['bg-warning animate-pulse', 'Connecting…'],
+        offline: ['bg-muted-foreground', 'Offline · saved locally'],
+        error: ['bg-destructive', error ?? 'Connection error'],
     } as const;
     const [dot, text] = styles[connection];
     return (
-        <div className="fixed right-4 top-4 z-10 flex items-center gap-2">
-            <div className="flex items-center gap-1 rounded-full border bg-white p-1 shadow-sm">
-                <span className="hidden items-center gap-2 pl-2 pr-1 text-xs text-gray-600 sm:flex" data-testid="connection-status" data-status={connection}>
-                    <span className={`h-2 w-2 rounded-full ${dot}`} />
-                    <span className="max-w-[14rem] truncate">{text}</span>
-                </span>
-                <button
-                    className="flex h-7 items-center gap-1 rounded-full px-2 text-xs text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                    onClick={onConnectAi}
-                    aria-label="Connect your AI"
-                >
-                    <Bot className="h-4 w-4" />
-                    <span className="hidden sm:inline">AI</span>
-                </button>
-            </div>
-            <Button size="sm" className="h-9 rounded-full bg-indigo-500 px-4 hover:bg-indigo-600" onClick={onShare}>
-                <Share2 className="mr-1 h-4 w-4" />
-                Share
-            </Button>
+        <div
+            className="chrome fixed bottom-[calc(max(12px,env(safe-area-inset-bottom))+64px)] right-[max(12px,env(safe-area-inset-right))] z-10 flex h-9 items-center gap-2 rounded-xl px-3 text-xs text-muted-foreground lg:bottom-[max(12px,env(safe-area-inset-bottom))]"
+            data-testid="connection-status"
+            data-status={connection}
+            role="status"
+            aria-live="polite"
+        >
+            <span className="relative flex h-2 w-2">
+                {connection === 'online' && <span className="absolute inset-0 animate-ping rounded-full bg-success opacity-40 [animation-duration:2.4s]" />}
+                <span className={cn('relative h-2 w-2 rounded-full', dot)} />
+            </span>
+            <span className="hidden max-w-[14rem] truncate sm:inline">{text}</span>
         </div>
+    );
+}
+
+function RollingNumber({ value, suffix }: { value: number; suffix?: string }) {
+    const prev = useRef(value);
+    const dir = value >= prev.current ? 1 : -1;
+    useEffect(() => {
+        prev.current = value;
+    }, [value]);
+    return (
+        <span className="relative inline-flex overflow-hidden tabular-nums">
+            <AnimatePresence mode="popLayout" initial={false} custom={dir}>
+                <motion.span
+                    key={value}
+                    custom={dir}
+                    initial={{ y: `${dir * 100}%`, opacity: 0 }}
+                    animate={{ y: '0%', opacity: 1 }}
+                    exit={{ y: `${dir * -100}%`, opacity: 0 }}
+                    transition={{ type: 'spring', visualDuration: 0.22, bounce: 0.1 }}
+                >
+                    {value}
+                    {suffix}
+                </motion.span>
+            </AnimatePresence>
+        </span>
+    );
+}
+
+function ZoomButton({ label, hint, onClick, children }: { label: string; hint?: React.ReactNode; onClick: () => void; children: React.ReactNode }) {
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    type="button"
+                    aria-label={label}
+                    onClick={onClick}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground active:scale-95"
+                >
+                    {children}
+                </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+                {label}
+                {hint}
+            </TooltipContent>
+        </Tooltip>
     );
 }
 
@@ -48,19 +146,26 @@ export function ZoomControls({ onFit }: { onFit: () => void }) {
         state.setViewport({ scale, x: cx - ((cx - vp.x) / vp.scale) * scale, y: cy - ((cy - vp.y) / vp.scale) * scale });
     };
     return (
-        <div className="fixed bottom-4 left-4 z-10 flex items-center gap-0.5 rounded-lg border bg-white p-1 shadow-sm">
-            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Zoom out" onClick={() => zoom(1 / 1.2)}>
-                <Minus className="h-4 w-4" />
-            </Button>
-            <button className="w-12 text-center text-xs tabular-nums text-gray-600 hover:text-gray-900" onClick={() => zoom(null)} title="Reset zoom" data-testid="zoom-level">
-                {Math.round(viewport.scale * 100)}%
+        <div className="chrome fixed bottom-[calc(max(12px,env(safe-area-inset-bottom))+64px)] left-[max(12px,env(safe-area-inset-left))] z-10 flex items-center gap-0.5 rounded-xl p-0.5 lg:bottom-[max(12px,env(safe-area-inset-bottom))]">
+            <ZoomButton label="Zoom out" hint={<><Kbd>{MOD}</Kbd><Kbd>−</Kbd></>} onClick={() => zoom(1 / 1.2)}>
+                <Minus className="h-4 w-4" strokeWidth={1.75} />
+            </ZoomButton>
+            <button
+                type="button"
+                className="h-8 min-w-[52px] rounded-lg px-1 text-center font-mono text-xs text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                onClick={() => zoom(null)}
+                title="Reset zoom"
+                data-testid="zoom-level"
+            >
+                <RollingNumber value={Math.round(viewport.scale * 100)} suffix="%" />
             </button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Zoom in" onClick={() => zoom(1.2)}>
-                <Plus className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Zoom to fit" onClick={onFit}>
-                <Maximize className="h-4 w-4" />
-            </Button>
+            <ZoomButton label="Zoom in" hint={<><Kbd>{MOD}</Kbd><Kbd>+</Kbd></>} onClick={() => zoom(1.2)}>
+                <Plus className="h-4 w-4" strokeWidth={1.75} />
+            </ZoomButton>
+            <div className="mx-0.5 h-4 w-px bg-border" />
+            <ZoomButton label="Zoom to fit" hint={<Kbd>⇧1</Kbd>} onClick={onFit}>
+                <Maximize className="h-[15px] w-[15px]" strokeWidth={1.75} />
+            </ZoomButton>
         </div>
     );
 }
@@ -74,13 +179,25 @@ export function NoticeToast() {
         }, 4000);
         return () => clearTimeout(t);
     }, [notice]);
-    if (!notice) return null;
     return (
-        <div
-            role="status"
-            className={`fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-lg px-4 py-2 text-sm shadow-lg ${notice.kind === 'error' ? 'bg-red-600 text-white' : 'bg-gray-900 text-white'}`}
-        >
-            {notice.text}
+        <div className="pointer-events-none fixed left-1/2 top-[calc(max(12px,env(safe-area-inset-top))+56px)] z-50 -translate-x-1/2 lg:top-[max(16px,env(safe-area-inset-top))]">
+            <AnimatePresence>
+                {notice && (
+                    <motion.div
+                        key={notice.at}
+                        role="status"
+                        initial={{ opacity: 0, y: -10, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -6, scale: 0.98, transition: { duration: 0.14 } }}
+                        className={cn(
+                            'pointer-events-auto flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-xl px-3.5 py-2 text-[13px] shadow-lift',
+                            notice.kind === 'error' ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground',
+                        )}
+                    >
+                        {notice.text}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

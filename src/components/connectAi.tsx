@@ -1,21 +1,28 @@
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, Sparkles } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { mcpUrl } from '@/config';
+import { cn } from '@/lib/utils';
 import { CopyField } from './shareDialog';
+
+const Code = ({ children }: { children: React.ReactNode }) => <code className="rounded bg-secondary px-1 py-px font-mono text-[11px] text-foreground">{children}</code>;
 
 const CLIENTS = [
     {
         id: 'claude',
         name: 'Claude',
         steps: () => (
-            <ol className="list-decimal space-y-0.5 pl-4">
-                <li>
-                    Open <b>Settings → Connectors</b> (web or desktop).
-                </li>
-                <li>
-                    <b>Add custom connector</b>, name it “SketchSync”, paste the URL above.
-                </li>
-                <li>Enable it in a chat and ask Claude to draw.</li>
+            <ol className="space-y-1.5">
+                {[
+                    <>Open <b className="font-medium text-foreground">Settings → Connectors</b> (web or desktop).</>,
+                    <><b className="font-medium text-foreground">Add custom connector</b>, name it “SketchSync”, paste the URL above.</>,
+                    <>Enable it in a chat and ask Claude to draw.</>,
+                ].map((step, i) => (
+                    <li key={i} className="flex gap-2.5">
+                        <span className="mt-px flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-secondary font-mono text-[10px] text-muted-foreground">{i + 1}</span>
+                        <span>{step}</span>
+                    </li>
+                ))}
             </ol>
         ),
     },
@@ -28,10 +35,9 @@ const CLIENTS = [
         id: 'cursor',
         name: 'Cursor / VS Code',
         steps: (url: string) => (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
                 <p>
-                    Add to <code className="rounded bg-gray-100 px-1">.cursor/mcp.json</code>, or <code className="rounded bg-gray-100 px-1">.vscode/mcp.json</code> under a{' '}
-                    <code className="rounded bg-gray-100 px-1">servers</code> key:
+                    Add to <Code>.cursor/mcp.json</Code>, or <Code>.vscode/mcp.json</Code> under a <Code>servers</Code> key:
                 </p>
                 <CopyField value={JSON.stringify({ mcpServers: { sketchsync: { url } } })} label="MCP JSON config" copyLabel="Copy config" dense />
             </div>
@@ -42,7 +48,7 @@ const CLIENTS = [
         name: 'Other',
         steps: () => (
             <p>
-                Any client that supports remote <b>Streamable HTTP</b> MCP servers works — add the URL above as a remote server.
+                Any client that supports remote <b className="font-medium text-foreground">Streamable HTTP</b> MCP servers works. Add the URL above as a remote server.
             </p>
         ),
     },
@@ -54,32 +60,48 @@ export function ConnectAiPanel({ roomId }: { roomId: string }) {
     const selected = CLIENTS.find((c) => c.id === client)!;
 
     return (
-        <div className="space-y-3" data-testid="connect-ai">
-            <p className="text-sm text-gray-500">Let Claude or any MCP client read and draw on this board, live.</p>
+        <div className="space-y-4" data-testid="connect-ai">
+            <div className="space-y-1">
+                <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tightish">Let an AI draw on this board</h2>
+                <p className="text-[13px] leading-relaxed text-muted-foreground">Claude, Cursor or any MCP client can read and edit this board live, next to you.</p>
+            </div>
 
-            <CopyField value={url} label="MCP server URL" testId="mcp-url" />
+            <CopyField value={url} label="MCP server URL" testId="mcp-url" icon={<Sparkles className="h-3.5 w-3.5 text-claude" />} />
 
-            <div className="space-y-2">
-                <div className="flex flex-wrap gap-1.5">
+            <div className="space-y-3">
+                <div className="flex flex-wrap gap-1">
                     {CLIENTS.map((c) => (
                         <button
                             key={c.id}
-                            className={`rounded-full px-2.5 py-1 text-xs transition-colors ${
-                                client === c.id ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-gray-100'
-                            }`}
+                            type="button"
+                            aria-pressed={client === c.id}
+                            className={cn('relative rounded-full px-3 py-1 text-xs font-medium transition-colors', client === c.id ? 'text-accent-foreground' : 'text-muted-foreground hover:bg-secondary hover:text-foreground')}
                             onClick={() => setClient(c.id)}
                         >
-                            {c.name}
+                            {client === c.id && <motion.span layoutId="client-pill" className="absolute inset-0 rounded-full bg-accent" transition={{ type: 'spring', visualDuration: 0.25, bounce: 0.15 }} />}
+                            <span className="relative">{c.name}</span>
                         </button>
                     ))}
                 </div>
-                <div className="text-xs leading-relaxed text-gray-600">{selected.steps(url)}</div>
+                <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                        key={client}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4, transition: { duration: 0.08 } }}
+                        className="min-h-[72px] text-[12.5px] leading-relaxed text-muted-foreground"
+                    >
+                        {selected.steps(url)}
+                    </motion.div>
+                </AnimatePresence>
             </div>
 
-            <div className="space-y-1 border-t pt-3 text-xs text-gray-400">
-                <p>Then ask: “Draw a flowchart of our signup flow.”</p>
+            <div className="space-y-2 rounded-xl bg-secondary/60 p-3 text-xs text-muted-foreground">
+                <p>
+                    Then try: <span className="text-foreground">“Draw a flowchart of our signup flow.”</span>
+                </p>
                 <p className="flex items-start gap-1.5">
-                    <ShieldAlert className="mt-px h-3.5 w-3.5 shrink-0" />
+                    <ShieldAlert className="mt-px h-3.5 w-3.5 shrink-0 text-warning" />
                     Anyone with this URL can edit the board. Keep this tab open so the AI can reach it.
                 </p>
             </div>

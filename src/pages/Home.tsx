@@ -1,73 +1,162 @@
-import { Button } from "@/components/ui/button"
-import { ArrowRight, Brush, Users, MessageSquare, Share2, FileImage, Zap } from 'lucide-react'
-import Navbar from "../components/navbar"
-import Footer from "../components/footer"
-import { useNavigate } from "react-router-dom"
-import Safari from "../components/ui/safari";
+import { ArrowRight, Sparkles } from 'lucide-react';
+import { motion } from 'motion/react';
+import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import Footer from '@/components/footer';
+import Navbar from '@/components/navbar';
+import { Bento } from '@/components/landing/Bento';
+import { HeroBoard } from '@/components/landing/HeroBoard';
+import { McpSection } from '@/components/landing/McpSection';
+import { Reveal } from '@/components/landing/Reveal';
+import { Shortcuts } from '@/components/landing/Shortcuts';
+import { LogoMark } from '@/components/logo';
 
-export default function Home() {
-    const navigate = useNavigate()
+const HEADLINE = ['The', 'whiteboard', 'your', 'AI', 'can', 'draw', 'on.'];
+const CLIENTS = ['Claude', 'Claude Code', 'Cursor', 'VS Code', 'Windsurf', 'Zed', 'Any MCP client'];
+
+function Hero() {
     return (
-        <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
-            <Navbar />
-            <main>
-                {/* Hero Section */}
-                <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-                    <div className="text-center">
-                        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-gray-900 mb-6">
-                            Collaborate and Create with{" "}
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
-                                SketchSync
+        <section className="relative">
+            <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))] pb-10 pt-14 sm:pt-20">
+                <motion.a
+                    href="#mcp"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="group inline-flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-3 text-[12.5px] text-muted-foreground shadow-[0_1px_2px_hsl(0_0%_0%/0.04)] transition-colors hover:text-foreground"
+                >
+                    <span className="flex items-center gap-1 rounded-full bg-claude/15 px-2 py-0.5 font-mono text-[11px] font-medium text-claude">
+                        <Sparkles className="h-3 w-3" /> MCP
+                    </span>
+                    Works with Claude, Cursor and VS Code
+                    <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                </motion.a>
+
+                <h1 className="mt-6 max-w-[15ch] text-balance text-[clamp(44px,8vw,92px)] font-semibold leading-[0.95] tracking-display" aria-label={HEADLINE.join(' ')}>
+                    {HEADLINE.map((w, i) => (
+                        <motion.span
+                            key={i}
+                            aria-hidden
+                            className="mr-[0.22em] inline-block last:mr-0"
+                            initial={{ opacity: 0, y: '0.35em', filter: 'blur(8px)' }}
+                            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                            transition={{ type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.08 + i * 0.06 }}
+                        >
+                            {w === 'AI' ? <span className="text-claude">AI</span> : w === 'on.' ? <>on<span className="text-muted-foreground/50">.</span></> : w}
+                        </motion.span>
+                    ))}
+                </h1>
+
+                <div className="mt-8 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+                    <motion.p
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.5 }}
+                        className="max-w-[46ch] text-pretty text-[17px] leading-relaxed text-muted-foreground"
+                    >
+                        Sketch with your team in real time. Connect Claude or any MCP client and it adds flowcharts, diagrams and math to the same board while you watch.
+                    </motion.p>
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.6 }}
+                        className="flex flex-col gap-3 sm:items-end"
+                    >
+                        <div className="flex flex-wrap gap-2.5">
+                            <Link
+                                to="/board"
+                                className="group relative inline-flex h-12 items-center gap-2 overflow-hidden rounded-xl bg-primary px-5 text-[15px] font-medium text-primary-foreground shadow-[inset_0_1px_0_hsl(0_0%_100%/0.15),0_8px_24px_-8px_hsl(225_20%_10%/0.5)] transition-transform active:scale-[0.97]"
+                            >
+                                <span className="absolute inset-0 animate-sheen bg-[linear-gradient(100deg,transparent_30%,hsl(0_0%_100%/0.22)_50%,transparent_70%)]" />
+                                <span className="relative">Open a board</span>
+                                <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                            </Link>
+                            <a href="#mcp" className="inline-flex h-12 items-center gap-2 rounded-xl border border-border bg-card px-5 text-[15px] font-medium transition-colors hover:bg-secondary">
+                                Connect your AI
+                            </a>
+                        </div>
+                        <p className="font-mono text-[11.5px] text-muted-foreground">Free · no sign-up · open source</p>
+                    </motion.div>
+                </div>
+            </div>
+
+            <motion.div
+                initial={{ opacity: 0, y: 40, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: 'spring', visualDuration: 0.9, bounce: 0.1, delay: 0.45 }}
+                className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]"
+            >
+                <HeroBoard />
+            </motion.div>
+        </section>
+    );
+}
+
+function WorksWith() {
+    const row = [...CLIENTS, ...CLIENTS];
+    return (
+        <section className="mx-auto mt-20 max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-8">
+                <p className="shrink-0 font-mono text-[11.5px] uppercase tracking-[0.08em] text-muted-foreground">Draws with</p>
+                <div className="relative w-full overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_10%,#000_90%,transparent)]">
+                    <div className="flex w-max animate-marquee gap-4 hover:[animation-play-state:paused]">
+                        {row.map((c, i) => (
+                            <span key={i} className="whitespace-nowrap px-4 text-[18px] font-medium tracking-tightish text-muted-foreground/80" aria-hidden={i >= CLIENTS.length}>
+                                {c}
                             </span>
-                        </h1>
-                        <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-                            A dynamic and intuitive whiteboard collaboration app that lets teams sketch, brainstorm, and share ideas in real time.
-                        </p>
-                        <div className="flex justify-center gap-4">
-                            <Button size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" onClick={() => navigate('/board')}>
-                                Get Started
-                                <ArrowRight className="ml-2 h-5 w-5" />
-                            </Button>
-
-                        </div>
-                    </div>
-                    <div className="mt-16 relative">
-                        <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 shadow-lg transform skew-y-6 sm:skew-y-0 sm:-rotate-3 sm:rounded-3xl"></div>
-                        <div className="relative bg-white shadow-lg sm:rounded-3xl">
-                            <div className="relative">
-                                <Safari
-                                    url="https://sketchsync.onrender.com"
-                                    className="size-full"
-                                    videoSrc="https://utfs.io/f/799t8sfip0HkKLdv68siMOmqvkaoXpjZVHRFfTB3gChYr76t"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Features Section */}
-                <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-                    <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Key Features</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {[
-                            { icon: Brush, title: "Smooth Drawing", description: "Advanced drawing engine for a natural sketching experience" },
-                            { icon: Users, title: "Real-time Collaboration", description: "Work together with instant syncing across all devices" },
-                            { icon: Zap, title: "Multiple Tools", description: "Various drawing tools to suit your project needs" },
-                            { icon: MessageSquare, title: "Live Commenting", description: "Add comments and annotations for effective feedback" },
-                            { icon: Share2, title: "Easy Sharing", description: "Share sketches via email, link, or social media" },
-                            { icon: FileImage, title: "Export Options", description: "Export as high-quality images or PDFs" },
-                        ].map((feature, index) => (
-                            <div key={index} className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-                                <feature.icon className="h-12 w-12 text-purple-600 mb-4" />
-                                <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                                <p className="text-gray-600">{feature.description}</p>
-                            </div>
                         ))}
                     </div>
-                </section>
+                </div>
+            </div>
+        </section>
+    );
+}
+
+function Cta() {
+    return (
+        <section className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
+            <Reveal>
+                <div className="border-beam relative overflow-hidden rounded-3xl border border-border bg-card">
+                    <div className="dot-grid absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_at_center,#000,transparent_75%)]" />
+                    <div className="relative flex flex-col items-center px-6 py-20 text-center">
+                        <LogoMark className="h-12 w-12" />
+                        <h2 className="mt-6 max-w-[18ch] text-balance text-[clamp(30px,4.5vw,52px)] font-semibold leading-[1.02] tracking-[-0.04em]">Start a board. Invite a teammate. Or an AI.</h2>
+                        <p className="mt-4 max-w-md text-[16px] text-muted-foreground">A new board takes one click and lives at its own link.</p>
+                        <Link to="/board" className="group mt-8 inline-flex h-12 items-center gap-2 rounded-xl bg-primary px-6 text-[15px] font-medium text-primary-foreground transition-transform active:scale-[0.97]">
+                            Open a board
+                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                        </Link>
+                    </div>
+                </div>
+            </Reveal>
+        </section>
+    );
+}
+
+export default function Home() {
+    useEffect(() => {
+        document.title = 'SketchSync · The whiteboard your AI can draw on';
+    }, []);
+    return (
+        <div className="min-h-screen overflow-x-clip bg-background">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[720px] dot-grid opacity-70 [mask-image:linear-gradient(to_bottom,#000,transparent)]" />
+            <Navbar />
+            <main className="relative space-y-28 pb-28 sm:space-y-36">
+                <div>
+                    <Hero />
+                    <WorksWith />
+                </div>
+                <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
+                    <McpSection />
+                </div>
+                <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
+                    <Bento />
+                </div>
+                <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
+                    <Shortcuts />
+                </div>
+                <Cta />
             </main>
             <Footer />
         </div>
-    )
+    );
 }
-

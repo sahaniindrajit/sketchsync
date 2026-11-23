@@ -12,11 +12,14 @@ import {
     type Op,
     type OpAck,
     type OpBroadcast,
+    type PresenceBroadcast,
     type Shape,
 } from '@/shared/protocol';
 import { canMerge, isUrgent, mergeOps } from './opQueue';
 import { adoptOrphanPending, holdTabLock, loadBoard, saveBoard, savePending } from './persistence';
-import { setShapes, useBoard } from './store';
+import { agentName, setShapes, useBoard } from './store';
+import { inverseOf, recordOp } from './history';
+import { usePresence } from './presence';
 
 const FLUSH_INTERVAL_MS = 40;
 const SAVE_DEBOUNCE_MS = 400;
@@ -124,7 +127,57 @@ export class RoomSync {
             if (!this.stopped) useBoard.setState({ connection: 'offline' });
         });
         socket.on(EVENTS.op, (payload: OpBroadcast) => this.onServerOp(payload));
+        socket.on(EVENTS.presence, (p: PresenceBroadcast) => {
+            if (!p || typeof p.id !== 'string' || this.stopped) return;
+            // Someone new: tell them who we are (and the board's name) right away.
+            if (!usePresence.getState().peers[p.id]) setTimeout(() => usePresence.getState().announce(), 50);
+            usePresence.setState((s) => ({ peers: { ...s.peers, [p.id]: { ...p, at: Date.now() } } }));
+            const mine = usePresence.getState();
+            if (typeof p.title === 'string' && typeof p.titleAt === 'number' && p.titleAt > mine.titleAt) mine.setTitle(p.title, p.titleAt);
+        });
+        socket.on(EVENTS.presenceLeave, (p: { id: string }) => {
+            usePresence.setState((s) => {
+                const peers = { ...s.peers };
+                delete peers[p?.id];
+                return { peers };
+            });
+        });
+        this.startPresence();
         if (socket.connected) this.join();
+    }
+
+    private presenceTimer: ReturnType<typeof setInterval> | null = null;
+    private lastPointer: { x: number | null; y: number | null } = { x: null, y: null };
+    private lastSentAt = 0;
+    private sendQueued: ReturnType<typeof setTimeout> | null = null;
+
+    /** Throttled pointer updates plus a heartbeat, so late joiners see everyone; quiet peers are dropped. */
+    private startPresence() {
+        const emit = () => {
+            this.sendQueued = null;
+            if (!this.joined || !this.socket) return;
+            this.lastSentAt = Date.now();
+            const { me, title, titleAt } = usePresence.getState();
+            this.socket.emit(EVENTS.presence, { roomId: this.roomId, name: me.name, color: me.color, ...this.lastPointer, ...(titleAt ? { title, titleAt } : {}) });
+        };
+        usePresence.getState().loadTitle(this.roomId);
+        usePresence.setState({
+            peers: {},
+            announce: () => emit(),
+            send: (x, y) => {
+                this.lastPointer = { x, y };
+                if (this.sendQueued) return;
+                this.sendQueued = setTimeout(emit, Math.max(0, 60 - (Date.now() - this.lastSentAt)));
+            },
+        });
+        this.presenceTimer = setInterval(() => {
+            if (Date.now() - this.lastSentAt > 4000) emit();
+            const cutoff = Date.now() - 15000;
+            const { peers } = usePresence.getState();
+            if (Object.values(peers).some((p) => p.at < cutoff)) {
+                usePresence.setState({ peers: Object.fromEntries(Object.entries(peers).filter(([, p]) => p.at >= cutoff)) });
+            }
+        }, 2000);
     }
 
     stop() {
@@ -132,7 +185,9 @@ export class RoomSync {
         this.stopped = true;
         this.saveNow(true);
         window.removeEventListener('pagehide', this.saveNow);
-        for (const timer of [this.flushTimer, this.saveTimer, this.joinTimer]) if (timer) clearTimeout(timer);
+        for (const timer of [this.flushTimer, this.saveTimer, this.joinTimer, this.sendQueued]) if (timer) clearTimeout(timer);
+        if (this.presenceTimer) clearInterval(this.presenceTimer);
+        usePresence.setState({ peers: {}, send: () => {}, announce: () => {} });
         this.socket?.removeAllListeners();
         this.socket?.disconnect();
         this.socket = null;
@@ -142,6 +197,7 @@ export class RoomSync {
 
     /** Applies an op locally right away and queues it for the server. */
     dispatch(op: Op) {
+        recordOp(op, useBoard.getState().shapes);
         for (const part of splitOp(op)) {
             const last = this.pending[this.pending.length - 1];
             if (last && !last.dispatched && canMerge(last.op, part)) last.op = mergeOps(last.op, part);
@@ -323,6 +379,9 @@ export class RoomSync {
 
     private onServerOp(payload: OpBroadcast) {
         if (payload.roomId !== this.roomId || !this.joined) return;
+        const aiInverse = payload.origin.startsWith('ai:') ? inverseOf(payload.op, this.confirmed) : null;
+        // Record AI activity first so shapes it adds can animate in as they mount.
+        this.trackAi(payload, aiInverse);
         this.confirmed = applyOp(this.confirmed, payload.op);
         const index = this.pending.findIndex((p) => p.opId === payload.opId);
         if (index === 0) {
@@ -340,7 +399,6 @@ export class RoomSync {
             this.rebuildView();
         }
         this.scheduleSave();
-        this.trackAi(payload);
     }
 
     /** A remote op commutes with pending ops when they touch different shapes (and nothing pending deletes). */
@@ -367,17 +425,24 @@ export class RoomSync {
         return ids.every((id) => !touched.has(id));
     }
 
-    private trackAi(payload: OpBroadcast) {
+    private trackAi(payload: OpBroadcast, inverse: Op | null) {
         if (!payload.origin.startsWith('ai:')) return;
         const op = payload.op;
         const ids = op.kind === 'add' ? op.shapes.map((s) => s.id) : op.kind === 'update' ? op.patches.map((p) => p.id) : [];
+        const added = op.kind === 'add' ? op.shapes.filter((x) => x.type !== 'arrow' && x.type !== 'line').length : 0;
+        const connectors = op.kind === 'add' ? op.shapes.length - added : 0;
+        const name = agentName(payload.origin.slice(3));
         const prev = useBoard.getState().aiActivity;
-        const sameBatch = prev && Date.now() - prev.at < 4000;
+        const sameBatch = prev && prev.name === name && Date.now() - prev.at < 4000;
         useBoard.setState({
             aiActivity: {
-                name: payload.origin.slice(3) || 'AI',
+                name,
                 shapeIds: sameBatch ? Array.from(new Set([...prev.shapeIds, ...ids])) : ids,
                 at: Date.now(),
+                undo: [...(sameBatch ? prev.undo : []), ...(inverse ? [inverse] : [])],
+                lastIds: ids,
+                added: (sameBatch ? prev.added : 0) + added,
+                connectors: (sameBatch ? prev.connectors : 0) + connectors,
             },
         });
     }

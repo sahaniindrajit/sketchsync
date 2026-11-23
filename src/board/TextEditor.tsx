@@ -4,11 +4,13 @@ import { DEFAULTS, type MathShape, type TextShape } from '@/shared/protocol';
 import { FONT_FAMILY } from './measure';
 import { makeShape } from './shapeFactory';
 import { useBoard, type EditingState } from './store';
+import { displayInk, useTheme } from '@/lib/theme';
 
 /** HTML textarea overlaid on the canvas for editing text shapes and labels. */
 export function TextEditor({ editing }: { editing: EditingState }) {
     const viewport = useBoard((s) => s.viewport);
     const shapes = useBoard((s) => s.shapes);
+    const theme = useTheme((s) => s.resolved);
     const defaults = { strokeColor: useBoard((s) => s.strokeColor), fontSize: useBoard((s) => s.fontSize) };
     const ref = useRef<HTMLTextAreaElement>(null);
     const committed = useRef(false);
@@ -129,7 +131,7 @@ export function TextEditor({ editing }: { editing: EditingState }) {
             transform: 'translateY(-50%)',
             fontSize: fontSize * viewport.scale,
             textAlign: 'center',
-            color: ('label' in shape && shape.label?.color) || shape.strokeColor,
+            color: displayInk(('label' in shape && shape.label?.color) || shape.strokeColor, theme),
         };
     } else if (isMath) {
         const x = 'x' in editing ? editing.x : shape!.x;
@@ -139,14 +141,14 @@ export function TextEditor({ editing }: { editing: EditingState }) {
             left,
             top,
             fontSize: 16,
-            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
-            color: '#1e1e1e',
-            background: '#ffffff',
-            border: '1px solid #a5b4fc',
-            borderRadius: 6,
-            padding: '6px 8px',
-            minWidth: 220,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            fontFamily: '"Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace',
+            color: 'hsl(var(--foreground))',
+            background: 'hsl(var(--popover))',
+            border: '1px solid hsl(var(--ring))',
+            borderRadius: 10,
+            padding: '8px 10px',
+            minWidth: 240,
+            boxShadow: '0 0 0 4px hsl(var(--ring) / 0.15), 0 12px 32px -12px rgba(0,0,0,0.3)',
         };
     } else {
         const textShape = shape?.type === 'text' ? shape : undefined;
@@ -159,7 +161,7 @@ export function TextEditor({ editing }: { editing: EditingState }) {
             top,
             fontSize: fontSize * viewport.scale,
             fontWeight: textShape?.fontWeight === 'bold' ? 700 : 400,
-            color: textShape?.strokeColor ?? defaults.strokeColor,
+            color: displayInk(textShape?.strokeColor ?? defaults.strokeColor, theme),
             textAlign: textShape?.align ?? 'left',
             width: textShape?.width ? textShape.width * viewport.scale : undefined,
             transform: textShape?.rotation ? `rotate(${textShape.rotation}deg)` : undefined,
@@ -183,7 +185,7 @@ export function TextEditor({ editing }: { editing: EditingState }) {
             }}
             placeholder={editing.kind === 'label' ? 'Label' : isMath ? 'LaTeX, e.g. \\frac{a}{b}  (Esc to finish)' : 'Type…'}
             spellCheck={false}
-            className="absolute z-20 resize-none overflow-hidden whitespace-pre bg-transparent p-0 outline-none placeholder:text-gray-300"
+            className="absolute z-20 resize-none overflow-hidden whitespace-pre bg-transparent p-0 outline-none placeholder:text-muted-foreground/50"
             style={{
                 fontFamily: FONT_FAMILY,
                 lineHeight: DEFAULTS.lineHeight,

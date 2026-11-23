@@ -1,13 +1,16 @@
-import { Bot, Crosshair } from 'lucide-react';
+import { Crosshair, Sparkles, Undo2 } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { getShapeBounds, unionBoxes, type Box } from '@/shared/geometry';
 import { browserMeasurer } from '@/board/measure';
-import { useBoard } from '@/board/store';
+import { undoAiBatch, useBoard } from '@/board/store';
+import { cn } from '@/lib/utils';
 
 const ACTIVE_MS = 2500;
-const VISIBLE_MS = 7000;
+const VISIBLE_MS = 12000;
 
 /** Bounds of the shapes the AI touched most recently. */
+// eslint-disable-next-line react-refresh/only-export-components
 export function aiActivityBounds(): Box | null {
     const { aiActivity, shapes } = useBoard.getState();
     if (!aiActivity) return null;
@@ -16,6 +19,7 @@ export function aiActivityBounds(): Box | null {
 }
 
 /** Re-renders periodically while AI activity is recent. */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAiActivityClock(windowMs: number) {
     const activity = useBoard((s) => s.aiActivity);
     const [now, setNow] = useState(() => Date.now());
@@ -38,30 +42,76 @@ export function useAiActivityClock(windowMs: number) {
 
 export function AiActivityToast({ onJump }: { onJump: (box: Box) => void }) {
     const { activity, now } = useAiActivityClock(VISIBLE_MS);
-    if (!activity || now - activity.at > VISIBLE_MS) return null;
-    const active = now - activity.at < ACTIVE_MS;
+    const visible = !!activity && now - activity.at <= VISIBLE_MS;
+    const active = visible && now - activity!.at < ACTIVE_MS;
+    const count = activity?.shapeIds.length ?? 0;
+    const added = activity?.added ?? 0;
+    const connectors = activity?.connectors ?? 0;
+    const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+    const done =
+        added || connectors
+            ? `added ${[added && plural(added, 'shape', 'shapes'), connectors && plural(connectors, 'connector', 'connectors')].filter(Boolean).join(' and ')}`
+            : `edited ${plural(count, 'shape', 'shapes')}`;
     return (
-        <div
-            role="status"
-            data-testid="ai-activity"
-            className="fixed bottom-16 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-indigo-100 bg-white py-1.5 pl-3 pr-1.5 text-sm text-gray-700 shadow-lg"
-        >
-            <span className={`flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 ${active ? 'animate-pulse' : ''}`}>
-                <Bot className="h-4 w-4" />
-            </span>
-            <span>
-                <b className="font-medium">{activity.name}</b> {active ? 'is editing the board…' : 'edited the board'}
-            </span>
-            <button
-                className="flex items-center gap-1 rounded-full bg-indigo-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-indigo-600"
-                onClick={() => {
-                    const box = aiActivityBounds();
-                    if (box) onJump(box);
-                }}
-            >
-                <Crosshair className="h-3.5 w-3.5" />
-                Show
-            </button>
+        <div className="pointer-events-none fixed left-1/2 top-[calc(max(12px,env(safe-area-inset-top))+56px)] z-40 -translate-x-1/2 lg:top-[max(14px,env(safe-area-inset-top))]">
+            <AnimatePresence>
+                {visible && (
+                    <motion.div
+                        role="status"
+                        data-testid="ai-activity"
+                        layout
+                        initial={{ opacity: 0, y: -12, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.97, transition: { duration: 0.15 } }}
+                        transition={{ type: 'spring', visualDuration: 0.3, bounce: 0.1 }}
+                        className="chrome pointer-events-auto flex items-center gap-2.5 whitespace-nowrap rounded-full py-1.5 pl-1.5 pr-1.5 text-[13px] text-muted-foreground"
+                    >
+                        <span className={cn('relative flex h-7 w-7 items-center justify-center rounded-full bg-claude text-white', active && 'ai-ping')}>
+                            <Sparkles className="h-3.5 w-3.5" strokeWidth={2} />
+                        </span>
+                        <motion.span layout="position" className="flex items-center gap-1">
+                            <b className="font-semibold text-foreground">{activity!.name}</b>
+                            <AnimatePresence mode="popLayout" initial={false}>
+                                <motion.span
+                                    layout="position"
+                                    key={active ? 'on' : 'off'}
+                                    initial={{ opacity: 0, y: 4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -4, transition: { duration: 0.1 } }}
+                                    className={cn(active && 'text-shimmer')}
+                                >
+                                    {active ? 'is drawing…' : done}
+                                </motion.span>
+                            </AnimatePresence>
+                        </motion.span>
+                        <motion.button
+                            layout="position"
+                            type="button"
+                            className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-foreground transition-[transform,background-color] hover:bg-secondary/70 active:scale-95"
+                            onClick={() => {
+                                const box = aiActivityBounds();
+                                if (box) onJump(box);
+                            }}
+                        >
+                            <Crosshair className="h-3.5 w-3.5" />
+                            Show me
+                        </motion.button>
+                        {!!activity?.undo.length && (
+                            <motion.button
+                                layout="position"
+                                type="button"
+                                aria-label={`Undo ${activity.name}'s changes`}
+                                title={`Undo ${activity.name}'s changes`}
+                                onClick={undoAiBatch}
+                                className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground active:scale-95"
+                            >
+                                <Undo2 className="h-3.5 w-3.5" />
+                                Undo
+                            </motion.button>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

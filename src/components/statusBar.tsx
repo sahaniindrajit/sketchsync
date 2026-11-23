@@ -1,66 +1,157 @@
-import { Bot, Maximize, Minus, Plus, Share2 } from 'lucide-react';
-import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { useBoard } from '@/board/store';
+import { Maximize, Minus, Plus, Redo2, Share2, Sparkles, Undo2 } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { useEffect, useRef } from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Kbd } from '@/components/ui/kbd';
+import { MOD } from '@/lib/platform';
+import { animateViewport, redoLast, undoLast, useBoard, useCanUndo } from '@/board/store';
+import { useHistory } from '@/board/history';
+import { cn } from '@/lib/utils';
+import { useMedia } from '@/lib/useMedia';
+import { useAiActivityClock } from './aiActivity';
+import { PresenceStack } from './presence';
 
+const AI_ACTIVE_MS = 2500;
+
+/** Top-right cluster: AI agent status and Share. */
 export function ConnectionBadge({ onShare, onConnectAi }: { onShare: () => void; onConnectAi: () => void }) {
-    const connection = useBoard((s) => s.connection);
-    const error = useBoard((s) => s.connectionError);
-    const styles = {
-        online: ['bg-emerald-500', 'Live'],
-        connecting: ['bg-amber-400 animate-pulse', 'Connecting…'],
-        offline: ['bg-gray-400', 'Offline · saved locally'],
-        error: ['bg-red-500', error ?? 'Connection error'],
-    } as const;
-    const [dot, text] = styles[connection];
+    const { activity, now } = useAiActivityClock(AI_ACTIVE_MS);
+    const working = !!activity && now - activity.at < AI_ACTIVE_MS;
     return (
-        <div className="fixed right-4 top-4 z-10 flex items-center gap-2">
-            <div className="flex items-center gap-1 rounded-full border bg-white p-1 shadow-sm">
-                <span className="hidden items-center gap-2 pl-2 pr-1 text-xs text-gray-600 sm:flex" data-testid="connection-status" data-status={connection}>
-                    <span className={`h-2 w-2 rounded-full ${dot}`} />
-                    <span className="max-w-[14rem] truncate">{text}</span>
-                </span>
-                <button
-                    className="flex h-7 items-center gap-1 rounded-full px-2 text-xs text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                    onClick={onConnectAi}
-                    aria-label="Connect your AI"
-                >
-                    <Bot className="h-4 w-4" />
-                    <span className="hidden sm:inline">AI</span>
-                </button>
-            </div>
-            <Button size="sm" className="h-9 rounded-full bg-indigo-500 px-4 hover:bg-indigo-600" onClick={onShare}>
-                <Share2 className="mr-1 h-4 w-4" />
+        <motion.div
+            initial={{ y: -12, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="fixed right-[max(12px,env(safe-area-inset-right))] top-[max(12px,env(safe-area-inset-top))] z-30 flex items-center gap-2"
+        >
+            <motion.div layout className="chrome flex h-11 items-center rounded-xl" transition={{ type: 'spring', visualDuration: 0.3, bounce: 0 }}>
+            <PresenceStack />
+            <div className="mx-0.5 h-5 w-px bg-border" />
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <button
+                        type="button"
+                        onClick={onConnectAi}
+                        aria-label="Connect your AI"
+                        className={cn(
+                            'flex h-11 items-center gap-2 rounded-r-xl pl-2 pr-3 text-[13px] font-medium text-foreground/80 transition-colors hover:text-foreground',
+                                        )}
+                    >
+                        <span className={cn('relative flex h-5 w-5 items-center justify-center rounded-full transition-colors', working ? 'bg-claude text-white' : 'bg-secondary text-claude')}>
+                            <Sparkles className="h-3 w-3" strokeWidth={2} />
+                        </span>
+                        <span className="whitespace-nowrap"><span className="sm:hidden">AI</span><span className="hidden sm:inline">Connect AI</span></span>
+                    </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Let Claude, Cursor or any MCP client draw here</TooltipContent>
+            </Tooltip>
+            </motion.div>
+            <button
+                id="share-button"
+                type="button"
+                onClick={onShare}
+                className="relative flex h-11 items-center gap-2 overflow-hidden rounded-xl bg-primary px-4 text-[13px] font-medium text-primary-foreground shadow-chrome transition-transform active:scale-[0.97]"
+            >
+                <Share2 className="h-4 w-4" strokeWidth={2} />
                 Share
-            </Button>
-        </div>
+            </button>
+        </motion.div>
+    );
+}
+
+function RollingNumber({ value, suffix }: { value: number; suffix?: string }) {
+    const prev = useRef({ value, at: 0 });
+    const now = Date.now();
+    const dir = value >= prev.current.value ? 1 : -1;
+    // Quick repeated changes swap instantly instead of stacking rolls.
+    const rapid = now - prev.current.at < 220;
+    useEffect(() => {
+        prev.current = { value, at: Date.now() };
+    }, [value]);
+    return (
+        <span className="relative inline-flex h-[1.2em] items-center justify-center overflow-hidden tabular-nums">
+            <AnimatePresence mode="popLayout" initial={false}>
+                <motion.span
+                    key={value}
+                    initial={rapid ? false : { y: `${dir * 100}%`, opacity: 0 }}
+                    animate={{ y: '0%', opacity: 1 }}
+                    exit={rapid ? { opacity: 0, transition: { duration: 0 } } : { y: `${dir * -100}%`, opacity: 0 }}
+                    transition={{ type: 'spring', visualDuration: 0.2, bounce: 0 }}
+                >
+                    {value}
+                    {suffix}
+                </motion.span>
+            </AnimatePresence>
+        </span>
+    );
+}
+
+function ZoomButton({ label, hint, onClick, children, disabled }: { label: string; hint?: React.ReactNode; onClick: () => void; children: React.ReactNode; disabled?: boolean }) {
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    type="button"
+                    aria-label={label}
+                    onClick={disabled ? undefined : onClick}
+                    aria-disabled={disabled || undefined}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-[background-color,color,transform] hover:bg-secondary hover:text-foreground active:scale-95 aria-disabled:cursor-default aria-disabled:opacity-35 aria-disabled:hover:bg-transparent aria-disabled:active:scale-100"
+                >
+                    {children}
+                </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+                {label}
+                {hint}
+            </TooltipContent>
+        </Tooltip>
     );
 }
 
 export function ZoomControls({ onFit }: { onFit: () => void }) {
     const viewport = useBoard((s) => s.viewport);
+    const target = useBoard((s) => s.viewportTarget);
+    const compact = useMedia('(max-width: 639px)');
+    const canUndo = useCanUndo();
+    const canRedo = useHistory((s) => s.redo.length > 0);
     const zoom = (factor: number | null) => {
         const state = useBoard.getState();
-        const vp = state.viewport;
+        // Build on where the camera is heading, so quick repeated presses compound.
+        const vp = state.viewportTarget ?? state.viewport;
         const scale = factor === null ? 1 : Math.min(8, Math.max(0.1, vp.scale * factor));
         const cx = window.innerWidth / 2;
         const cy = window.innerHeight / 2;
-        state.setViewport({ scale, x: cx - ((cx - vp.x) / vp.scale) * scale, y: cy - ((cy - vp.y) / vp.scale) * scale });
+        animateViewport({ scale, x: cx - ((cx - vp.x) / vp.scale) * scale, y: cy - ((cy - vp.y) / vp.scale) * scale }, 220);
     };
+    // Phones: undo/redo live in the top bar and pinch zooms.
+    if (compact) return null;
     return (
-        <div className="fixed bottom-4 left-4 z-10 flex items-center gap-0.5 rounded-lg border bg-white p-1 shadow-sm">
-            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Zoom out" onClick={() => zoom(1 / 1.2)}>
-                <Minus className="h-4 w-4" />
-            </Button>
-            <button className="w-12 text-center text-xs tabular-nums text-gray-600 hover:text-gray-900" onClick={() => zoom(null)} title="Reset zoom" data-testid="zoom-level">
-                {Math.round(viewport.scale * 100)}%
+        <div className="chrome fixed bottom-[calc(max(12px,env(safe-area-inset-bottom))+64px)] left-[max(12px,env(safe-area-inset-left))] z-10 flex items-center gap-0.5 rounded-xl p-0.5 xl:bottom-[max(12px,env(safe-area-inset-bottom))]">
+            <ZoomButton label="Undo" hint={<><Kbd>{MOD}</Kbd><Kbd>Z</Kbd></>} onClick={undoLast} disabled={!canUndo}>
+                <Undo2 className="h-4 w-4" strokeWidth={1.75} />
+            </ZoomButton>
+            <ZoomButton label="Redo" hint={<><Kbd>{MOD}</Kbd><Kbd>⇧</Kbd><Kbd>Z</Kbd></>} onClick={redoLast} disabled={!canRedo}>
+                <Redo2 className="h-4 w-4" strokeWidth={1.75} />
+            </ZoomButton>
+            <div className="mx-0.5 h-4 w-px bg-border" />
+            <ZoomButton label="Zoom out" hint={<><Kbd>{MOD}</Kbd><Kbd>−</Kbd></>} onClick={() => zoom(1 / 1.2)}>
+                <Minus className="h-4 w-4" strokeWidth={1.75} />
+            </ZoomButton>
+            <button
+                type="button"
+                className="h-8 min-w-[52px] rounded-lg px-1 text-center text-[12.5px] font-medium tabular-nums text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                onClick={() => zoom(null)}
+                title="Reset zoom"
+                data-testid="zoom-level"
+            >
+                <RollingNumber value={Math.round((target ?? viewport).scale * 100)} suffix="%" />
             </button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Zoom in" onClick={() => zoom(1.2)}>
-                <Plus className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Zoom to fit" onClick={onFit}>
-                <Maximize className="h-4 w-4" />
-            </Button>
+            <ZoomButton label="Zoom in" hint={<><Kbd>{MOD}</Kbd><Kbd>+</Kbd></>} onClick={() => zoom(1.2)}>
+                <Plus className="h-4 w-4" strokeWidth={1.75} />
+            </ZoomButton>
+            <div className="mx-0.5 h-4 w-px bg-border" />
+            <ZoomButton label="Zoom to fit" hint={<><Kbd>⇧</Kbd><Kbd>1</Kbd></>} onClick={onFit}>
+                <Maximize className="h-[15px] w-[15px]" strokeWidth={1.75} />
+            </ZoomButton>
         </div>
     );
 }
@@ -74,13 +165,25 @@ export function NoticeToast() {
         }, 4000);
         return () => clearTimeout(t);
     }, [notice]);
-    if (!notice) return null;
     return (
-        <div
-            role="status"
-            className={`fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-lg px-4 py-2 text-sm shadow-lg ${notice.kind === 'error' ? 'bg-red-600 text-white' : 'bg-gray-900 text-white'}`}
-        >
-            {notice.text}
+        <div className="pointer-events-none fixed bottom-[calc(max(12px,env(safe-area-inset-bottom))+120px)] left-1/2 z-50 -translate-x-1/2 xl:bottom-[calc(max(12px,env(safe-area-inset-bottom))+72px)]">
+            <AnimatePresence>
+                {notice && (
+                    <motion.div
+                        key={notice.at}
+                        role="status"
+                        initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 6, scale: 0.98, transition: { duration: 0.14 } }}
+                        className={cn(
+                            'pointer-events-auto flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-xl px-3.5 py-2 text-[13px] shadow-lift',
+                            notice.kind === 'error' ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground',
+                        )}
+                    >
+                        {notice.text}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

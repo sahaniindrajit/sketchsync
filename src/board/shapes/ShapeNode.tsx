@@ -1,10 +1,13 @@
 import type Konva from 'konva';
+import KonvaLib from 'konva';
+import { useBoard } from '../store';
 import React, { useEffect, useState } from 'react';
 import { Arrow, Circle, Ellipse, Group, Image as KonvaImage, Line, Rect, Text } from 'react-konva';
 import { arrowHeadSize, diamondPoints, isDotStroke, polylineMidpoint, resolveLinePoints } from '@/shared/geometry';
 import { DEFAULTS, type LineShape, type Shape, type TextLabel } from '@/shared/protocol';
 import { FONT_FAMILY, measureTextWidth } from '../measure';
 import { MathNode } from './MathNode';
+import { displayFill, displayInk, useTheme } from '@/lib/theme';
 
 export interface ShapeNodeProps {
     shape: Shape;
@@ -21,6 +24,18 @@ export interface ShapeNodeProps {
 
 const fillOf = (fill: string) => (fill === 'transparent' ? 'rgba(0,0,0,0)' : fill);
 
+/** The shape as displayed: near-black ink is lifted on the dark board; stored colours never change. */
+function useInked<T extends Shape>(shape: T, theme: 'light' | 'dark'): T {
+    return React.useMemo(() => {
+        if (theme === 'light') return shape;
+        const strokeColor = displayInk(shape.strokeColor, theme);
+        const fillColor = displayFill(shape.fillColor, theme);
+        const label = 'label' in shape && shape.label?.color ? { ...shape.label, color: displayInk(shape.label.color, theme) } : undefined;
+        if (strokeColor === shape.strokeColor && fillColor === shape.fillColor && !label) return shape;
+        return { ...shape, strokeColor, fillColor, ...(label ? { label } : {}) };
+    }, [shape, theme]);
+}
+
 /** Group origin for a shape; bound lines draw in absolute coordinates. */
 export function shapeOrigin(shape: Shape): { x: number; y: number } {
     if ((shape.type === 'line' || shape.type === 'arrow') && (shape.startBinding || shape.endBinding)) return { x: 0, y: 0 };
@@ -31,8 +46,30 @@ export const ShapeNode = React.memo(function ShapeNode(props: ShapeNodeProps) {
     const { shape, draggable, hidden, onDragMove, onDragEnd, onTransformEnd } = props;
     const origin = shapeOrigin(shape);
     const isBoundLine = (shape.type === 'line' || shape.type === 'arrow') && origin.x === 0 && origin.y === 0 && (shape.startBinding || shape.endBinding);
+    const groupRef = React.useRef<Konva.Group>(null);
+    // Shapes an AI just added fade in one after another instead of popping in.
+    useEffect(() => {
+        const node = groupRef.current;
+        const ai = useBoard.getState().aiActivity;
+        if (!node || !ai || Date.now() - ai.at > 1200) return;
+        const index = ai.shapeIds.indexOf(shape.id);
+        if (index < 0 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const target = shape.opacity;
+        node.opacity(0);
+        let tween: KonvaLib.Tween | null = null;
+        const timer = setTimeout(() => {
+            tween = new KonvaLib.Tween({ node, opacity: target, duration: 0.4, easing: KonvaLib.Easings.EaseOut });
+            tween.play();
+        }, Math.min(index, 12) * 70);
+        return () => {
+            clearTimeout(timer);
+            tween?.destroy();
+            node.opacity(target);
+        };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
     return (
         <Group
+            ref={groupRef}
             id={shape.id}
             name="shape"
             x={origin.x}
@@ -50,7 +87,9 @@ export const ShapeNode = React.memo(function ShapeNode(props: ShapeNodeProps) {
     );
 });
 
-function ShapeBody({ shape, startTarget, endTarget, hideLabel }: ShapeNodeProps) {
+function ShapeBody({ shape: stored, startTarget, endTarget, hideLabel }: ShapeNodeProps) {
+    const theme = useTheme((s) => s.resolved);
+    const shape = useInked(stored, theme);
     const getShape = (id: string) => (id === startTarget?.id ? startTarget : id === endTarget?.id ? endTarget : undefined);
     switch (shape.type) {
         case 'rect':
@@ -168,6 +207,7 @@ function BoxLabel({ label, width, height, fallbackColor, inset = 0 }: { label?: 
 }
 
 function LinearBody({ shape, getShape, hideLabel }: { shape: LineShape; getShape: (id: string) => Shape | undefined; hideLabel: boolean }) {
+    const dark = useTheme((s) => s.resolved) === 'dark';
     const bound = !!(shape.startBinding || shape.endBinding);
     const points = bound ? resolveLinePoints(shape, getShape) : shape.points;
     const head = arrowHeadSize(shape.strokeWidth);
@@ -189,7 +229,7 @@ function LinearBody({ shape, getShape, hideLabel }: { shape: LineShape; getShape
         const h = lines.length * fontSize * DEFAULTS.lineHeight + 4;
         labelNode = (
             <Group x={mid.x - w / 2} y={mid.y - h / 2} listening={false}>
-                <Rect width={w} height={h} fill="#ffffff" cornerRadius={3} />
+                <Rect width={w} height={h} fill={dark ? '#0e0f11' : '#ffffff'} cornerRadius={3} />
                 <Text
                     x={4}
                     y={2}

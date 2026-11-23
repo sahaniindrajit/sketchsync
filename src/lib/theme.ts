@@ -1,0 +1,110 @@
+import { create } from 'zustand';
+
+export type ThemePreference = 'system' | 'light' | 'dark';
+export type ResolvedTheme = 'light' | 'dark';
+
+const KEY = 'sketchsync:theme';
+const media = typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+function readPreference(): ThemePreference {
+    try {
+        const v = localStorage.getItem(KEY);
+        return v === 'light' || v === 'dark' ? v : 'system';
+    } catch {
+        return 'system';
+    }
+}
+
+const resolve = (pref: ThemePreference): ResolvedTheme => (pref === 'system' ? (media?.matches ? 'dark' : 'light') : pref);
+
+function apply(theme: ResolvedTheme) {
+    const root = document.documentElement;
+    root.classList.toggle('dark', theme === 'dark');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0e0f11' : '#fafaf9');
+}
+
+interface ThemeState {
+    preference: ThemePreference;
+    resolved: ResolvedTheme;
+    setPreference: (pref: ThemePreference) => void;
+    toggle: () => void;
+}
+
+export const useTheme = create<ThemeState>()((set, get) => {
+    const preference = readPreference();
+    const resolved = resolve(preference);
+    if (typeof document !== 'undefined') apply(resolved);
+    media?.addEventListener('change', () => {
+        if (get().preference !== 'system') return;
+        const next = resolve('system');
+        apply(next);
+        set({ resolved: next });
+    });
+    return {
+        preference,
+        resolved,
+        setPreference: (pref) => {
+            try {
+                if (pref === 'system') localStorage.removeItem(KEY);
+                else localStorage.setItem(KEY, pref);
+            } catch {
+                /* storage unavailable */
+            }
+            const next = resolve(pref);
+            apply(next);
+            set({ preference: pref, resolved: next });
+        },
+        toggle: () => get().setPreference(get().resolved === 'dark' ? 'light' : 'dark'),
+    };
+});
+
+/**
+ * Display colour for canvas ink. Stored colours never change (other users and server
+ * renders see the original); only near-black ink is lifted so it stays readable on the
+ * dark board.
+ */
+export function displayInk(color: string, theme: ResolvedTheme): string {
+    if (theme !== 'dark' || !color || color === 'transparent') return color;
+    const hex = color.replace('#', '');
+    const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex.slice(0, 6);
+    if (!/^[0-9a-fA-F]{6}$/.test(full)) return color;
+    const r = parseInt(full.slice(0, 2), 16);
+    const g = parseInt(full.slice(2, 4), 16);
+    const b = parseInt(full.slice(4, 6), 16);
+    const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    return lum < 0.16 ? '#e6e6e9' : color;
+}
+
+const PEN_FOR_PASTEL: Record<string, string> = {
+    '#ffc9c9': '#ff6b6b',
+    '#b2f2bb': '#51cf66',
+    '#a5d8ff': '#4dabf7',
+    '#ffec99': '#fcc419',
+    '#eebefa': '#cc5de8',
+};
+
+/**
+ * Display colour for shape fills on the dark board: a translucent tint of the same hue, so
+ * pastels read as colour instead of glare or mud. Stored colours never change.
+ */
+const DARK_FILLS: Record<string, string> = {
+    '#f6dccf': '#3a2a24',
+    '#dbe7f5': '#1f2a3a',
+    '#f1eee8': '#26272b',
+};
+
+export function displayFill(color: string, theme: ResolvedTheme): string {
+    if (theme !== 'dark' || !color || color === 'transparent') return color;
+    const key = color.toLowerCase();
+    if (DARK_FILLS[key]) return DARK_FILLS[key];
+    const hex = (PEN_FOR_PASTEL[key] ?? key).replace('#', '');
+    const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex.slice(0, 6);
+    if (!/^[0-9a-fA-F]{6}$/.test(full)) return color;
+    const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16));
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const l = (max + min) / 510;
+    if (l < 0.5 && !PEN_FOR_PASTEL[key]) return color;
+    if (max - min < 12) return l > 0.95 ? '#1c1d21' : '#2a2c31';
+    return `rgba(${r}, ${g}, ${b}, 0.28)`;
+}

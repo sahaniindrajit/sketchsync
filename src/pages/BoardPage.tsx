@@ -59,8 +59,9 @@ function BoardScreen({ roomId }: { roomId: string }) {
     const [params, setParams] = useSearchParams();
     // `?connect=ai` (from the landing page) opens the Connect your AI dialog once.
     const [share, setShare] = useState<ShareTab | null>(() => (params.get('connect') === 'ai' ? 'ai' : null));
+    const [ask] = useState(() => params.get('ask')?.slice(0, 200) ?? undefined);
     useEffect(() => {
-        if (params.has('connect')) setParams({}, { replace: true });
+        if (params.has('connect') || params.has('ask')) setParams({}, { replace: true });
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
     const [palette, setPalette] = useState(false);
     const isEmpty = useBoard((s) => s.shapes.size === 0);
@@ -170,7 +171,7 @@ function BoardScreen({ roomId }: { roomId: string }) {
                             tab={share}
                             onTab={setShare}
                             onClose={() => setShare(null)}
-                            aiPanel={<ConnectAiPanel roomId={roomId} />}
+                            aiPanel={<ConnectAiPanel roomId={roomId} ask={ask} />}
                         />
                     )}
                 </AnimatePresence>

@@ -10,7 +10,7 @@ export default function NotFound() {
         <div className="flex min-h-screen flex-col bg-background">
             <Navbar />
             <main className="mx-auto flex w-full max-w-6xl flex-1 items-center px-[max(16px,env(safe-area-inset-left))] py-20">
-                <div className="grid w-full items-center gap-12 md:grid-cols-[1fr_1.1fr] md:items-start">
+                <div className="grid w-full items-center gap-12 md:grid-cols-[1fr_1.1fr]">
                     <div className="max-w-[480px]">
                         <p className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted-foreground">Error 404</p>
                         <h1 className="mt-3 text-[clamp(36px,5vw,56px)] font-semibold leading-[1.02] tracking-[-0.04em]">Page not found</h1>
@@ -27,7 +27,7 @@ export default function NotFound() {
                     <div className="dot-grid relative aspect-[5/4] w-full overflow-hidden rounded-2xl border border-border bg-card">
                         <svg viewBox="0 0 500 400" className="absolute inset-0 h-full w-full text-foreground" aria-hidden>
                             <motion.path
-                                d="M82 290 C 130 210, 190 330, 250 230 S 360 140, 440 200"
+                                d="M82 290 C 130 210, 190 330, 250 230 S 360 140, 440 200 M422 186 L441 201 L418 209"
                                 fill="none"
                                 stroke="currentColor"
                                 strokeWidth="3"
@@ -36,7 +36,6 @@ export default function NotFound() {
                                 animate={{ pathLength: 1 }}
                                 transition={{ duration: 1.4, ease: 'easeInOut' }}
                             />
-                            <motion.path d="M424 186 L442 202 L420 210" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" initial={{ opacity: reduced ? 1 : 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.35 }} />
                             <text x="458" y="200" fontSize="30" fontWeight="700" className="fill-foreground" fontFamily="Inter, sans-serif">
                                 ?
                             </text>

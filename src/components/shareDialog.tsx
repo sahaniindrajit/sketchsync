@@ -1,11 +1,43 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { Check, Copy, Link2, Sparkles, X } from 'lucide-react';
+import { assignColors, initials, usePresence } from '@/board/presence';
+import { useBoard } from '@/board/store';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { boardUrl } from '@/config';
 import { cn } from '@/lib/utils';
 
 export type ShareTab = 'collaborate' | 'ai';
+
+/** Who is on the board right now, including you and any AI that is drawing. */
+function PeopleHere() {
+    const me = usePresence((s) => s.me);
+    const peers = Object.values(usePresence((s) => s.peers));
+    const colors = assignColors(me, peers);
+    const ai = useBoard((s) => s.aiActivity);
+    const rows = [
+        { id: 'me', name: me.name, color: me.color, note: 'you' },
+        ...peers.map((p) => ({ id: p.id, name: p.name, color: colors[p.id], note: 'editing' })),
+        ...(ai && Date.now() - ai.at < 60_000 ? [{ id: 'ai', name: ai.name, color: 'hsl(var(--claude))', note: 'AI' }] : []),
+    ];
+    return (
+        <div className="space-y-2 border-t border-border/70 pt-4">
+            <p className="text-[12px] font-medium text-muted-foreground">On this board now</p>
+            <ul className="space-y-1.5">
+                {rows.map((r) => (
+                    <li key={r.id} className="flex items-center gap-2.5 text-[13px]">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold text-white" style={{ backgroundColor: r.color }}>
+                            {r.id === 'ai' ? <Sparkles className="h-3 w-3" /> : initials(r.name)}
+                        </span>
+                        <span className="flex-1 font-medium">{r.name}</span>
+                        <span className="text-[12px] text-muted-foreground">{r.note}</span>
+                    </li>
+                ))}
+            </ul>
+            {rows.length === 1 && <p className="text-[12px] text-muted-foreground">Send the link above and they'll appear here as they join.</p>}
+        </div>
+    );
+}
 
 /** Animates its height to fit whatever it contains. */
 function AutoHeight({ children }: { children: React.ReactNode }) {
@@ -106,7 +138,15 @@ export function ShareDialog({ roomId, tab, onTab, onClose, aiPanel }: { roomId: 
                     />
                 </Dialog.Overlay>
                 <div className="pointer-events-none fixed inset-0 z-[61] flex items-end justify-center sm:items-start sm:p-4 sm:pt-[max(1rem,14vh)]">
-                    <Dialog.Content asChild forceMount aria-describedby={undefined}>
+                    <Dialog.Content
+                        asChild
+                        forceMount
+                        aria-describedby={undefined}
+                        onCloseAutoFocus={(e) => {
+                            e.preventDefault();
+                            document.getElementById('share-button')?.focus();
+                        }}
+                    >
                         <motion.div
                             initial={{ opacity: 0, scale: 0.96, y: 8 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -169,6 +209,7 @@ export function ShareDialog({ roomId, tab, onTab, onClose, aiPanel }: { roomId: 
                                                 <p className="text-[13px] leading-relaxed text-muted-foreground">Anyone with the link can view and edit in real time. No account needed.</p>
                                             </div>
                                             <CopyField value={boardUrl(roomId)} label="Board link" testId="board-link" icon={<Link2 className="h-3.5 w-3.5" />} />
+                                            <PeopleHere />
                                         </div>
                                     ) : (
                                         aiPanel

@@ -115,10 +115,10 @@ test('works on a phone-sized screen', async ({ browser }) => {
     const page = await context.newPage();
     await openNewBoard(page);
     await expect(page.getByTestId('toolbar')).toBeVisible();
-    // Style panel starts collapsed on small screens.
+    // Boards open with the Select tool; picking a drawing tool offers the style panel, collapsed on small screens.
+    await selectTool(page, 'rect');
     await expect(page.getByTestId('style-panel')).toBeHidden();
     await expect(page.getByLabel('Show style panel')).toBeVisible();
-    await selectTool(page, 'rect');
     await drag(page, [150, 300], [250, 400]);
     await waitForShapes(page, (l) => l.length === 1);
     await page.screenshot({ path: 'e2e/screenshots/mobile.png' });

@@ -41,7 +41,7 @@ const LAYOUTS = {
         circle: 'M590 236 C 560 196, 400 192, 362 236 C 330 274, 372 318, 470 320 C 560 322, 608 296, 596 250',
         pointer: 'M470 330 C 472 350, 476 362, 480 372',
         note: [430, 400] as Pt,
-        ai: [[960, 120], [700, 170], [272, 142], [262, 292], [552, 286], [842, 286], [270, 450], [380, 520], [600, 170], [640, 200]] as Pt[],
+        ai: [[960, 120], [700, 170], [272, 142], [262, 292], [552, 286], [842, 286], [270, 450], [420, 440], [600, 170], [640, 200]] as Pt[],
         me: [[470, 90], [480, 100], [490, 110], [500, 120], [840, 430], [800, 440], [700, 300], [590, 230], [470, 372], [560, 420]] as Pt[],
     },
     tall: {
@@ -69,10 +69,12 @@ const LAYOUTS = {
 
 const ink = 'currentColor';
 
+// After the first loop, undrawn shapes rest as a faint ghost so the board is never empty.
+let ghost = false;
 function drawn(on: boolean, order: number) {
     return {
         initial: { pathLength: 0, opacity: 0 },
-        animate: on ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 0 },
+        animate: on ? { pathLength: 1, opacity: 1 } : ghost ? { pathLength: 1, opacity: 0.14 } : { pathLength: 0, opacity: 0 },
         transition: on
             ? { pathLength: { duration: 0.65, ease: [0.65, 0, 0.35, 1] as const }, opacity: { duration: 0.05 } }
             : { duration: 0.3, delay: (12 - order) * 0.045 },
@@ -81,7 +83,7 @@ function drawn(on: boolean, order: number) {
 function faded(on: boolean, order: number, delay = 0) {
     return {
         initial: { opacity: 0 },
-        animate: { opacity: on ? 1 : 0 },
+        animate: { opacity: on ? 1 : ghost ? 0.14 : 0 },
         transition: on ? { duration: 0.35, delay } : { duration: 0.25, delay: (12 - order) * 0.045 },
     };
 }
@@ -137,7 +139,7 @@ const FEED = [
     { at: 1, tool: 'get_board', note: 'empty board' },
     { at: 2, tool: 'create_flowchart', note: (step: number) => `${Math.min(5, Math.max(1, step - 1))} of 5 nodes` },
     { at: 6, tool: 'update_shapes', note: 'labels yes / no' },
-    { at: 7, tool: 'get_board_image', note: 'checked the layout' },
+    { at: 7, tool: 'get_board_image', note: 'looks right' },
 ];
 
 export function HeroBoard({ className }: { className?: string }) {
@@ -181,6 +183,7 @@ export function HeroBoard({ className }: { className?: string }) {
         return () => timers.forEach(clearTimeout);
     }, [inView, reduced, paused]);
 
+    ghost = ran;
     const s = (n: number) => step >= n;
     const aiWorking = step >= 1 && step < FINAL - 1;
     const meDrawing = step >= 7 && step < FINAL;
@@ -305,7 +308,7 @@ export function HeroBoard({ className }: { className?: string }) {
                                 );
                             })}
                         </AnimatePresence>
-                        {step < 1 && <div className="text-[12px] text-muted-foreground">Waiting for a request…</div>}
+                        {step < 1 && <div className="text-[12px] text-muted-foreground">Listening for the next request…</div>}
                     </div>
                 </div>
 

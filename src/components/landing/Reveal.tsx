@@ -20,7 +20,7 @@ export function SectionHeading({ eyebrow, title, children, className, center, sm
     return (
         <Reveal className={cn('max-w-2xl space-y-4', center && 'mx-auto text-center', className)}>
             <p className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted-foreground">{eyebrow}</p>
-            <h2 className={cn('text-balance font-semibold leading-[1.02] tracking-[-0.04em]', small ? 'text-[clamp(26px,3.4vw,38px)]' : 'text-[clamp(32px,5vw,56px)]')}>{title}</h2>
+            <h2 className={cn('text-balance font-semibold leading-[1.0] tracking-[-0.04em]', small ? 'text-[clamp(26px,3.4vw,38px)]' : 'text-[clamp(32px,5vw,56px)]')}>{title}</h2>
             {children && <p className="text-pretty text-[17px] leading-relaxed text-muted-foreground">{children}</p>}
         </Reveal>
     );

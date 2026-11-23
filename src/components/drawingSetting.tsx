@@ -1,4 +1,4 @@
-import { BringToFront, Check, Copy, Palette, Pipette, SendToBack, Trash2, X } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, BringToFront, Check, Copy, Palette, Pipette, SendToBack, Trash2, X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { AnimatePresence, motion } from 'motion/react';
@@ -128,6 +128,13 @@ function duplicate() {
     state.setSelection(copies.map((c) => c.id));
 }
 
+function patchSelection(type: string, changes: Record<string, unknown>) {
+    const patches = selection()
+        .filter((x) => x.type === type)
+        .map((x) => ({ id: x.id, changes }));
+    if (patches.length) useBoard.getState().dispatch({ kind: 'update', patches: patches as ShapePatch[] });
+}
+
 function removeSelected() {
     const state = useBoard.getState();
     if (state.selectedIds.length) state.dispatch({ kind: 'delete', ids: state.selectedIds });
@@ -142,7 +149,7 @@ function ActionButton({ label, short, hint, onClick, children, danger }: { label
                     aria-label={label}
                     onClick={onClick}
                     className={cn(
-                        'flex h-12 flex-col items-center justify-center gap-1 rounded-lg bg-secondary text-[10.5px] font-medium text-muted-foreground transition-colors active:scale-95',
+                        'flex h-12 flex-col items-center justify-center gap-1 rounded-lg bg-secondary text-[10.5px] font-medium text-muted-foreground transition-[background-color,color,transform] active:scale-95',
                         danger ? 'hover:bg-destructive/10 hover:text-destructive' : 'hover:bg-secondary/60 hover:text-foreground',
                     )}
                 >
@@ -238,6 +245,14 @@ export const DrawingSettings = React.memo(function DrawingSettings() {
             return n === 1 ? name : `${n} ${name === 'Math' || name === 'Text' ? name : name + 's'}`;
         }
         return `${n} shapes`;
+    });
+    const selRect = useBoard((s) => {
+        const r = s.selectedIds.map((id) => s.shapes.get(id)).find((x) => x?.type === 'rect');
+        return r && r.type === 'rect' ? (r.cornerRadius ? 'round' : 'sharp') : null;
+    });
+    const selAlign = useBoard((s) => {
+        const t = s.selectedIds.map((id) => s.shapes.get(id)).find((x) => x?.type === 'text');
+        return t && t.type === 'text' ? t.align : null;
     });
     const selOpacity = useBoard((s) => {
         const first = s.selectedIds[0] && s.shapes.get(s.selectedIds[0]);
@@ -393,6 +408,33 @@ export const DrawingSettings = React.memo(function DrawingSettings() {
                         )}
                         {selectedCount > 0 && (
                             <>
+                                {selRect && (
+                                    <Section title="Corners">
+                                        <Segmented
+                                            group="corners"
+                                            options={[0, 1]}
+                                            value={selRect === 'round' ? 1 : 0}
+                                            onChange={(v) => patchSelection('rect', { cornerRadius: v ? 14 : null })}
+                                            labelOf={(v) => (v ? 'Round corners' : 'Sharp corners')}
+                                            render={(v) => <span className={cn('block h-3 w-4 border-[1.5px] border-current', v ? 'rounded-[4px]' : 'rounded-none')} />}
+                                        />
+                                    </Section>
+                                )}
+                                {selAlign && (
+                                    <Section title="Align">
+                                        <Segmented
+                                            group="align"
+                                            options={[0, 1, 2]}
+                                            value={['left', 'center', 'right'].indexOf(selAlign)}
+                                            onChange={(v) => patchSelection('text', { align: (['left', 'center', 'right'] as const)[v] })}
+                                            labelOf={(v) => `Align ${['left', 'center', 'right'][v]}`}
+                                            render={(v) => {
+                                                const Icon = [AlignLeft, AlignCenter, AlignRight][v];
+                                                return <Icon className="h-3.5 w-3.5" />;
+                                            }}
+                                        />
+                                    </Section>
+                                )}
                                 <Section title="Opacity" value={`${Math.round(selOpacity * 100)}%`}>
                                     <Slider value={[Math.round(selOpacity * 100)]} min={10} max={100} step={5} onValueChange={(v) => setOpacity(v[0] / 100)} aria-label="Opacity" />
                                 </Section>

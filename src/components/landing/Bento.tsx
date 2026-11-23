@@ -256,14 +256,14 @@ export function Bento() {
                 Everything below is in the app today. No sign-up, nothing to install.
             </SectionHeading>
             <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-3">
-                <Cell className="md:col-span-2" title="Everyone sees the same board, instantly" body="People and AIs edit together without conflicts. Every change lands in the same order for every tab.">
-                    <MultiplayerDemo />
+                <Cell className="md:col-span-2" title="Your AI can read your sketches" body="Draw something rough. The assistant sees it as an image, understands it, and builds on it." delay={0.1}>
+                    <SeesSketchDemo />
                 </Cell>
                 <Cell title="Math that looks like math" body="Press M and type LaTeX. Ask the AI for a worked solution and it writes each step on the board." delay={0.05}>
                     <MathDemo />
                 </Cell>
-                <Cell className="md:col-span-2" title="Your AI can read your sketches" body="Draw something rough. The assistant sees it as an image, understands it, and builds on it." delay={0.1}>
-                    <SeesSketchDemo />
+                <Cell className="md:col-span-2" title="Everyone sees the same board, instantly" body="People and AIs edit together without conflicts. Every change lands in the same order for every tab.">
+                    <MultiplayerDemo />
                 </Cell>
                 <Cell title="Diagrams that arrange themselves" body="Describe a process and the boxes arrive laid out and connected, ready to edit." delay={0.05}>
                     <LayoutDemo />

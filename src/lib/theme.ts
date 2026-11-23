@@ -75,21 +75,29 @@ export function displayInk(color: string, theme: ResolvedTheme): string {
     return lum < 0.16 ? '#e6e6e9' : color;
 }
 
-/** Display colour for shape fills: pastels become deeper tones of the same hue on the dark board. */
+const PEN_FOR_PASTEL: Record<string, string> = {
+    '#ffc9c9': '#ff6b6b',
+    '#b2f2bb': '#51cf66',
+    '#a5d8ff': '#4dabf7',
+    '#ffec99': '#fcc419',
+    '#eebefa': '#cc5de8',
+};
+
+/**
+ * Display colour for shape fills on the dark board: a translucent tint of the same hue, so
+ * pastels read as colour instead of glare or mud. Stored colours never change.
+ */
 export function displayFill(color: string, theme: ResolvedTheme): string {
     if (theme !== 'dark' || !color || color === 'transparent') return color;
-    const hex = color.replace('#', '');
+    const key = color.toLowerCase();
+    const hex = (PEN_FOR_PASTEL[key] ?? key).replace('#', '');
     const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex.slice(0, 6);
     if (!/^[0-9a-fA-F]{6}$/.test(full)) return color;
-    const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
+    const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16));
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
-    const l = (max + min) / 2;
-    if (l < 0.6) return color;
-    if (max - min < 0.04) return l > 0.95 ? '#1c1d21' : '#2a2c31';
-    const d = max - min;
-    const sat = d / (1 - Math.abs(2 * l - 1));
-    let h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-    h = Math.round(h * 60 + 360) % 360;
-    return `hsl(${h}, ${Math.round(Math.min(1, sat) * 62)}%, 33%)`;
+    const l = (max + min) / 510;
+    if (l < 0.5 && !PEN_FOR_PASTEL[key]) return color;
+    if (max - min < 12) return l > 0.95 ? '#1c1d21' : '#2a2c31';
+    return `rgba(${r}, ${g}, ${b}, 0.28)`;
 }

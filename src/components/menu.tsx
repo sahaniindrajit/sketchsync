@@ -1,4 +1,4 @@
-import { FilePlus2, Github, HelpCircle, ImageDown, Maximize, Moon, Sparkles, Sun, Trash2, Users } from 'lucide-react';
+import { FilePlus2, PenLine, Github, HelpCircle, ImageDown, Maximize, Moon, Sparkles, Sun, Trash2, Users } from 'lucide-react';
 import { motion } from 'motion/react';
 import React, { useEffect, useRef } from 'react';
 import { Kbd } from '@/components/ui/kbd';
@@ -51,6 +51,7 @@ export const AppMenu = React.memo(function AppMenu({ actions, onClose, viaKeyboa
             ...(actions.onFit ? [{ icon: Maximize, label: 'Zoom to fit', onClick: actions.onFit }] : []),
         ],
         [
+            { icon: PenLine, label: 'Rename board', onClick: () => window.dispatchEvent(new Event('sketchsync:rename')) },
             { icon: FilePlus2, label: 'New board', onClick: actions.onNewBoard },
             { icon: theme === 'dark' ? Sun : Moon, label: theme === 'dark' ? 'Light mode' : 'Dark mode', onClick: toggleTheme, toggle: theme === 'dark' },
         ],
@@ -86,7 +87,7 @@ export const AppMenu = React.memo(function AppMenu({ actions, onClose, viaKeyboa
                             )}
                             tabIndex={-1}
                             aria-checked={item.toggle}
-                            onMouseEnter={(e) => e.currentTarget.focus()}
+                            onPointerMove={(e) => document.activeElement !== e.currentTarget && e.currentTarget.focus()}
                             onClick={() => {
                                 onClose();
                                 item.onClick();

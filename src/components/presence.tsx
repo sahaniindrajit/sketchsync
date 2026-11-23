@@ -5,6 +5,7 @@ import { assignColors, initials, usePresence, type Peer } from '@/board/presence
 import { useBoard } from '@/board/store';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { useMedia } from '@/lib/useMedia';
 import { useAiActivityClock } from './aiActivity';
 
 /**
@@ -56,7 +57,7 @@ function Avatar({ color, label, className, children }: { color: string; label: s
                     initial={{ scale: 0.6, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.6, opacity: 0 }}
-                    className={cn('relative -ml-1.5 flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-semibold text-white ring-2 ring-[hsl(var(--chrome))] first:ml-0', className)}
+                    className={cn('relative -ml-1 flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-semibold text-white ring-[2.5px] ring-[hsl(var(--chrome))] first:ml-0', className)}
                     style={{ backgroundColor: color }}
                     aria-label={label}
                     tabIndex={0}
@@ -81,7 +82,8 @@ export function PresenceStack() {
     const { activity, now } = useAiActivityClock(8000);
     const aiHere = !!activity && now - activity.at < 8000;
     const [editing, setEditing] = useState(false);
-    const shown = peers.slice(0, 3);
+    const compact = useMedia('(max-width: 639px)');
+    const shown = peers.slice(0, compact ? 1 : 3);
     const extra = peers.length - shown.length;
     const status = {
         online: ['bg-success', peers.length ? `Live · ${peers.length + 1} here` : 'Live'],
@@ -117,7 +119,7 @@ export function PresenceStack() {
                             type="button"
                             onClick={() => setEditing(true)}
                             aria-label={`You: ${me.name}. Change your name`}
-                            className={cn('relative -ml-1.5 flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-semibold text-white ring-2 ring-[hsl(var(--chrome))]', !(aiHere || shown.length) && 'ml-0')}
+                            className={cn('relative -ml-1 flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-semibold text-white shadow-[0_0_0_2.5px_hsl(var(--chrome)),0_0_0_4px_hsl(var(--foreground)/0.5)]', !(aiHere || shown.length) && 'ml-0')}
                             style={{ backgroundColor: me.color }}
                         >
                             {initials(me.name)}

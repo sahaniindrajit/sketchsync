@@ -111,9 +111,15 @@ function MiniBoard({ n }: { n: number }) {
                         <motion.path d={head} fill="none" stroke="#e6e6e9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" initial={false} animate={{ opacity: drawing ? 1 : 0 }} transition={{ delay: drawing ? 1.2 + i * 0.2 : 0 }} />
                     </g>
                 ))}
-                <motion.text x="300" y="248" fontSize="12" fill="#e58a6b" fontFamily="Inter, sans-serif" fontWeight="600" initial={false} animate={{ opacity: checked ? 1 : 0 }}>
-                    ✓ cache in front of the DB
-                </motion.text>
+                <motion.g initial={false} animate={{ opacity: checked ? 1 : 0 }}>
+                    <path d="M346 108 V 164" fill="none" stroke="#e58a6b" strokeWidth="1.5" strokeDasharray="4 4" />
+                    <text x="354" y="141" fontSize="11.5" fill="#e58a6b" fontFamily="Inter, sans-serif" fontWeight="600">
+                        cache
+                    </text>
+                    <text x="24" y="256" fontSize="12" fill="#e58a6b" fontFamily="Inter, sans-serif" fontWeight="600">
+                        ✓ Redis now sits in front of Postgres
+                    </text>
+                </motion.g>
                 <motion.g initial={false} animate={{ x: cx, y: cy, opacity: ai ? 1 : 0 }} transition={{ type: 'spring', visualDuration: 0.6, bounce: 0.1 }}>
                     <path d="M0 0 L0 17 L4.6 12.8 L7.6 19.5 L10.4 18.3 L7.5 11.8 L13.6 11.6 Z" fill="#e58a6b" stroke="white" strokeWidth="1.3" />
                     <rect x="13" y="20" width="56" height="20" rx="6" fill="#e58a6b" />
@@ -132,7 +138,7 @@ export function McpSection() {
     const setup = SETUPS.find((s) => s.id === tab)!;
     const { ref, n, replay } = useReplay();
     return (
-        <section id="mcp" className="scroll-mt-16 bg-[hsl(228_12%_7%)] text-white dark:bg-[hsl(228_10%_9%)] dark:[border-block:1px_solid_hsl(0_0%_100%/0.08)]">
+        <section id="mcp" className="scroll-mt-16 bg-[hsl(228_12%_7%)] text-white dark:bg-[linear-gradient(180deg,hsl(228_10%_12%),hsl(228_10%_9%))] dark:[border-block:1px_solid_hsl(0_0%_100%/0.1)]">
             <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))] py-24 sm:py-32">
                 <Reveal className="grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-end">
                     <div className="max-w-2xl space-y-4">
@@ -154,7 +160,7 @@ export function McpSection() {
                 <Reveal delay={0.05} className="mt-12 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 md:grid-cols-[1.1fr_1fr]">
                     <div ref={ref} className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[hsl(228_10%_5%)]">
                         <div
-                            className="flex items-center gap-1 overflow-x-auto border-b border-white/10 p-2 [mask-image:linear-gradient(90deg,#000_88%,transparent)] [scrollbar-width:none] md:[mask-image:none]"
+                            className="flex items-center gap-1 overflow-x-auto border-b border-white/10 p-2 pr-8 [mask-image:linear-gradient(90deg,#000_85%,transparent)] [scrollbar-width:none] md:pr-2 md:[mask-image:none]"
                             role="tablist"
                             aria-label="Setup instructions"
                             onKeyDown={(e) => {
@@ -188,7 +194,7 @@ export function McpSection() {
                                 <CopyButton value={setup.code.replace(/\\\n\s+/g, '')} label="Copy snippet" dense className="text-white/60 hover:bg-white/10 hover:text-white" />
                             </div>
                             <div className="relative">
-                                <motion.pre key={setup.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="min-h-[150px] overflow-x-auto px-5 pb-4 pt-2 font-mono text-[12.5px] leading-[1.75] [scrollbar-width:thin]">
+                                <motion.pre key={setup.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="overflow-x-auto px-5 pb-4 pt-2 font-mono text-[12.5px] leading-[1.75] [scrollbar-width:thin]">
                                     <code>
                                         {setup.code.split('\n').map((line, i) => (
                                             <div key={i} className="flex">

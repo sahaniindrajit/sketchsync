@@ -55,7 +55,7 @@ const CLIENTS = [
     },
 ] as const;
 
-export function ConnectAiPanel({ roomId }: { roomId: string }) {
+export function ConnectAiPanel({ roomId, ask }: { roomId: string; ask?: string }) {
     const url = mcpUrl(roomId);
     const [client, setClient] = useState<(typeof CLIENTS)[number]['id']>('claude');
     const selected = CLIENTS.find((c) => c.id === client)!;
@@ -100,7 +100,7 @@ export function ConnectAiPanel({ roomId }: { roomId: string }) {
 
             <div className="space-y-2 rounded-xl bg-secondary/60 p-3 text-xs text-muted-foreground">
                 <p>
-                    Then try: <span className="text-foreground">“Draw a flowchart of our signup flow.”</span>
+                    Then try: <span className="text-foreground">“{ask || 'Draw a flowchart of our signup flow.'}”</span>
                 </p>
                 <p className="flex items-start gap-1.5">
                     <ShieldAlert className="mt-px h-3.5 w-3.5 shrink-0 text-warning" />

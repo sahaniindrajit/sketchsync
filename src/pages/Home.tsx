@@ -1,7 +1,7 @@
 import { ArrowRight, Code2, MousePointer2, Sparkles, SquareTerminal, Wind, Zap } from 'lucide-react';
 import { motion, useInView, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Footer from '@/components/footer';
 import Navbar from '@/components/navbar';
 import { Bento } from '@/components/landing/Bento';
@@ -135,15 +135,19 @@ function WorksWith() {
 
 const PROMPTS = ['Draw our signup flow', 'Sketch the system architecture', 'Solve ∫ x² dx step by step', 'Turn my sketch into a clean diagram'];
 
-/** A prompt box whose example requests type themselves, as if to an AI on the board. */
+/** Type what you want an AI to draw; it opens a board with Connect your AI and your request ready. */
 function PromptBox() {
     const reduced = useReducedMotion();
-    const ref = useRef<HTMLDivElement>(null);
+    const navigate = useNavigate();
+    const ref = useRef<HTMLFormElement>(null);
     const inView = useInView(ref, { amount: 0.6 });
+    const [value, setValue] = useState('');
+    const [focused, setFocused] = useState(false);
     const [i, setI] = useState(0);
     const [n, setN] = useState(reduced ? PROMPTS[0].length : 0);
+    const demo = !value && !focused;
     useEffect(() => {
-        if (!inView || reduced) return;
+        if (!inView || reduced || !demo) return;
         const text = PROMPTS[i];
         if (n < text.length) {
             const t = setTimeout(() => setN(n + 1), 45);
@@ -154,27 +158,44 @@ function PromptBox() {
             setN(0);
         }, 1800);
         return () => clearTimeout(t);
-    }, [inView, reduced, i, n]);
+    }, [inView, reduced, demo, i, n]);
     return (
-        <div ref={ref} className="mx-auto mt-10 w-full max-w-xl">
-            <div className="flex items-center gap-3 rounded-2xl border border-border bg-background p-2 pl-4 text-left shadow-lift">
+        <form
+            ref={ref}
+            className="mx-auto mt-10 w-full max-w-xl"
+            onSubmit={(e) => {
+                e.preventDefault();
+                const ask = value.trim() || PROMPTS[i];
+                navigate(`/board?connect=ai&ask=${encodeURIComponent(ask)}`);
+            }}
+        >
+            <div className="flex items-center gap-3 rounded-2xl border border-border bg-background p-2 pl-4 text-left shadow-lift transition-[border-color,box-shadow] focus-within:border-ring focus-within:shadow-[0_0_0_4px_hsl(var(--ring)/0.15)]">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-claude text-white">
                     <Sparkles className="h-3.5 w-3.5" />
                 </span>
-                <span className="min-w-0 flex-1 truncate text-[15px]">
-                    <span className="text-muted-foreground">@Claude </span>
-                    {PROMPTS[i].slice(0, n)}
-                    <span className="ml-px inline-block h-[1.05em] w-[1.5px] translate-y-[2px] animate-blink bg-foreground" />
-                </span>
-                <Link to="/board" className="group inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-primary px-4 text-[14.5px] font-medium text-primary-foreground transition-transform active:scale-[0.97] sm:px-5">
+                <div className="relative min-w-0 flex-1">
+                    <input
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        onFocus={() => setFocused(true)}
+                        onBlur={() => setFocused(false)}
+                        aria-label="What should your AI draw?"
+                        className="h-10 w-full bg-transparent text-[15px] outline-none"
+                    />
+                    {demo && (
+                        <span className="pointer-events-none absolute inset-0 flex items-center truncate text-[15px] text-muted-foreground" aria-hidden>
+                            Ask your AI to “{PROMPTS[i].slice(0, n)}
+                            <span className="ml-px inline-block h-[1.05em] w-[1.5px] animate-blink bg-foreground" />”
+                        </span>
+                    )}
+                </div>
+                <button type="submit" className="group inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-primary px-4 text-[14.5px] font-medium text-primary-foreground transition-transform active:scale-[0.97] sm:px-5">
                     Open a board
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </Link>
+                </button>
             </div>
-            <p className="mt-4 text-[13.5px] text-muted-foreground">
-                Then <Link to="/board?connect=ai" className="font-medium text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground">connect your AI</Link> and ask it right on the board.
-            </p>
-        </div>
+            <p className="mt-4 text-[13.5px] text-muted-foreground">We'll open a new board with the Connect your AI steps and your request ready to paste.</p>
+        </form>
     );
 }
 
@@ -184,7 +205,15 @@ function Cta() {
             <Reveal>
                 <div className="relative overflow-hidden rounded-3xl border border-border bg-card dark:bg-[hsl(228_9%_10.5%)]">
                     <div className="dot-grid absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_at_center,#000,transparent_75%)]" />
-                    <div className="pointer-events-none absolute -top-48 left-1/2 h-[28rem] w-[760px] max-w-full -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,hsl(var(--claude)/0.2),transparent)]" />
+                    <svg className="pointer-events-none absolute right-[8%] top-[18%] hidden h-24 w-40 text-foreground/15 md:block" viewBox="0 0 160 96" aria-hidden>
+                        <rect x="2" y="2" width="70" height="40" rx="8" fill="none" stroke="currentColor" strokeWidth="2" />
+                        <path d="M72 22 H 108" stroke="currentColor" strokeWidth="2" />
+                        <path d="M124 6 L144 22 L124 38 L104 22 Z" fill="none" stroke="currentColor" strokeWidth="2" />
+                    </svg>
+                    <svg className="pointer-events-none absolute bottom-[16%] left-[7%] hidden h-24 w-36 md:block" viewBox="0 0 140 96" aria-hidden>
+                        <path d="M8 70 C 30 20, 60 90, 90 40 S 130 30, 132 50" fill="none" stroke="#1971c2" strokeOpacity="0.35" strokeWidth="3" strokeLinecap="round" />
+                        <path d="M118 8 L118 25 L122.6 20.8 L125.6 27.5 L128.4 26.3 L125.5 19.8 L131.6 19.6 Z" style={{ fill: 'hsl(var(--claude))' }} />
+                    </svg>
                     <div className="relative flex flex-col items-center px-5 py-20 text-center sm:py-28">
                         <h2 className="max-w-[16ch] text-balance text-[clamp(34px,6vw,68px)] font-semibold leading-[0.98] tracking-[-0.045em]">Start a board. Invite a teammate. Or an AI.</h2>
                         <p className="mt-5 max-w-md text-balance text-[17px] text-muted-foreground">One click, no account. Every board lives at its own link.</p>

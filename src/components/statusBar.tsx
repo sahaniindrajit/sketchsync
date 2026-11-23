@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Kbd } from '@/components/ui/kbd';
 import { MOD } from '@/lib/platform';
-import { animateViewport, redoLast, undoLast, useBoard } from '@/board/store';
+import { animateViewport, redoLast, undoLast, useBoard, useCanUndo } from '@/board/store';
 import { useHistory } from '@/board/history';
 import { cn } from '@/lib/utils';
 import { useMedia } from '@/lib/useMedia';
@@ -34,19 +34,19 @@ export function ConnectionBadge({ onShare, onConnectAi }: { onShare: () => void;
                         aria-label="Connect your AI"
                         className={cn(
                             'flex h-11 items-center gap-2 rounded-r-xl pl-2 pr-3 text-[13px] font-medium text-foreground/80 transition-colors hover:text-foreground',
-                            working && 'border-claude/40',
-                        )}
+                                        )}
                     >
                         <span className={cn('relative flex h-5 w-5 items-center justify-center rounded-full transition-colors', working ? 'bg-claude text-white' : 'bg-secondary text-claude')}>
                             <Sparkles className="h-3 w-3" strokeWidth={2} />
                         </span>
-                        <span className="hidden whitespace-nowrap sm:inline">Connect AI</span>
+                        <span className="whitespace-nowrap"><span className="sm:hidden">AI</span><span className="hidden sm:inline">Connect AI</span></span>
                     </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Let Claude, Cursor or any MCP client draw here</TooltipContent>
             </Tooltip>
             </motion.div>
             <button
+                id="share-button"
                 type="button"
                 onClick={onShare}
                 className="relative flex h-11 items-center gap-2 overflow-hidden rounded-xl bg-primary px-4 text-[13px] font-medium text-primary-foreground shadow-chrome transition-transform active:scale-[0.97]"
@@ -94,7 +94,7 @@ function ZoomButton({ label, hint, onClick, children, disabled }: { label: strin
                     aria-label={label}
                     onClick={disabled ? undefined : onClick}
                     aria-disabled={disabled || undefined}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground active:scale-95 aria-disabled:cursor-default aria-disabled:opacity-35 aria-disabled:hover:bg-transparent aria-disabled:active:scale-100"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-[background-color,color,transform] hover:bg-secondary hover:text-foreground active:scale-95 aria-disabled:cursor-default aria-disabled:opacity-35 aria-disabled:hover:bg-transparent aria-disabled:active:scale-100"
                 >
                     {children}
                 </button>
@@ -111,7 +111,7 @@ export function ZoomControls({ onFit }: { onFit: () => void }) {
     const viewport = useBoard((s) => s.viewport);
     const target = useBoard((s) => s.viewportTarget);
     const compact = useMedia('(max-width: 639px)');
-    const canUndo = useHistory((s) => s.undo.length > 0);
+    const canUndo = useCanUndo();
     const canRedo = useHistory((s) => s.redo.length > 0);
     const zoom = (factor: number | null) => {
         const state = useBoard.getState();

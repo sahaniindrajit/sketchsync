@@ -23,7 +23,7 @@ type Item = { id: number; kind: Kind; x: number; y: number };
 
 // Spots on the mini board, used in turn so new shapes rarely overlap.
 const SLOTS: [number, number][] = [
-    [70, 60], [200, 55], [330, 65], [80, 150], [210, 150], [335, 155], [140, 220], [275, 220],
+    [80, 60], [200, 58], [320, 62], [100, 140], [220, 140], [330, 145], [150, 100], [270, 100],
 ];
 const FILLS: Partial<Record<Kind, string>> = { R: '#a5d8ff', O: '#b2f2bb', D: '#ffec99' };
 
@@ -70,6 +70,8 @@ export function Shortcuts() {
         { id: 3, kind: 'O', x: 330, y: 65 },
     ]);
     const [selected, setSelected] = useState<number | null>(null);
+    const itemsRef = useRef(items);
+    itemsRef.current = items;
     const [pan, setPan] = useState(0);
     const counter = useRef(3);
     const nextId = useRef(4);
@@ -81,10 +83,7 @@ export function Shortcuts() {
             return;
         }
         if (key === 'V') {
-            setItems((list) => {
-                setSelected(list[list.length - 1]?.id ?? null);
-                return list;
-            });
+            setSelected(itemsRef.current[itemsRef.current.length - 1]?.id ?? null);
             return;
         }
         if (key === 'H') {
@@ -122,10 +121,10 @@ export function Shortcuts() {
 
     return (
         <section ref={sectionRef}>
-            <SectionHeading center small eyebrow="Keyboard first" title="Every tool is one key away.">
+            <SectionHeading small eyebrow="Keyboard first" title="Every tool is one key away.">
                 Press a key, or click one, and it draws here. The same keys work on the board, and <span className="whitespace-nowrap"><span className="kbd">⌘</span> <span className="kbd">K</span></span> finds everything else.
             </SectionHeading>
-            <Reveal className="mx-auto mt-12 grid max-w-5xl items-center gap-8 md:grid-cols-[1fr_1.1fr]">
+            <Reveal className="mt-10 grid items-center gap-8 md:grid-cols-[1fr_1.2fr]">
                 <div className="grid grid-cols-6 gap-2 sm:grid-cols-4 sm:gap-3.5">
                     {KEYS.map(([k, label]) => {
                         const on = pressed === k;
@@ -160,7 +159,7 @@ export function Shortcuts() {
                     </div>
                 </div>
                 <div className="dot-grid relative overflow-hidden rounded-2xl border border-border bg-background shadow-lift">
-                    <svg viewBox="0 0 400 270" className="block h-auto w-full text-foreground" role="img" aria-label="A small board showing the shapes you drew with the keyboard">
+                    <svg viewBox="0 0 400 200" className="block h-auto w-full text-foreground" role="img" aria-label="A small board showing the shapes you drew with the keyboard">
                         <motion.g animate={{ x: pan }} transition={{ type: 'spring', visualDuration: 0.4, bounce: 0.15 }}>
                             <AnimatePresence>
                                 {items.map((it) => (

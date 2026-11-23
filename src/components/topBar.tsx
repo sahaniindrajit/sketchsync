@@ -8,7 +8,7 @@ import { MOD } from '@/lib/platform';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePresence } from '@/board/presence';
 import { useHistory } from '@/board/history';
-import { redoLast, undoLast } from '@/board/store';
+import { redoLast, undoLast, useCanUndo } from '@/board/store';
 import { cn } from '@/lib/utils';
 import { useMedia } from '@/lib/useMedia';
 import { AppMenu, type MenuActions } from './menu';
@@ -30,7 +30,7 @@ function IconButton({ label, onClick, disabled, children }: { label: string; onC
 export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand: () => void }) {
     const [showMenu, setShowMenu] = useState(false);
     const compact = useMedia('(max-width: 639px)');
-    const canUndo = useHistory((s) => s.undo.length > 0);
+    const canUndo = useCanUndo();
     const canRedo = useHistory((s) => s.redo.length > 0);
     const [viaKeyboard, setViaKeyboard] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -133,9 +133,14 @@ export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand
 function BoardTitle() {
     const title = usePresence((s) => s.title);
     const [editing, setEditing] = useState(false);
+    useEffect(() => {
+        const start = () => setEditing(true);
+        window.addEventListener('sketchsync:rename', start);
+        return () => window.removeEventListener('sketchsync:rename', start);
+    }, []);
     const commit = (value: string) => {
         setEditing(false);
-        if (value.trim() === title) return;
+        if (value.trim() === (title || 'Untitled board')) return;
         usePresence.getState().setTitle(value);
         usePresence.getState().announce();
     };
@@ -143,7 +148,7 @@ function BoardTitle() {
         return (
             <input
                 autoFocus
-                defaultValue={title}
+                defaultValue={title || 'Untitled board'}
                 maxLength={60}
                 aria-label="Board name"
                 placeholder="Untitled board"
@@ -154,7 +159,7 @@ function BoardTitle() {
                     if (e.key === 'Enter') commit(e.currentTarget.value);
                     if (e.key === 'Escape') setEditing(false);
                 }}
-                className="h-8 w-[180px] rounded-md border border-ring bg-card px-2 text-[13px] font-medium outline-none ring-[3px] ring-ring/15"
+                className="h-8 w-[180px] rounded-md border border-ring bg-card px-2 text-[13px] font-medium outline-none ring-[3px] ring-ring/15 max-sm:fixed max-sm:left-3 max-sm:right-3 max-sm:top-[64px] max-sm:z-50 max-sm:h-11 max-sm:w-auto max-sm:text-[15px] max-sm:shadow-lift"
             />
         );
     }

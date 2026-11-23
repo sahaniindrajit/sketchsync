@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { applyOp } from '@/shared/ops';
-import { asOneStep, redo, resetHistory, undo } from './history';
+import { asOneStep, redo, resetHistory, undo, useHistory } from './history';
 import { DEFAULTS, type Op, type Shape } from '@/shared/protocol';
 
 export type Tool = 'select' | 'hand' | 'rect' | 'ellipse' | 'diamond' | 'arrow' | 'line' | 'pencil' | 'text' | 'math' | 'eraser';
@@ -71,7 +71,7 @@ const initialDefaults = {
 
 export const useBoard = create<BoardState>()((set) => ({
     ...initialDefaults,
-    tool: 'pencil',
+    tool: 'select',
     strokeColor: DEFAULTS.strokeColor,
     fillColor: DEFAULTS.fillColor,
     strokeWidth: DEFAULTS.strokeWidth,
@@ -134,6 +134,11 @@ export function animateViewport(target: Viewport, ms = 320) {
     let last = start;
     const ease = (t: number) => 1 - Math.pow(1 - t, 3);
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+    // Glide the board point under the screen centre, so the view never drifts sideways while zooming.
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    const c0 = { x: (cx - start.x) / start.scale, y: (cy - start.y) / start.scale };
+    const c1 = { x: (cx - target.x) / target.scale, y: (cy - target.y) / target.scale };
     const step = (now: number) => {
         const current = useBoard.getState().viewport;
         if (current !== last) {
@@ -144,7 +149,8 @@ export function animateViewport(target: Viewport, ms = 320) {
         const k = ease(t);
         // Interpolate scale geometrically so zooming feels even.
         const scale = start.scale * Math.pow(target.scale / start.scale, k);
-        last = { scale, x: lerp(start.x, target.x, k), y: lerp(start.y, target.y, k) };
+        const c = { x: lerp(c0.x, c1.x, k), y: lerp(c0.y, c1.y, k) };
+        last = { scale, x: cx - c.x * scale, y: cy - c.y * scale };
         if (t >= 1) last = target;
         useBoard.setState(t >= 1 ? { viewport: last, viewportTarget: null } : { viewport: last });
         if (t < 1) viewportAnim = requestAnimationFrame(step);
@@ -153,7 +159,28 @@ export function animateViewport(target: Viewport, ms = 320) {
 }
 
 /** Undo/redo the local user's last change. */
-export const undoLast = () => undo((op) => useBoard.getState().dispatch(op), () => useBoard.getState().shapes);
+/** Whether Undo has anything to do: your own history, or a newer AI batch. */
+export function useCanUndo(): boolean {
+    const local = useHistory((s) => s.undo.length > 0);
+    const lastAt = useHistory((s) => s.lastAt);
+    const ai = useBoard((s) => s.aiActivity);
+    return local || (!!ai?.undo.length && ai.at > lastAt);
+}
+
+/** True when the newest change on the board is an AI batch you can still revert. */
+export function aiUndoable(): boolean {
+    const ai = useBoard.getState().aiActivity;
+    return !!ai?.undo.length && ai.at > useHistory.getState().lastAt && Date.now() - ai.at < 120_000;
+}
+
+/** Undo: the AI's batch if that is the newest change, otherwise your own last change. */
+export const undoLast = () => {
+    if (aiUndoable()) {
+        undoAiBatch();
+        return true;
+    }
+    return undo((op) => useBoard.getState().dispatch(op), () => useBoard.getState().shapes);
+};
 /** Reverts the AI's most recent batch of edits (as one undoable step for this user). */
 export function undoAiBatch() {
     const { aiActivity, dispatch, notify } = useBoard.getState();

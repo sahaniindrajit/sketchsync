@@ -12,9 +12,11 @@ type Entry = Op[];
 interface HistoryState {
     undo: Entry[];
     redo: Entry[];
+    /** When this user last changed the board. */
+    lastAt: number;
 }
 
-export const useHistory = create<HistoryState>()(() => ({ undo: [], redo: [] }));
+export const useHistory = create<HistoryState>()(() => ({ undo: [], redo: [], lastAt: 0 }));
 
 const LIMIT = 200;
 let replaying = false;
@@ -75,11 +77,11 @@ export function recordOp(op: Op, shapes: Map<string, Shape>) {
     useHistory.setState((s) => {
         if (gestureOpen && gestureEntry && s.undo[s.undo.length - 1] === gestureEntry) {
             gestureEntry.push(inverse);
-            return { redo: [] };
+            return { redo: [], lastAt: Date.now() };
         }
         const entry: Entry = [inverse];
         if (gestureOpen) gestureEntry = entry;
-        return { undo: [...s.undo, entry].slice(-LIMIT), redo: [] };
+        return { undo: [...s.undo, entry].slice(-LIMIT), redo: [], lastAt: Date.now() };
     });
 }
 
@@ -118,7 +120,7 @@ export function redo(dispatch: (op: Op) => void, getShapes: () => Map<string, Sh
 
 export function resetHistory() {
     gestureEntry = null;
-    useHistory.setState({ undo: [], redo: [] });
+    useHistory.setState({ undo: [], redo: [], lastAt: 0 });
 }
 
 /** Runs `fn` so that every op it dispatches becomes a single undo step. */

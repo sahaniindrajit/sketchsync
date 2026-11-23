@@ -7,7 +7,7 @@ import { undoAiBatch, useBoard } from '@/board/store';
 import { cn } from '@/lib/utils';
 
 const ACTIVE_MS = 2500;
-const VISIBLE_MS = 7000;
+const VISIBLE_MS = 12000;
 
 /** Bounds of the shapes the AI touched most recently. */
 // eslint-disable-next-line react-refresh/only-export-components

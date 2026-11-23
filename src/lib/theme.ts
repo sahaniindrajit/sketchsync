@@ -91,5 +91,5 @@ export function displayFill(color: string, theme: ResolvedTheme): string {
     const sat = d / (1 - Math.abs(2 * l - 1));
     let h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
     h = Math.round(h * 60 + 360) % 360;
-    return `hsl(${h}, ${Math.round(Math.min(1, sat) * 55)}%, 27%)`;
+    return `hsl(${h}, ${Math.round(Math.min(1, sat) * 62)}%, 33%)`;
 }

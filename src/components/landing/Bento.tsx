@@ -70,7 +70,7 @@ function MultiplayerDemo() {
                     <svg width="14" height="16" viewBox="0 0 14 20"><path d="M0 0 L0 17 L4.6 12.8 L7.6 19.5 L10.4 18.3 L7.5 11.8 L13.6 11.6 Z" fill="#2f9e44" stroke="white" strokeWidth="1.3" /></svg>
                     <span className="mt-3 rounded-md bg-[#2f9e44] px-1.5 py-0.5 text-[10.5px] font-semibold text-white">Arjun</span>
                 </motion.div>
-                <motion.div animate={{ x: [250, 230, 10, 240][i], y: [100, 0, 100, 96][i] }} transition={{ type: 'spring', visualDuration: 0.9, bounce: 0.1 }} className="absolute flex items-start gap-0.5">
+                <motion.div animate={{ x: [250, 230, 10, 250][i], y: [100, 0, 100, 4][i] }} transition={{ type: 'spring', visualDuration: 0.9, bounce: 0.1 }} className="absolute flex items-start gap-0.5">
                     <svg width="14" height="16" viewBox="0 0 14 20"><path d="M0 0 L0 17 L4.6 12.8 L7.6 19.5 L10.4 18.3 L7.5 11.8 L13.6 11.6 Z" fill="#1971c2" stroke="white" strokeWidth="1.3" /></svg>
                     <span className="mt-3 rounded-md bg-[#1971c2] px-1.5 py-0.5 text-[10.5px] font-semibold text-white">Maya</span>
                 </motion.div>
@@ -252,7 +252,7 @@ function SeesSketchDemo() {
 export function Bento() {
     return (
         <section id="features" className="scroll-mt-24">
-            <SectionHeading eyebrow="What's on the board" title="Built for people. Readable by models.">
+            <SectionHeading eyebrow="What's on the board" title="A board your AI can read, not just write.">
                 Everything below is in the app today. No sign-up, nothing to install.
             </SectionHeading>
             <div className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -262,11 +262,11 @@ export function Bento() {
                 <Cell title="Math that looks like math" body="Press M and type LaTeX. Ask the AI for a worked solution and it writes each step on the board." delay={0.05}>
                     <MathDemo />
                 </Cell>
-                <Cell title="Diagrams that arrange themselves" body="Describe a process and the boxes arrive laid out and connected, ready to edit." delay={0.05}>
-                    <LayoutDemo />
-                </Cell>
                 <Cell className="md:col-span-2" title="Your AI can read your sketches" body="Draw something rough. The assistant sees it as an image, understands it, and builds on it." delay={0.1}>
                     <SeesSketchDemo />
+                </Cell>
+                <Cell title="Diagrams that arrange themselves" body="Describe a process and the boxes arrive laid out and connected, ready to edit." delay={0.05}>
+                    <LayoutDemo />
                 </Cell>
             </div>
             <Reveal className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-[14px] text-muted-foreground">

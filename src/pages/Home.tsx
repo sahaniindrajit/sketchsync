@@ -1,16 +1,14 @@
 import { ArrowRight, Code2, MousePointer2, Sparkles, SquareTerminal, Wind, Zap } from 'lucide-react';
-import { motion, useReducedMotion } from 'motion/react';
-import { useEffect } from 'react';
+import { motion, useInView, useReducedMotion } from 'motion/react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Footer from '@/components/footer';
 import Navbar from '@/components/navbar';
 import { Bento } from '@/components/landing/Bento';
 import { HeroBoard } from '@/components/landing/HeroBoard';
 import { McpSection } from '@/components/landing/McpSection';
-import { Reveal, usePauseOffscreen } from '@/components/landing/Reveal';
-import { cn } from '@/lib/utils';
+import { Reveal } from '@/components/landing/Reveal';
 import { Shortcuts } from '@/components/landing/Shortcuts';
-import { LogoMark } from '@/components/logo';
 
 const HEADLINE = ['The', 'whiteboard', 'your', 'AI', 'can', 'draw', 'on.'];
 const CLIENTS = [
@@ -26,7 +24,7 @@ function Hero() {
     const reduced = useReducedMotion();
     return (
         <section className="relative">
-            <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))] pb-8 pt-10 sm:pt-14">
+            <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))] pb-7 pt-8 sm:pt-10">
                 <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -34,10 +32,10 @@ function Hero() {
                     className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.08em] text-muted-foreground"
                 >
                     <span className="h-1.5 w-1.5 rounded-full bg-claude" />
-                    Realtime whiteboard · MCP server built in
+                    <span className="hidden sm:inline">Realtime whiteboard · </span>MCP server built in
                 </motion.p>
 
-                <h1 className="mt-5 max-w-[15ch] text-balance text-[clamp(40px,7.4vw,84px)] font-semibold leading-[0.95] tracking-display" aria-label={HEADLINE.join(' ')}>
+                <h1 className="mt-4 max-w-[16ch] text-balance text-[clamp(40px,6.2vw,76px)] font-semibold leading-[0.95] tracking-display" aria-label={HEADLINE.join(' ')}>
                     {HEADLINE.map((w, i) => (
                         <motion.span
                             key={i}
@@ -77,7 +75,7 @@ function Hero() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={reduced ? { duration: 0.15 } : { type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.5 }}
-                    className="mt-6 max-w-[54ch] text-pretty text-[17px] leading-relaxed text-muted-foreground sm:text-[18px]"
+                    className="mt-5 max-w-[60ch] text-pretty text-[17px] leading-relaxed text-muted-foreground"
                 >
                     Sketch with your team in real time. Connect Claude or any MCP client and watch it add flowcharts, diagrams and math to the same board.
                 </motion.p>
@@ -85,14 +83,13 @@ function Hero() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={reduced ? { duration: 0.15 } : { type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.6 }}
-                    className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3"
+                    className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3"
                 >
                     <div className="flex flex-wrap gap-2.5">
                         <Link
                             to="/board"
                             className="group relative inline-flex h-12 items-center gap-2 overflow-hidden rounded-xl bg-primary px-5 text-[15px] font-medium text-primary-foreground shadow-[inset_0_1px_0_hsl(0_0%_100%/0.15),0_8px_24px_-8px_hsl(225_20%_10%/0.5)] transition-transform active:scale-[0.97]"
                         >
-                            <span className="absolute inset-0 animate-sheen bg-[linear-gradient(100deg,transparent_30%,hsl(0_0%_100%/0.22)_50%,transparent_70%)] [animation-iteration-count:3]" />
                             <span className="relative">Open a board</span>
                             <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                         </Link>
@@ -136,72 +133,62 @@ function WorksWith() {
     );
 }
 
-/** A hand-drawn arrow, drawn by Claude's cursor, pointing at the button. */
-function CtaSketch() {
+const PROMPTS = ['Draw our signup flow', 'Sketch the system architecture', 'Solve ∫ x² dx step by step', 'Turn my sketch into a clean diagram'];
+
+/** A prompt box whose example requests type themselves, as if to an AI on the board. */
+function PromptBox() {
     const reduced = useReducedMotion();
+    const ref = useRef<HTMLDivElement>(null);
+    const inView = useInView(ref, { amount: 0.6 });
+    const [i, setI] = useState(0);
+    const [n, setN] = useState(reduced ? PROMPTS[0].length : 0);
+    useEffect(() => {
+        if (!inView || reduced) return;
+        const text = PROMPTS[i];
+        if (n < text.length) {
+            const t = setTimeout(() => setN(n + 1), 45);
+            return () => clearTimeout(t);
+        }
+        const t = setTimeout(() => {
+            setI((i + 1) % PROMPTS.length);
+            setN(0);
+        }, 1800);
+        return () => clearTimeout(t);
+    }, [inView, reduced, i, n]);
     return (
-        <div className="pointer-events-none absolute -right-[176px] -top-[30px] hidden h-[110px] w-[180px] sm:block" aria-hidden>
-            <svg viewBox="0 0 180 110" className="h-full w-full">
-                <motion.path
-                    d="M168 18 C 120 4, 74 18, 58 50 C 50 66, 52 78, 44 86"
-                    fill="none"
-                    style={{ stroke: 'hsl(var(--claude))' }}
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    initial={{ pathLength: reduced ? 1 : 0 }}
-                    whileInView={{ pathLength: 1 }}
-                    viewport={{ once: true, amount: 0.8 }}
-                    transition={{ duration: 1, ease: 'easeInOut', delay: 0.3 }}
-                />
-                <motion.path
-                    d="M34 74 L44 88 L58 78"
-                    fill="none"
-                    style={{ stroke: 'hsl(var(--claude))' }}
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    initial={{ opacity: reduced ? 1 : 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true, amount: 0.8 }}
-                    transition={{ delay: 1.25, duration: 0.2 }}
-                />
-            </svg>
-            <motion.span
-                className="absolute right-0 top-0 flex items-start"
-                initial={reduced ? false : { opacity: 0, x: 10, y: -6 }}
-                whileInView={{ opacity: 1, x: 0, y: 0 }}
-                viewport={{ once: true, amount: 0.8 }}
-                transition={{ type: 'spring', visualDuration: 0.5, bounce: 0.2 }}
-            >
-                <svg width="14" height="18" viewBox="0 0 16 22">
-                    <path d="M0 0 L0 18 L4.8 13.5 L8 20.5 L11 19.2 L7.9 12.4 L14.3 12.2 Z" style={{ fill: 'hsl(var(--claude))' }} stroke="white" strokeWidth="1.4" />
-                </svg>
-                <span className="mt-3.5 rounded-md bg-[#c4623f] px-1.5 py-0.5 text-[11px] font-semibold text-white">Claude</span>
-            </motion.span>
+        <div ref={ref} className="mx-auto mt-10 w-full max-w-xl">
+            <div className="flex items-center gap-3 rounded-2xl border border-border bg-background p-2 pl-4 text-left shadow-lift">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-claude text-white">
+                    <Sparkles className="h-3.5 w-3.5" />
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[15px]">
+                    <span className="text-muted-foreground">@Claude </span>
+                    {PROMPTS[i].slice(0, n)}
+                    <span className="ml-px inline-block h-[1.05em] w-[1.5px] translate-y-[2px] animate-blink bg-foreground" />
+                </span>
+                <Link to="/board" className="group inline-flex h-11 shrink-0 items-center gap-2 rounded-xl bg-primary px-4 text-[14.5px] font-medium text-primary-foreground transition-transform active:scale-[0.97] sm:px-5">
+                    Open a board
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+            </div>
+            <p className="mt-4 text-[13.5px] text-muted-foreground">
+                Then <Link to="/board?connect=ai" className="font-medium text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground">connect your AI</Link> and ask it right on the board.
+            </p>
         </div>
     );
 }
 
 function Cta() {
-    const [ref, paused] = usePauseOffscreen<HTMLElement>();
     return (
-        <section ref={ref} className={cn('mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]', paused)}>
+        <section className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
             <Reveal>
-                <div className="relative overflow-hidden rounded-3xl border border-border bg-card">
+                <div className="relative overflow-hidden rounded-3xl border border-border bg-card dark:bg-[hsl(228_9%_10.5%)]">
                     <div className="dot-grid absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_at_center,#000,transparent_75%)]" />
-                    <div className="pointer-events-none absolute -top-48 left-1/2 h-[28rem] w-[760px] max-w-full -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,hsl(var(--claude)/0.22),transparent)]" />
-                    <div className="pointer-events-none absolute -bottom-56 left-1/2 h-[26rem] w-[700px] max-w-full -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,hsl(var(--accent)/0.12),transparent)]" />
-                    <div className="relative flex flex-col items-center px-6 py-24 text-center sm:py-32">
-                        <LogoMark className="h-14 w-14" />
-                        <h2 className="mt-7 max-w-[16ch] text-balance text-[clamp(34px,6vw,68px)] font-semibold leading-[0.98] tracking-[-0.045em]">Start a board. Invite a teammate. Or an AI.</h2>
-                        <p className="mt-5 max-w-md text-[17px] text-muted-foreground">A new board takes one click and lives at its own link. No account needed.</p>
-                        <div className="relative mt-8">
-                            <Link to="/board" className="group relative z-10 inline-flex h-14 items-center gap-2 rounded-2xl bg-primary px-7 text-[16px] font-medium text-primary-foreground shadow-[0_12px_32px_-12px_hsl(225_20%_10%/0.6)] transition-transform active:scale-[0.97]">
-                                Open a board
-                                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                            </Link>
-                            <CtaSketch />
-                        </div>
+                    <div className="pointer-events-none absolute -top-48 left-1/2 h-[28rem] w-[760px] max-w-full -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,hsl(var(--claude)/0.2),transparent)]" />
+                    <div className="relative flex flex-col items-center px-5 py-20 text-center sm:py-28">
+                        <h2 className="max-w-[16ch] text-balance text-[clamp(34px,6vw,68px)] font-semibold leading-[0.98] tracking-[-0.045em]">Start a board. Invite a teammate. Or an AI.</h2>
+                        <p className="mt-5 max-w-md text-balance text-[17px] text-muted-foreground">One click, no account. Every board lives at its own link.</p>
+                        <PromptBox />
                     </div>
                 </div>
             </Reveal>
@@ -217,7 +204,7 @@ export default function Home() {
         <div className="min-h-screen overflow-x-clip bg-background">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[720px] dot-grid opacity-70 [mask-image:linear-gradient(to_bottom,#000,transparent)]" />
             <Navbar />
-            <main className="relative space-y-28 pb-28 sm:space-y-40">
+            <main className="relative space-y-24 pb-24 sm:space-y-32 sm:pb-32">
                 <div>
                     <Hero />
                     <WorksWith />

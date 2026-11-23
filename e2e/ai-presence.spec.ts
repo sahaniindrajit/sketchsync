@@ -42,7 +42,7 @@ test('selection actions: duplicate, reorder, opacity, delete', async ({ page }) 
     await drag(page, [400, 300], [520, 380]);
     await selectTool(page, 'select');
     await page.mouse.click(460, 301);
-    await expect(page.getByTestId('style-panel')).toContainText('1 selected');
+    await expect(page.getByTestId('style-panel')).toContainText('Rectangle');
 
     await page.getByLabel('Duplicate').click();
     await waitForShapes(page, (l) => l.length === 2 && l[1].x === l[0].x + 20);

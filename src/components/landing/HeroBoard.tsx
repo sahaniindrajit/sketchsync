@@ -41,7 +41,7 @@ const LAYOUTS = {
         circle: 'M590 236 C 560 196, 400 192, 362 236 C 330 274, 372 318, 470 320 C 560 322, 608 296, 596 250',
         pointer: 'M470 330 C 472 350, 476 362, 480 372',
         note: [430, 400] as Pt,
-        ai: [[960, 120], [700, 170], [272, 142], [262, 292], [552, 286], [842, 286], [270, 450], [320, 490], [600, 150], [900, 120]] as Pt[],
+        ai: [[960, 120], [700, 170], [272, 142], [262, 292], [552, 286], [842, 286], [270, 450], [380, 520], [600, 170], [640, 200]] as Pt[],
         me: [[470, 90], [480, 100], [490, 110], [500, 120], [840, 430], [800, 440], [700, 300], [590, 230], [470, 372], [560, 420]] as Pt[],
     },
     tall: {
@@ -63,7 +63,7 @@ const LAYOUTS = {
         pointer: 'M318 372 C 330 420, 334 456, 330 486',
         note: [236, 514] as Pt,
         ai: [[290, 90], [280, 90], [276, 116], [270, 240], [282, 352], [292, 444], [300, 470], [290, 500], [300, 140], [290, 120]] as Pt[],
-        me: [[30, 150], [30, 160], [36, 170], [40, 180], [40, 520], [30, 500], [330, 300], [300, 320], [320, 470], [250, 540]] as Pt[],
+        me: [[30, 150], [30, 160], [36, 170], [40, 180], [330, 520], [320, 500], [330, 300], [300, 320], [320, 470], [230, 540]] as Pt[],
     },
 };
 
@@ -196,23 +196,22 @@ export function HeroBoard({ className }: { className?: string }) {
         <div ref={ref} className={cn('relative overflow-hidden rounded-[18px] border border-border bg-card shadow-lift', className)}>
             <div className={cn('dot-grid relative w-full bg-background', L.aspect)}>
                 <svg viewBox={L.viewBox} className="absolute inset-0 h-full w-full text-foreground" role="img" aria-label="Claude drawing a signup flowchart on a SketchSync board while a teammate adds a note">
-                    <motion.rect x={L.halo.x} y={L.halo.y} width={L.halo.w} height={L.halo.h} rx="14" fill="none" style={{ stroke: 'hsl(var(--claude))' }} strokeWidth="1.5" strokeDasharray="6 5" initial={{ opacity: 0 }} animate={{ opacity: aiWorking && step >= 2 ? 0.9 : 0 }} transition={{ duration: 0.4 }} />
 
                     <Node on={s(2)} order={1} {...L.a} label="Sign-up form" />
                     <Arrow on={s(3)} order={2} d={L.ab[0]} head={L.ab[1]} />
                     <g>
-                        <motion.path d={diamond} style={{ fill: fill('#a5d8ff') }} {...faded(s(3), 3, 0.45)} />
+                        <motion.path d={diamond} style={{ fill: fill('#f6dccf') }} {...faded(s(3), 3, 0.45)} />
                         <motion.path d={diamond} fill="none" stroke={ink} strokeWidth="2" strokeLinejoin="round" {...drawn(s(3), 3)} />
                         <motion.text x={L.diamond.cx} y={L.diamond.cy + 5} textAnchor="middle" fontSize="15" fill="currentColor" fontFamily="Inter, sans-serif" {...faded(s(3), 3, 0.4)}>
                             Email valid?
                         </motion.text>
                     </g>
                     <Arrow on={s(4)} order={4} d={L.bc[0]} head={L.bc[1]} />
-                    <Node on={s(4)} order={4} {...L.c} label="Create account" fill={fill('#b2f2bb')} />
+                    <Node on={s(4)} order={4} {...L.c} label="Create account" fill={fill('#dbe7f5')} />
                     <Arrow on={s(5)} order={5} d={L.cd[0]} head={L.cd[1]} />
                     <Node on={s(5)} order={5} {...L.d} label="Send welcome email" />
                     {L.be && <Arrow on={s(6)} order={6} d={L.be[0]} head={L.be[1]} />}
-                    {L.e && <Node on={s(6)} order={6} {...L.e} label="Show inline error" fill={fill('#ffc9c9')} />}
+                    {L.e && <Node on={s(6)} order={6} {...L.e} label="Show inline error" fill={fill('#f1eee8')} />}
                     <motion.text x={L.yes[0]} y={L.yes[1]} fontSize="13" className="fill-muted-foreground" fontFamily="Inter, sans-serif" {...faded(s(6), 7, 0.3)}>
                         yes
                     </motion.text>
@@ -273,7 +272,7 @@ export function HeroBoard({ className }: { className?: string }) {
                         <motion.span layout="position" className={cn('relative flex h-5 w-5 items-center justify-center rounded-full bg-claude text-white', aiWorking && 'ai-ping')}>
                             <Sparkles className="h-3 w-3" />
                         </motion.span>
-                        <AnimatePresence mode="wait" initial={false}>
+                        <AnimatePresence mode="popLayout" initial={false}>
                             <motion.span key={aiWorking ? 'a' : 'b'} layout="position" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className={cn('whitespace-nowrap', aiWorking ? 'text-shimmer font-medium' : 'text-muted-foreground')}>
                                 {aiWorking ? 'Claude is drawing' : step >= FINAL - 1 || (step === -1 && ran) ? 'Claude added 11 shapes' : 'Claude · connected'}
                             </motion.span>
@@ -283,7 +282,7 @@ export function HeroBoard({ className }: { className?: string }) {
                 </div>
 
                 {/* agent feed */}
-                <div className="pointer-events-none absolute bottom-4 right-4 hidden w-[264px] rounded-xl border border-border/80 bg-[hsl(var(--chrome)/0.94)] p-3 shadow-chrome backdrop-blur md:block">
+                <div className="pointer-events-none absolute right-4 top-[60px] hidden w-[264px] rounded-xl border border-border/80 bg-[hsl(var(--chrome)/0.94)] p-3 shadow-chrome backdrop-blur md:block">
                     <div className="mb-2.5 flex items-center justify-between font-mono text-[10.5px] uppercase tracking-[0.06em] text-muted-foreground">
                         <span>MCP · tool calls</span>
                         <span className="flex items-center gap-1.5">

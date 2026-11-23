@@ -21,6 +21,8 @@ export interface AiActivity {
     undo: Op[];
     added: number;
     connectors: number;
+    /** Shapes touched by the most recent AI op only. */
+    lastIds: string[];
 }
 
 /** `text`/`math` edit a shape, `label` edits a box/line label, `new-text`/`new-math` place a new shape. */
@@ -105,6 +107,13 @@ export function setShapes(shapes: Map<string, Shape>) {
 export function resetBoardState(roomId: string | null, shapes: Map<string, Shape>) {
     resetHistory();
     useBoard.setState({ ...initialDefaults, roomId, shapes, selectedIds: [], viewport: { x: 0, y: 0, scale: 1 } });
+}
+
+/** "claude-ai" → "Claude AI": a readable name for an MCP client. */
+export function agentName(raw: string): string {
+    const words = raw.replace(/[-_.]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return 'AI';
+    return words.map((w) => (w.length <= 2 ? w.toUpperCase() : w[0].toUpperCase() + w.slice(1))).join(' ');
 }
 
 let viewportAnim = 0;

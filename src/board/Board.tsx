@@ -763,10 +763,34 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
     const aiActivity = useBoard((s) => s.aiActivity);
     const aiShapes = aiActivity ? aiActivity.shapeIds.map((id) => shapes.get(id)).filter((x): x is NonNullable<typeof x> => !!x) : [];
     const aiBoxes = aiShapes.map((x) => getShapeBounds(x, (id) => shapes.get(id), browserMeasurer));
-    const aiBox = aiBoxes.length ? unionBoxes(aiBoxes) : null;
+    const lastSet = new Set(aiActivity?.lastIds ?? []);
+    const lastBoxes = aiShapes.filter((x) => lastSet.has(x.id)).map((x) => getShapeBounds(x, (id) => shapes.get(id), browserMeasurer));
+    const aiBox = lastBoxes.length ? unionBoxes(lastBoxes) : null;
     const aiTargets = aiBoxes.map((b) => ({ x: b.x + b.width * 0.75, y: b.y + b.height * 0.8 }));
     // A new batch starts when the AI's shape list is replaced rather than extended.
     const aiBatch = aiActivity?.shapeIds[0] ?? '';
+
+    // If the AI draws somewhere you can't see while you're idle, glide over to it.
+    const lastInput = useRef(Date.now());
+    useEffect(() => {
+        const mark = () => (lastInput.current = Date.now());
+        window.addEventListener('pointerdown', mark);
+        window.addEventListener('keydown', mark);
+        window.addEventListener('wheel', mark);
+        return () => {
+            window.removeEventListener('pointerdown', mark);
+            window.removeEventListener('keydown', mark);
+            window.removeEventListener('wheel', mark);
+        };
+    }, []);
+    useEffect(() => {
+        if (!aiBox || Date.now() - lastInput.current < 4000) return;
+        const vp = useBoard.getState().viewport;
+        const left = aiBox.x * vp.scale + vp.x;
+        const top = aiBox.y * vp.scale + vp.y;
+        const visible = left < window.innerWidth && top < window.innerHeight && left + aiBox.width * vp.scale > 0 && top + aiBox.height * vp.scale > 0;
+        if (!visible) zoomToFit(aiBox);
+    }, [aiActivity?.at]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const hiddenId = editing && (editing.kind === 'text' || editing.kind === 'math') ? editing.shapeId : null;
     const labelHiddenId = editing && editing.kind === 'label' ? editing.shapeId : null;

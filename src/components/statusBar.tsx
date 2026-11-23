@@ -23,7 +23,9 @@ export function ConnectionBadge({ onShare, onConnectAi }: { onShare: () => void;
             animate={{ y: 0, opacity: 1 }}
             className="fixed right-[max(12px,env(safe-area-inset-right))] top-[max(12px,env(safe-area-inset-top))] z-30 flex items-center gap-2"
         >
+            <motion.div layout className="chrome flex h-11 items-center rounded-xl" transition={{ type: 'spring', visualDuration: 0.3, bounce: 0 }}>
             <PresenceStack />
+            <div className="mx-0.5 h-5 w-px bg-border" />
             <Tooltip>
                 <TooltipTrigger asChild>
                     <button
@@ -31,7 +33,7 @@ export function ConnectionBadge({ onShare, onConnectAi }: { onShare: () => void;
                         onClick={onConnectAi}
                         aria-label="Connect your AI"
                         className={cn(
-                            'chrome flex h-11 items-center gap-2 rounded-xl pl-2.5 pr-3 text-[13px] font-medium text-foreground/80 transition-colors hover:text-foreground',
+                            'flex h-11 items-center gap-2 rounded-r-xl pl-2 pr-3 text-[13px] font-medium text-foreground/80 transition-colors hover:text-foreground',
                             working && 'border-claude/40',
                         )}
                     >
@@ -43,6 +45,7 @@ export function ConnectionBadge({ onShare, onConnectAi }: { onShare: () => void;
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Let Claude, Cursor or any MCP client draw here</TooltipContent>
             </Tooltip>
+            </motion.div>
             <button
                 type="button"
                 onClick={onShare}
@@ -56,21 +59,23 @@ export function ConnectionBadge({ onShare, onConnectAi }: { onShare: () => void;
 }
 
 function RollingNumber({ value, suffix }: { value: number; suffix?: string }) {
-    const prev = useRef(value);
-    const dir = value >= prev.current ? 1 : -1;
+    const prev = useRef({ value, at: 0 });
+    const now = Date.now();
+    const dir = value >= prev.current.value ? 1 : -1;
+    // Quick repeated changes swap instantly instead of stacking rolls.
+    const rapid = now - prev.current.at < 220;
     useEffect(() => {
-        prev.current = value;
+        prev.current = { value, at: Date.now() };
     }, [value]);
     return (
-        <span className="relative inline-flex overflow-hidden tabular-nums">
-            <AnimatePresence mode="popLayout" initial={false} custom={dir}>
+        <span className="relative inline-flex h-[1.2em] items-center justify-center overflow-hidden tabular-nums">
+            <AnimatePresence mode="popLayout" initial={false}>
                 <motion.span
                     key={value}
-                    custom={dir}
-                    initial={{ y: `${dir * 100}%`, opacity: 0 }}
+                    initial={rapid ? false : { y: `${dir * 100}%`, opacity: 0 }}
                     animate={{ y: '0%', opacity: 1 }}
-                    exit={{ y: `${dir * -100}%`, opacity: 0 }}
-                    transition={{ type: 'spring', visualDuration: 0.22, bounce: 0.1 }}
+                    exit={rapid ? { opacity: 0, transition: { duration: 0 } } : { y: `${dir * -100}%`, opacity: 0 }}
+                    transition={{ type: 'spring', visualDuration: 0.2, bounce: 0 }}
                 >
                     {value}
                     {suffix}
@@ -117,23 +122,8 @@ export function ZoomControls({ onFit }: { onFit: () => void }) {
         const cy = window.innerHeight / 2;
         animateViewport({ scale, x: cx - ((cx - vp.x) / vp.scale) * scale, y: cy - ((cy - vp.y) / vp.scale) * scale }, 220);
     };
-    if (compact) {
-        // Phones: a small cluster under the top bar; pinch to zoom, tap the % to reset.
-        return (
-            <div className="chrome fixed left-[max(12px,env(safe-area-inset-left))] top-[calc(max(12px,env(safe-area-inset-top))+52px)] z-10 flex items-center gap-0.5 rounded-xl p-0.5">
-                <ZoomButton label="Undo" onClick={undoLast} disabled={!canUndo}>
-                    <Undo2 className="h-4 w-4" strokeWidth={1.75} />
-                </ZoomButton>
-                <ZoomButton label="Redo" onClick={redoLast} disabled={!canRedo}>
-                    <Redo2 className="h-4 w-4" strokeWidth={1.75} />
-                </ZoomButton>
-                <div className="mx-0.5 h-4 w-px bg-border" />
-                <button type="button" className="h-8 min-w-[48px] rounded-lg px-1 text-center font-mono text-xs text-muted-foreground" onClick={() => zoom(null)} data-testid="zoom-level">
-                    <RollingNumber value={Math.round((target ?? viewport).scale * 100)} suffix="%" />
-                </button>
-            </div>
-        );
-    }
+    // Phones: undo/redo live in the top bar and pinch zooms.
+    if (compact) return null;
     return (
         <div className="chrome fixed bottom-[calc(max(12px,env(safe-area-inset-bottom))+64px)] left-[max(12px,env(safe-area-inset-left))] z-10 flex items-center gap-0.5 rounded-xl p-0.5 xl:bottom-[max(12px,env(safe-area-inset-bottom))]">
             <ZoomButton label="Undo" hint={<><Kbd>{MOD}</Kbd><Kbd>Z</Kbd></>} onClick={undoLast} disabled={!canUndo}>
@@ -148,7 +138,7 @@ export function ZoomControls({ onFit }: { onFit: () => void }) {
             </ZoomButton>
             <button
                 type="button"
-                className="h-8 min-w-[52px] rounded-lg px-1 text-center font-mono text-xs text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                className="h-8 min-w-[52px] rounded-lg px-1 text-center text-[12.5px] font-medium tabular-nums text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
                 onClick={() => zoom(null)}
                 title="Reset zoom"
                 data-testid="zoom-level"

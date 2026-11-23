@@ -92,7 +92,7 @@ export function PresenceStack() {
     const [dot, text] = status[connection];
 
     return (
-        <div className="chrome flex h-11 items-center gap-2 rounded-xl pl-1.5 pr-1.5">
+        <div className="flex h-11 items-center gap-2 pl-1.5 pr-1">
             <div className="flex items-center">
                 <AnimatePresence initial={false}>
                     {aiHere && (

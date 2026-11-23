@@ -10,7 +10,7 @@ export default function NotFound() {
         <div className="flex min-h-screen flex-col bg-background">
             <Navbar />
             <main className="mx-auto flex w-full max-w-6xl flex-1 items-center px-[max(16px,env(safe-area-inset-left))] py-20">
-                <div className="grid w-full items-center gap-12 md:grid-cols-[1fr_1.1fr]">
+                <div className="grid w-full items-center gap-12 md:grid-cols-[1fr_1.1fr] md:items-start">
                     <div className="max-w-[480px]">
                         <p className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted-foreground">Error 404</p>
                         <h1 className="mt-3 text-[clamp(36px,5vw,56px)] font-semibold leading-[1.02] tracking-[-0.04em]">Page not found</h1>
@@ -37,7 +37,7 @@ export default function NotFound() {
                                 transition={{ duration: 1.4, ease: 'easeInOut' }}
                             />
                             <motion.path d="M424 186 L442 202 L420 210" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" initial={{ opacity: reduced ? 1 : 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.35 }} />
-                            <text x="462" y="196" fontSize="22" fontWeight="600" className="fill-muted-foreground" fontFamily="Inter, sans-serif">
+                            <text x="458" y="200" fontSize="30" fontWeight="700" className="fill-foreground" fontFamily="Inter, sans-serif">
                                 ?
                             </text>
                             <rect x="40" y="280" width="40" height="40" rx="9" fill="none" stroke="currentColor" strokeWidth="2.5" />

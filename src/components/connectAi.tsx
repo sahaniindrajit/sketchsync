@@ -2,6 +2,7 @@ import { ShieldAlert, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { mcpUrl } from '@/config';
+import { useBoard } from '@/board/store';
 import { cn } from '@/lib/utils';
 import { CopyField } from './shareDialog';
 
@@ -67,6 +68,7 @@ export function ConnectAiPanel({ roomId }: { roomId: string }) {
             </div>
 
             <CopyField value={url} label="MCP server URL" testId="mcp-url" icon={<Sparkles className="h-3.5 w-3.5 text-claude" />} />
+            <AiStatus />
 
             <div className="space-y-3">
                 <div className="flex flex-wrap gap-1">
@@ -105,6 +107,30 @@ export function ConnectAiPanel({ roomId }: { roomId: string }) {
                     Anyone with this URL can edit the board. Keep this tab open so the AI can reach it.
                 </p>
             </div>
+        </div>
+    );
+}
+
+function ago(ms: number) {
+    const s = Math.round(ms / 1000);
+    if (s < 60) return 'just now';
+    const m = Math.round(s / 60);
+    return m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`;
+}
+
+/** Feedback after setup: has an AI drawn on this board in this session yet? */
+function AiStatus() {
+    const activity = useBoard((s) => s.aiActivity);
+    return (
+        <div className="flex items-center gap-2 text-[12.5px] text-muted-foreground" role="status">
+            <span className={cn('h-2 w-2 rounded-full', activity ? 'bg-success' : 'animate-pulse bg-warning')} />
+            {activity ? (
+                <span>
+                    <b className="font-medium text-foreground">{activity.name}</b> drew here {ago(Date.now() - activity.at)}.
+                </span>
+            ) : (
+                <span>Waiting for an AI to connect. Its edits appear here live.</span>
+            )}
         </div>
     );
 }

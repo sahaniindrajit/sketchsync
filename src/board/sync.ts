@@ -17,7 +17,7 @@ import {
 } from '@/shared/protocol';
 import { canMerge, isUrgent, mergeOps } from './opQueue';
 import { adoptOrphanPending, holdTabLock, loadBoard, saveBoard, savePending } from './persistence';
-import { setShapes, useBoard } from './store';
+import { agentName, setShapes, useBoard } from './store';
 import { inverseOf, recordOp } from './history';
 import { usePresence } from './presence';
 
@@ -129,6 +129,8 @@ export class RoomSync {
         socket.on(EVENTS.op, (payload: OpBroadcast) => this.onServerOp(payload));
         socket.on(EVENTS.presence, (p: PresenceBroadcast) => {
             if (!p || typeof p.id !== 'string' || this.stopped) return;
+            // Someone new: tell them who we are (and the board's name) right away.
+            if (!usePresence.getState().peers[p.id]) setTimeout(() => usePresence.getState().announce(), 50);
             usePresence.setState((s) => ({ peers: { ...s.peers, [p.id]: { ...p, at: Date.now() } } }));
             const mine = usePresence.getState();
             if (typeof p.title === 'string' && typeof p.titleAt === 'number' && p.titleAt > mine.titleAt) mine.setTitle(p.title, p.titleAt);
@@ -429,7 +431,7 @@ export class RoomSync {
         const ids = op.kind === 'add' ? op.shapes.map((s) => s.id) : op.kind === 'update' ? op.patches.map((p) => p.id) : [];
         const added = op.kind === 'add' ? op.shapes.filter((x) => x.type !== 'arrow' && x.type !== 'line').length : 0;
         const connectors = op.kind === 'add' ? op.shapes.length - added : 0;
-        const name = payload.origin.slice(3) || 'AI';
+        const name = agentName(payload.origin.slice(3));
         const prev = useBoard.getState().aiActivity;
         const sameBatch = prev && prev.name === name && Date.now() - prev.at < 4000;
         useBoard.setState({
@@ -438,6 +440,7 @@ export class RoomSync {
                 shapeIds: sameBatch ? Array.from(new Set([...prev.shapeIds, ...ids])) : ids,
                 at: Date.now(),
                 undo: [...(sameBatch ? prev.undo : []), ...(inverse ? [inverse] : [])],
+                lastIds: ids,
                 added: (sameBatch ? prev.added : 0) + added,
                 connectors: (sameBatch ? prev.connectors : 0) + connectors,
             },

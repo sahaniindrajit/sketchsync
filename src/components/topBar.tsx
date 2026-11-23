@@ -1,4 +1,4 @@
-import { Menu, Search } from 'lucide-react';
+import { Download, Menu, Redo2, Search, Undo2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -7,11 +7,31 @@ import { Kbd } from '@/components/ui/kbd';
 import { MOD } from '@/lib/platform';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePresence } from '@/board/presence';
+import { useHistory } from '@/board/history';
+import { redoLast, undoLast } from '@/board/store';
 import { cn } from '@/lib/utils';
+import { useMedia } from '@/lib/useMedia';
 import { AppMenu, type MenuActions } from './menu';
+
+function IconButton({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
+    return (
+        <button
+            type="button"
+            aria-label={label}
+            aria-disabled={disabled || undefined}
+            onClick={disabled ? undefined : onClick}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground aria-disabled:opacity-35"
+        >
+            {children}
+        </button>
+    );
+}
 
 export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand: () => void }) {
     const [showMenu, setShowMenu] = useState(false);
+    const compact = useMedia('(max-width: 639px)');
+    const canUndo = useHistory((s) => s.undo.length > 0);
+    const canRedo = useHistory((s) => s.redo.length > 0);
     const [viaKeyboard, setViaKeyboard] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -51,9 +71,19 @@ export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand
                 >
                     <Menu className="h-[18px] w-[18px]" strokeWidth={1.75} />
                 </button>
-                <Link to="/" className="flex items-center gap-2 rounded-lg px-1.5 py-1 transition-colors hover:bg-secondary" title="SketchSync home">
+                <Link to="/" className="hidden items-center rounded-lg px-1.5 py-1 transition-colors hover:bg-secondary sm:flex" title="SketchSync home">
                     <LogoMark className="h-5 w-5" />
                 </Link>
+                {compact && (
+                <div className="flex items-center">
+                    <IconButton label="Undo" onClick={undoLast} disabled={!canUndo}>
+                        <Undo2 className="h-[17px] w-[17px]" strokeWidth={1.75} />
+                    </IconButton>
+                    <IconButton label="Redo" onClick={redoLast} disabled={!canRedo}>
+                        <Redo2 className="h-[17px] w-[17px]" strokeWidth={1.75} />
+                    </IconButton>
+                </div>
+                )}
                 <BoardTitle />
                 <div className="mx-1 hidden h-5 w-px bg-border sm:block" />
                 <Tooltip>
@@ -70,6 +100,19 @@ export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand
                         </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">Search tools & actions</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <button
+                            type="button"
+                            aria-label="Download PNG"
+                            onClick={actions.onExport}
+                            className="hidden h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground sm:flex"
+                        >
+                            <Download className="h-[17px] w-[17px]" strokeWidth={1.75} />
+                        </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">Export as PNG</TooltipContent>
                 </Tooltip>
             </div>
             <AnimatePresence>{showMenu && (

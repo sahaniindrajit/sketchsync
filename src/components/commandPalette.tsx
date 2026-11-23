@@ -1,7 +1,7 @@
 import { Command } from 'cmdk';
 import { ArrowUpRight, Circle, Diamond, Eraser, FilePlus2, Hand, ImageDown, Link2, Maximize, Minus, Moon, MousePointer2, Pencil, Redo2, Sigma, Sparkles, Square, Sun, Trash2, Type, Undo2 } from 'lucide-react';
 import { Kbd } from '@/components/ui/kbd';
-import { redoLast, undoLast, useBoard, type Tool } from '@/board/store';
+import { redoLast, undoAiBatch, undoLast, useBoard, type Tool } from '@/board/store';
 import { MOD } from '@/lib/platform';
 import { useTheme } from '@/lib/theme';
 import type { MenuActions } from './menu';
@@ -26,6 +26,7 @@ const groupClass = '[&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:pb-
 
 export function CommandPalette({ open, onOpenChange, actions, onFit }: { open: boolean; onOpenChange: (open: boolean) => void; actions: MenuActions; onFit: () => void }) {
     const setTool = useBoard((s) => s.setTool);
+    const aiUndo = useBoard((s) => (s.aiActivity?.undo.length ? s.aiActivity.name : null));
     const theme = useTheme((s) => s.resolved);
     const toggleTheme = useTheme((s) => s.toggle);
 
@@ -71,6 +72,11 @@ export function CommandPalette({ open, onOpenChange, actions, onFit }: { open: b
                     <Command.Item className={itemClass} onSelect={run(undoLast)} keywords={['back', 'revert']}>
                         <Undo2 /> <span className="flex-1">Undo</span> <Kbd>{MOD}</Kbd><Kbd>Z</Kbd>
                     </Command.Item>
+                    {aiUndo && (
+                        <Command.Item className={itemClass} onSelect={run(undoAiBatch)} keywords={['ai', 'claude', 'revert']}>
+                            <Undo2 className="text-claude" /> <span className="flex-1">Undo {aiUndo}'s last change</span>
+                        </Command.Item>
+                    )}
                     <Command.Item className={itemClass} onSelect={run(redoLast)}>
                         <Redo2 /> <span className="flex-1">Redo</span> <Kbd>{MOD}</Kbd><Kbd>⇧</Kbd><Kbd>Z</Kbd>
                     </Command.Item>

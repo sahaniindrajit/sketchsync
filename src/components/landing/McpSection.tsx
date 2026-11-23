@@ -9,7 +9,7 @@ import { Reveal } from './Reveal';
 const URL = `${BACKEND_URL}/mcp/<board-id>`;
 
 const SETUPS = [
-    { id: 'code', name: 'Claude Code', file: 'terminal', code: `claude mcp add --transport http sketchsync \\\n  ${URL}` },
+    { id: 'code', name: 'Claude Code', file: 'terminal', code: `claude mcp add \\\n  --transport http sketchsync \\\n  ${URL}` },
     { id: 'cursor', name: 'Cursor', file: '.cursor/mcp.json', code: JSON.stringify({ mcpServers: { sketchsync: { url: URL } } }, null, 2) },
     { id: 'vscode', name: 'VS Code', file: '.vscode/mcp.json', code: JSON.stringify({ servers: { sketchsync: { type: 'http', url: URL } } }, null, 2) },
     { id: 'claude', name: 'Claude app', file: 'Settings → Connectors', code: `Add custom connector\n  Name   SketchSync\n  URL    ${URL}` },
@@ -19,7 +19,7 @@ const TOOLS = ['get_board', 'get_board_image', 'add_shapes', 'update_shapes', 'd
 
 const SESSION = [
     { tool: 'get_board', out: 'empty board' },
-    { tool: 'create_flowchart', out: '3 nodes, laid out' },
+    { tool: 'create_flowchart', out: '4 nodes, auto-laid out' },
     { tool: 'get_board_image', out: 'looks right' },
 ];
 const DONE = SESSION.length + 1;
@@ -46,12 +46,12 @@ function Session({ n }: { n: number }) {
         <div className="space-y-3 px-5 py-5 text-[13px]">
             <div className="flex items-start gap-2.5">
                 <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-[10px] font-semibold text-white">Y</span>
-                <p className="text-white/90">Draw a flowchart of our signup flow.</p>
+                <p className="text-white/90">Sketch our system architecture.</p>
             </div>
             <div className="min-h-[76px] space-y-1.5 pl-[30px] font-mono text-[12px]">
                 <AnimatePresence initial={false}>
                     {SESSION.slice(0, Math.max(0, n)).map((step, i) => (
-                        <motion.div key={step.tool} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2 whitespace-nowrap">
+                        <motion.div key={step.tool} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, transition: { duration: 0.12 } }} className="flex items-center gap-2 whitespace-nowrap">
                             <span className="flex h-4 w-4 shrink-0 items-center justify-center">
                                 {i === n - 1 && n < DONE ? (
                                     <span className="h-3 w-3 animate-spin rounded-full border-[1.5px] border-[#f0b49a] border-t-transparent" />
@@ -70,44 +70,50 @@ function Session({ n }: { n: number }) {
                 <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#d97757] text-white">
                     <svg viewBox="0 0 16 16" className="h-2.5 w-2.5" fill="currentColor"><path d="M8 0l1.8 6.2L16 8l-6.2 1.8L8 16l-1.8-6.2L0 8l6.2-1.8z" /></svg>
                 </span>
-                <p className="text-white/90">Done. The flow is on your board.</p>
+                <p className="text-white/90">Done. I put a cache in front of Postgres.</p>
             </motion.div>
         </div>
     );
 }
 
-/** The board the session above is drawing on. */
+/** The board the session is drawing on: a small system diagram that builds as the steps tick. */
 function MiniBoard({ n }: { n: number }) {
     const nodes = [
-        { x: 40, y: 52, w: 130, label: 'Sign-up form', fill: '#ffffff' },
-        { x: 210, y: 52, w: 120, label: 'Email valid?', fill: '#a5d8ff' },
-        { x: 210, y: 150, w: 150, label: 'Create account', fill: '#b2f2bb' },
+        { x: 24, y: 112, w: 104, label: 'Browser', fill: '#f1eee8' },
+        { x: 168, y: 112, w: 96, label: 'API', fill: '#f6dccf' },
+        { x: 300, y: 56, w: 92, label: 'Redis', fill: '#dbe7f5' },
+        { x: 300, y: 168, w: 92, label: 'Postgres', fill: '#dbe7f5' },
+    ];
+    const edges = [
+        ['M128 138 H 164', 'M157 132 L165 138 L157 144'],
+        ['M264 128 C 282 120, 284 86, 296 84', 'M288 79 L297 84 L290 91'],
+        ['M264 148 C 282 156, 284 190, 296 192', 'M290 185 L297 192 L288 197'],
     ];
     const drawing = n >= 2;
+    const checked = n >= 3;
     const ai = n >= 1 && n < DONE;
-    const cursor: [number, number][] = [[330, 230], [330, 230], [160, 100], [300, 120], [330, 200], [360, 236]];
+    const cursor: [number, number][] = [[360, 250], [360, 250], [110, 150], [240, 150], [370, 95], [370, 206]];
     const [cx, cy] = cursor[Math.min(n, cursor.length - 1)];
     return (
-        <div className="dot-grid relative h-full min-h-[300px] overflow-hidden rounded-xl border border-white/10 bg-[hsl(228_10%_11%)] [--dot:0_0%_100%]">
-            <svg viewBox="0 0 400 280" className="absolute inset-0 h-full w-full" role="img" aria-label="The board filling in as the assistant draws">
-                <motion.rect x="26" y="36" width="350" height="190" rx="12" fill="none" stroke="#e58a6b" strokeWidth="1.5" strokeDasharray="5 5" animate={{ opacity: ai && drawing ? 0.9 : 0 }} />
+        <div className="relative h-full min-h-[320px] overflow-hidden rounded-xl border border-white/10 bg-[hsl(228_10%_11%)] [background-image:radial-gradient(hsl(0_0%_100%/0.09)_1px,transparent_1.2px)] [background-size:20px_20px]">
+            <svg viewBox="0 0 416 280" className="absolute inset-0 h-full w-full" role="img" aria-label="The board filling in with a system diagram as the assistant draws">
                 {nodes.map((nd, i) => (
-                    <motion.g key={nd.label} initial={false} animate={{ opacity: drawing ? 1 : 0, scale: drawing ? 1 : 0.9 }} transition={{ delay: drawing ? 0.15 + i * 0.22 : 0, type: 'spring', visualDuration: 0.4, bounce: 0.2 }} style={{ transformOrigin: `${nd.x + nd.w / 2}px ${nd.y + 22}px` }}>
-                        <rect x={nd.x} y={nd.y} width={nd.w} height={44} rx={9} fill={nd.fill} stroke="#1e1e1e" strokeWidth="2" />
-                        <text x={nd.x + nd.w / 2} y={nd.y + 27} textAnchor="middle" fontSize="13" fill="#1e1e1e" fontFamily="Inter, sans-serif">
+                    <motion.g key={nd.label} initial={false} animate={{ opacity: drawing ? 1 : 0, scale: drawing ? 1 : 0.9 }} transition={{ delay: drawing ? 0.1 + i * 0.25 : 0, type: 'spring', visualDuration: 0.4, bounce: 0.2 }} style={{ transformOrigin: `${nd.x + nd.w / 2}px ${nd.y + 26}px` }}>
+                        <rect x={nd.x} y={nd.y} width={nd.w} height={52} rx={10} fill={nd.fill} stroke="#1e1e1e" strokeWidth="2" />
+                        <text x={nd.x + nd.w / 2} y={nd.y + 31} textAnchor="middle" fontSize="15" fill="#1e1e1e" fontFamily="Inter, sans-serif">
                             {nd.label}
                         </text>
                     </motion.g>
                 ))}
-                {[
-                    ['M170 74 H 206', 'M199 68 L207 74 L199 80'],
-                    ['M270 96 V 146', 'M264 139 L270 147 L276 139'],
-                ].map(([d, head], i) => (
+                {edges.map(([d, head], i) => (
                     <g key={d}>
-                        <motion.path d={d} fill="none" stroke="#e6e6e9" strokeWidth="2" strokeLinecap="round" initial={false} animate={{ pathLength: drawing ? 1 : 0, opacity: drawing ? 1 : 0 }} transition={{ delay: drawing ? 0.6 + i * 0.2 : 0, duration: 0.4 }} />
-                        <motion.path d={head} fill="none" stroke="#e6e6e9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" initial={false} animate={{ opacity: drawing ? 1 : 0 }} transition={{ delay: drawing ? 0.9 + i * 0.2 : 0 }} />
+                        <motion.path d={d} fill="none" stroke="#e6e6e9" strokeWidth="2" strokeLinecap="round" initial={false} animate={{ pathLength: drawing ? 1 : 0, opacity: drawing ? 1 : 0 }} transition={{ delay: drawing ? 0.9 + i * 0.2 : 0, duration: 0.4 }} />
+                        <motion.path d={head} fill="none" stroke="#e6e6e9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" initial={false} animate={{ opacity: drawing ? 1 : 0 }} transition={{ delay: drawing ? 1.2 + i * 0.2 : 0 }} />
                     </g>
                 ))}
+                <motion.text x="300" y="248" fontSize="12" fill="#e58a6b" fontFamily="Inter, sans-serif" fontWeight="600" initial={false} animate={{ opacity: checked ? 1 : 0 }}>
+                    ✓ cache in front of the DB
+                </motion.text>
                 <motion.g initial={false} animate={{ x: cx, y: cy, opacity: ai ? 1 : 0 }} transition={{ type: 'spring', visualDuration: 0.6, bounce: 0.1 }}>
                     <path d="M0 0 L0 17 L4.6 12.8 L7.6 19.5 L10.4 18.3 L7.5 11.8 L13.6 11.6 Z" fill="#e58a6b" stroke="white" strokeWidth="1.3" />
                     <rect x="13" y="20" width="56" height="20" rx="6" fill="#e58a6b" />
@@ -136,7 +142,7 @@ export function McpSection() {
                             Every board has its own MCP endpoint. Paste it into Claude, Cursor or VS Code and the assistant can read the board, see your sketches, and draw shapes, flowcharts and LaTeX while you watch.
                         </p>
                     </div>
-                    <div className="flex flex-wrap gap-1.5 lg:justify-end">
+                    <div className="flex flex-wrap gap-1.5">
                         {TOOLS.map((t) => (
                             <code key={t} className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 font-mono text-[12px] text-white/75">
                                 {t}
@@ -148,7 +154,7 @@ export function McpSection() {
                 <Reveal delay={0.05} className="mt-12 grid gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 md:grid-cols-[1.1fr_1fr]">
                     <div ref={ref} className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-[hsl(228_10%_5%)]">
                         <div
-                            className="flex items-center gap-1 overflow-x-auto border-b border-white/10 p-2 [scrollbar-width:none]"
+                            className="flex items-center gap-1 overflow-x-auto border-b border-white/10 p-2 [mask-image:linear-gradient(90deg,#000_88%,transparent)] [scrollbar-width:none] md:[mask-image:none]"
                             role="tablist"
                             aria-label="Setup instructions"
                             onKeyDown={(e) => {

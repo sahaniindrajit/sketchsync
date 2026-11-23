@@ -117,7 +117,7 @@ export function ShareDialog({ roomId, tab, onTab, onClose, aiPanel }: { roomId: 
                             <Dialog.Title className="sr-only">Share board</Dialog.Title>
                             <div className="flex items-center gap-2 border-b border-border/70 p-2">
                                 <div
-                                    className="flex flex-1 gap-0.5"
+                                    className="flex flex-1 gap-0.5 rounded-xl bg-secondary p-1"
                                     role="tablist"
                                     aria-label="Share options"
                                     onKeyDown={(e) => {
@@ -136,10 +136,10 @@ export function ShareDialog({ roomId, tab, onTab, onClose, aiPanel }: { roomId: 
                                             aria-selected={tab === id}
                                             aria-controls="share-panel"
                                             tabIndex={tab === id ? 0 : -1}
-                                            className={cn('relative flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors', tab === id ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}
+                                            className={cn('relative flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors', tab === id ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}
                                             onClick={() => onTab(id)}
                                         >
-                                            {tab === id && <motion.span layoutId="share-tab" className="absolute inset-0 rounded-lg bg-secondary" transition={{ type: 'spring', visualDuration: 0.25, bounce: 0.15 }} />}
+                                            {tab === id && <motion.span layoutId="share-tab" className="absolute inset-0 rounded-lg bg-card shadow-[0_1px_3px_hsl(0_0%_0%/0.12)]" transition={{ type: 'spring', visualDuration: 0.25, bounce: 0.15 }} />}
                                             <Icon className={cn('relative z-10 h-3.5 w-3.5', id === 'ai' && 'text-claude')} />
                                             <span className="relative z-10">{label}</span>
                                         </button>

@@ -85,6 +85,14 @@ function applyStyle(key: StyleKey, value: string | number) {
 
 const isTransparent = (c: string) => c === 'transparent';
 
+const COLOR_NAMES: Record<string, string> = {
+    '#1e1e1e': 'Ink', '#e03131': 'Red', '#2f9e44': 'Green', '#1971c2': 'Blue', '#f08c00': 'Orange', '#9c36b5': 'Violet',
+    '#ffc9c9': 'Light red', '#b2f2bb': 'Light green', '#a5d8ff': 'Light blue', '#ffec99': 'Light yellow', '#eebefa': 'Light violet',
+};
+const TYPE_NAMES: Record<string, string> = {
+    rect: 'Rectangle', ellipse: 'Ellipse', diamond: 'Diamond', arrow: 'Arrow', line: 'Line', freehand: 'Drawing', text: 'Text', math: 'Math', image: 'Image',
+};
+
 
 function selection() {
     const state = useBoard.getState();
@@ -163,7 +171,7 @@ function Swatch({ color, active, onClick, label, group }: { color: string; activ
             type="button"
             aria-label={label}
             aria-pressed={active}
-            title={label}
+            title={COLOR_NAMES[color] ? `${COLOR_NAMES[color]} (${color})` : label}
             className="relative flex aspect-square w-full items-center justify-center rounded-lg outline-none transition-transform hover:scale-[1.08] focus-visible:ring-2 focus-visible:ring-ring active:scale-95"
             onClick={onClick}
         >
@@ -221,6 +229,16 @@ export const DrawingSettings = React.memo(function DrawingSettings() {
     const fontSize = useBoard((s) => s.fontSize);
     const keys = useRelevantKeys();
     const selectedCount = useBoard((s) => s.selectedIds.length);
+    const selTitle = useBoard((s) => {
+        const types = new Set(s.selectedIds.map((id) => s.shapes.get(id)?.type).filter(Boolean));
+        const n = s.selectedIds.length;
+        if (!n) return '';
+        if (types.size === 1) {
+            const name = TYPE_NAMES[[...types][0] as string] ?? 'Shape';
+            return n === 1 ? name : `${n} ${name === 'Math' || name === 'Text' ? name : name + 's'}`;
+        }
+        return `${n} shapes`;
+    });
     const selOpacity = useBoard((s) => {
         const first = s.selectedIds[0] && s.shapes.get(s.selectedIds[0]);
         return first ? first.opacity : 1;
@@ -250,7 +268,7 @@ export const DrawingSettings = React.memo(function DrawingSettings() {
 
     return (
         <div className="fixed right-[max(12px,env(safe-area-inset-right))] top-[calc(max(12px,env(safe-area-inset-top))+56px)] z-20">
-            <AnimatePresence mode="wait" initial={false}>
+            <AnimatePresence mode="popLayout" initial={false}>
                 {relevant && !open && (
                     <motion.button
                         key="toggle"
@@ -280,7 +298,7 @@ export const DrawingSettings = React.memo(function DrawingSettings() {
                         layout
                     >
                         <div className="-mb-1 flex items-center justify-between">
-                            <span className="text-[13px] font-medium">{selectedCount ? `${selectedCount} selected` : 'Style'}</span>
+                            <span className="text-[13px] font-medium">{selectedCount ? selTitle : 'Style'}</span>
                             <button type="button" aria-label="Hide style panel" className="-mr-1 flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground" onClick={() => setOpen(false)}>
                                 <X className="h-3.5 w-3.5" />
                             </button>

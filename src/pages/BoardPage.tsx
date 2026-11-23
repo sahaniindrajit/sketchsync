@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Board, type BoardHandle } from '@/board/Board';
 import { createBoard, getLastBoardId } from '@/board/persistence';
 import { resetBoardState, useBoard } from '@/board/store';
@@ -35,7 +35,8 @@ const downloadDataUrl = (dataUrl: string, name: string) => {
 /** `/board` → the last board created in this browser, or a new one. */
 export function BoardRedirect() {
     const roomId = useMemo(() => getLastBoardId() ?? createBoard(), []);
-    return <Navigate to={`/board/${roomId}`} replace />;
+    const { search } = useLocation();
+    return <Navigate to={`/board/${roomId}${search}`} replace />;
 }
 
 /** Old share links: `/live?roomId=<id>`. */
@@ -55,7 +56,12 @@ export default function BoardPage() {
 function BoardScreen({ roomId }: { roomId: string }) {
     const navigate = useNavigate();
     const handle = useRef<BoardHandle | null>(null);
-    const [share, setShare] = useState<ShareTab | null>(null);
+    const [params, setParams] = useSearchParams();
+    // `?connect=ai` (from the landing page) opens the Connect your AI dialog once.
+    const [share, setShare] = useState<ShareTab | null>(() => (params.get('connect') === 'ai' ? 'ai' : null));
+    useEffect(() => {
+        if (params.has('connect')) setParams({}, { replace: true });
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
     const [palette, setPalette] = useState(false);
     const isEmpty = useBoard((s) => s.shapes.size === 0);
     const hasEditor = useBoard((s) => s.editing !== null);

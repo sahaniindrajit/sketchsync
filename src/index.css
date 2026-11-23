@@ -137,39 +137,6 @@
   }
 }
 
-/* A light that travels around a card's border (used once, on the closing CTA). */
-@property --angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-@keyframes border-spin {
-  to {
-    --angle: 360deg;
-  }
-}
-.border-beam::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: conic-gradient(from var(--angle), transparent 0 70%, hsl(var(--claude) / 0.9) 84%, hsl(var(--accent)) 94%, transparent 100%);
-  opacity: 0.9;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  animation: border-spin 7s linear infinite;
-  pointer-events: none;
-}
-
-/* Infinite decorative animations stop while their section is off-screen. */
-.paused,
-.paused *,
-.paused::before {
-  animation-play-state: paused !important;
-}
-
 /* AI activity: an expanding ring (transform + opacity only). */
 .ai-ping::after {
   content: '';

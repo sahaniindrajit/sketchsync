@@ -56,9 +56,6 @@ const DockButton = React.forwardRef<
                 />
             )}
             <span className="relative z-10 transition-transform duration-150 group-active:scale-90">{children}</span>
-            {shortcut && (
-                <span className="pointer-events-none absolute bottom-[3px] right-[4px] text-[9px] font-medium leading-none text-muted-foreground/80 [@media(hover:none)]:hidden">{shortcut}</span>
-            )}
         </button>
     );
     if (!tip) return button;
@@ -206,9 +203,6 @@ export const Toolbar = React.memo(function Toolbar({ onImage, onDownload }: Tool
                         <Divider />
                         <DockButton label="Insert image" onClick={() => fileRef.current?.click()}>
                             <ImagePlus className="h-[18px] w-[18px]" strokeWidth={1.75} />
-                        </DockButton>
-                        <DockButton label="Download PNG" onClick={onDownload}>
-                            <Download className="h-[18px] w-[18px]" strokeWidth={1.75} />
                         </DockButton>
                     </>
                 )}

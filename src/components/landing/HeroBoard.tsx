@@ -62,7 +62,7 @@ const LAYOUTS = {
         circle: 'M306 318 C 296 284, 116 282, 92 322 C 74 356, 128 378, 200 377 C 278 377, 318 360, 308 328',
         pointer: 'M318 372 C 330 420, 334 456, 330 486',
         note: [236, 514] as Pt,
-        ai: [[380, 90], [330, 90], [276, 116], [270, 240], [282, 352], [292, 444], [320, 470], [340, 500], [360, 140], [360, 120]] as Pt[],
+        ai: [[290, 90], [280, 90], [276, 116], [270, 240], [282, 352], [292, 444], [300, 470], [290, 500], [300, 140], [290, 120]] as Pt[],
         me: [[30, 150], [30, 160], [36, 170], [40, 180], [40, 520], [30, 500], [330, 300], [300, 320], [320, 470], [250, 540]] as Pt[],
     },
 };
@@ -273,7 +273,7 @@ export function HeroBoard({ className }: { className?: string }) {
                         <motion.span layout="position" className={cn('relative flex h-5 w-5 items-center justify-center rounded-full bg-claude text-white', aiWorking && 'ai-ping')}>
                             <Sparkles className="h-3 w-3" />
                         </motion.span>
-                        <AnimatePresence mode="popLayout" initial={false}>
+                        <AnimatePresence mode="wait" initial={false}>
                             <motion.span key={aiWorking ? 'a' : 'b'} layout="position" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className={cn('whitespace-nowrap', aiWorking ? 'text-shimmer font-medium' : 'text-muted-foreground')}>
                                 {aiWorking ? 'Claude is drawing' : step >= FINAL - 1 || (step === -1 && ran) ? 'Claude added 11 shapes' : 'Claude · connected'}
                             </motion.span>

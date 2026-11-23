@@ -105,6 +105,10 @@
   .chrome {
     @apply border border-border/80 bg-[hsl(var(--chrome)/0.88)] shadow-chrome backdrop-blur-xl;
   }
+  /** Menus and popovers sit over content: nearly opaque so nothing reads through. */
+  .chrome-solid {
+    @apply bg-[hsl(var(--chrome)/0.97)];
+  }
   .kbd {
     @apply inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-[5px] border border-b-2 border-border bg-card px-1 font-sans text-[11px] font-medium leading-none text-muted-foreground;
   }

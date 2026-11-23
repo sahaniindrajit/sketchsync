@@ -1,4 +1,5 @@
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useInView } from 'motion/react';
+import { displayFill, useTheme, type ResolvedTheme } from '@/lib/theme';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Reveal, SectionHeading } from './Reveal';
@@ -26,15 +27,15 @@ const SLOTS: [number, number][] = [
 ];
 const FILLS: Partial<Record<Kind, string>> = { R: '#a5d8ff', O: '#b2f2bb', D: '#ffec99' };
 
-function ShapeGlyph({ kind }: { kind: Kind }) {
+function ShapeGlyph({ kind, theme }: { kind: Kind; theme: ResolvedTheme }) {
     const ink = { stroke: 'currentColor', strokeWidth: 2, fill: 'none', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
     switch (kind) {
         case 'R':
-            return <rect x={-38} y={-22} width={76} height={44} rx={8} {...ink} fill={FILLS.R} />;
+            return <rect x={-38} y={-22} width={76} height={44} rx={8} {...ink} fill={displayFill(FILLS.R!, theme)} />;
         case 'O':
-            return <ellipse rx={38} ry={24} {...ink} fill={FILLS.O} />;
+            return <ellipse rx={38} ry={24} {...ink} fill={displayFill(FILLS.O!, theme)} />;
         case 'D':
-            return <path d="M0 -28 L40 0 L0 28 L-40 0 Z" {...ink} fill={FILLS.D} />;
+            return <path d="M0 -28 L40 0 L0 28 L-40 0 Z" {...ink} fill={displayFill(FILLS.D!, theme)} />;
         case 'A':
             return (
                 <g {...ink}>
@@ -95,7 +96,11 @@ export function Shortcuts() {
         setItems((list) => [...list.filter((i) => i.x !== x || i.y !== y), { id: nextId.current++, kind: key as Kind, x, y }].slice(-8));
     }, []);
 
+    const sectionRef = useRef<HTMLElement>(null);
+    const inView = useInView(sectionRef, { amount: 0.3 });
+    const theme = useTheme((s) => s.resolved);
     useEffect(() => {
+        if (!inView) return;
         const down = (e: KeyboardEvent) => {
             const target = e.target as HTMLElement | null;
             if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return;
@@ -111,14 +116,14 @@ export function Shortcuts() {
             window.removeEventListener('keydown', down);
             window.removeEventListener('keyup', up);
         };
-    }, [act]);
+    }, [act, inView]);
 
     const sel = items.find((i) => i.id === selected);
 
     return (
-        <section>
+        <section ref={sectionRef}>
             <SectionHeading center eyebrow="Keyboard first" title="Every tool is one key away.">
-                Press a key, or click one, and it draws here. The same keys work on the board, and <span className="kbd">⌘</span> <span className="kbd">K</span> finds everything else.
+                Press a key, or click one, and it draws here. The same keys work on the board, and <span className="whitespace-nowrap"><span className="kbd">⌘</span> <span className="kbd">K</span></span> finds everything else.
             </SectionHeading>
             <Reveal className="mx-auto mt-12 grid max-w-5xl items-center gap-8 md:grid-cols-[1fr_1.1fr]">
                 <div className="grid grid-cols-4 gap-3 sm:gap-3.5">
@@ -150,7 +155,7 @@ export function Shortcuts() {
                         );
                     })}
                     <div className="flex flex-col items-center gap-2" aria-hidden>
-                        <span className="flex aspect-square w-full max-w-[64px] items-center justify-center gap-0.5 rounded-xl border border-dashed border-border text-[15px] font-medium text-muted-foreground">⌘K</span>
+                        <span className="flex aspect-square w-full max-w-[64px] items-center justify-center gap-0.5 rounded-xl bg-secondary text-[15px] font-medium text-muted-foreground">⌘K</span>
                         <span className="text-[12px] text-muted-foreground">Commands</span>
                     </div>
                 </div>
@@ -166,15 +171,17 @@ export function Shortcuts() {
                                         exit={{ opacity: 0, scale: 0.7, transition: { duration: 0.18 } }}
                                         transition={{ type: 'spring', visualDuration: 0.35, bounce: 0.3 }}
                                     >
-                                        <ShapeGlyph kind={it.kind} />
+                                        <ShapeGlyph kind={it.kind} theme={theme} />
                                     </motion.g>
                                 ))}
                             </AnimatePresence>
+                            <AnimatePresence>
                             {sel && (
                                 <motion.rect
                                     key={sel.id}
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
                                     x={sel.x - 48}
                                     y={sel.y - 34}
                                     width={96}
@@ -185,6 +192,7 @@ export function Shortcuts() {
                                     strokeWidth={1.5}
                                 />
                             )}
+                            </AnimatePresence>
                         </motion.g>
                     </svg>
                     <span className="absolute bottom-3 right-3 rounded-md border border-border bg-card px-2 py-1 font-mono text-[11px] text-muted-foreground">

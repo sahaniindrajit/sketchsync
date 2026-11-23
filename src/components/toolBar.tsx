@@ -91,7 +91,7 @@ function Tray({ open, onClose, children, align = 'left' }: { open: boolean; onCl
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 6, scale: 0.97, transition: { duration: 0.12 } }}
                     style={{ transformOrigin: align === 'right' ? 'bottom right' : 'bottom left' }}
-                    className={cn('chrome absolute bottom-full mb-3 flex items-center gap-0.5 rounded-2xl p-1.5', align === 'right' ? 'right-0' : 'left-0')}
+                    className={cn('chrome chrome-solid absolute bottom-full mb-3 flex items-center gap-0.5 rounded-2xl p-1.5', align === 'right' ? 'right-0' : 'left-0')}
                     role="menu"
                 >
                     {children}

@@ -6,7 +6,7 @@ import { LogoMark } from '@/components/logo';
 import { Kbd } from '@/components/ui/kbd';
 import { MOD } from '@/lib/platform';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useBoard } from '@/board/store';
+import { usePresence } from '@/board/presence';
 import { cn } from '@/lib/utils';
 import { AppMenu, type MenuActions } from './menu';
 
@@ -15,7 +15,6 @@ export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand
     const [viaKeyboard, setViaKeyboard] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
-    const roomId = useBoard((s) => s.roomId);
 
     useEffect(() => {
         if (!showMenu) return;
@@ -54,13 +53,8 @@ export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand
                 </button>
                 <Link to="/" className="flex items-center gap-2 rounded-lg px-1.5 py-1 transition-colors hover:bg-secondary" title="SketchSync home">
                     <LogoMark className="h-5 w-5" />
-                    <span className="hidden text-[13px] font-semibold tracking-tightish sm:inline">SketchSync</span>
                 </Link>
-                {roomId && (
-                    <span className="hidden select-all pr-1 font-mono text-[11px] text-muted-foreground md:inline" title="Board id">
-                        /{roomId.slice(0, 8)}
-                    </span>
-                )}
+                <BoardTitle />
                 <div className="mx-1 hidden h-5 w-px bg-border sm:block" />
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -89,5 +83,46 @@ export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand
                     />
                 )}</AnimatePresence>
         </motion.div>
+    );
+}
+
+/** The board's name. Editing it updates everyone on the board. */
+function BoardTitle() {
+    const title = usePresence((s) => s.title);
+    const [editing, setEditing] = useState(false);
+    const commit = (value: string) => {
+        setEditing(false);
+        if (value.trim() === title) return;
+        usePresence.getState().setTitle(value);
+        usePresence.getState().announce();
+    };
+    if (editing) {
+        return (
+            <input
+                autoFocus
+                defaultValue={title}
+                maxLength={60}
+                aria-label="Board name"
+                placeholder="Untitled board"
+                onFocus={(e) => e.currentTarget.select()}
+                onBlur={(e) => commit(e.currentTarget.value)}
+                onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === 'Enter') commit(e.currentTarget.value);
+                    if (e.key === 'Escape') setEditing(false);
+                }}
+                className="h-8 w-[180px] rounded-md border border-ring bg-card px-2 text-[13px] font-medium outline-none ring-[3px] ring-ring/15"
+            />
+        );
+    }
+    return (
+        <button
+            type="button"
+            onClick={() => setEditing(true)}
+            title="Rename board"
+            className={cn('hidden h-8 max-w-[220px] truncate rounded-md px-2 text-[13px] font-medium transition-colors hover:bg-secondary sm:block', !title && 'text-muted-foreground')}
+        >
+            {title || 'Untitled board'}
+        </button>
     );
 }

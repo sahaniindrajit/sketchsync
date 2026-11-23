@@ -42,6 +42,9 @@ test('style panel follows the tool and the selection', async ({ page }) => {
     await selectTool(page, 'select');
     await expect(page.getByTestId('style-panel')).toBeHidden();
     await selectTool(page, 'text');
+    // For a tool, the panel waits as a small style chip until opened.
+    await expect(page.getByTestId('style-panel')).toBeHidden();
+    await page.getByLabel('Show style panel').click();
     await expect(page.getByLabel('Font size 28')).toBeVisible();
     await expect(page.getByLabel('Fill #a5d8ff')).toHaveCount(0);
     await selectTool(page, 'rect');

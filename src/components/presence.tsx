@@ -1,38 +1,48 @@
 import { Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
-import { initials, usePresence, type Peer } from '@/board/presence';
+import { assignColors, initials, usePresence, type Peer } from '@/board/presence';
 import { useBoard } from '@/board/store';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useAiActivityClock } from './aiActivity';
 
-/** Other people's pointers, drawn over the canvas and smoothed with a spring. */
+/**
+ * Other people's pointers. They spring in board coordinates inside a layer that follows the
+ * camera directly, so they stay glued to the content while you pan or zoom.
+ */
 export function PeerCursors() {
     const peers = usePresence((s) => s.peers);
+    const me = usePresence((s) => s.me);
     const viewport = useBoard((s) => s.viewport);
-    const visible = Object.values(peers).filter((p): p is Peer & { x: number; y: number } => p.x !== null && p.y !== null);
+    const list = Object.values(peers);
+    const colors = assignColors(me, list);
+    const visible = list.filter((p): p is Peer & { x: number; y: number } => p.x !== null && p.y !== null);
     return (
         <div className="pointer-events-none absolute inset-0 z-[6] overflow-hidden" aria-hidden>
-            <AnimatePresence>
-                {visible.map((p) => (
-                    <motion.div
-                        key={p.id}
-                        className="absolute left-0 top-0 flex items-start"
-                        initial={{ opacity: 0, x: p.x * viewport.scale + viewport.x, y: p.y * viewport.scale + viewport.y }}
-                        animate={{ opacity: 1, x: p.x * viewport.scale + viewport.x, y: p.y * viewport.scale + viewport.y }}
-                        exit={{ opacity: 0, transition: { duration: 0.2 } }}
-                        transition={{ type: 'spring', visualDuration: 0.18, bounce: 0 }}
-                    >
-                        <svg width="16" height="20" viewBox="0 0 16 22">
-                            <path d="M0 0 L0 18 L4.8 13.5 L8 20.5 L11 19.2 L7.9 12.4 L14.3 12.2 Z" fill={p.color} stroke="white" strokeWidth="1.4" strokeLinejoin="round" />
-                        </svg>
-                        <span className="mt-[18px] whitespace-nowrap rounded-md px-1.5 py-0.5 text-[11.5px] font-semibold text-white shadow-chrome" style={{ backgroundColor: p.color }}>
-                            {p.name}
-                        </span>
-                    </motion.div>
-                ))}
-            </AnimatePresence>
+            <div className="absolute left-0 top-0 origin-top-left" style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})` }}>
+                <AnimatePresence>
+                    {visible.map((p) => (
+                        <motion.div
+                            key={p.id}
+                            className="absolute left-0 top-0"
+                            initial={{ opacity: 0, x: p.x, y: p.y }}
+                            animate={{ opacity: 1, x: p.x, y: p.y }}
+                            exit={{ opacity: 0, transition: { duration: 0.2 } }}
+                            transition={{ type: 'spring', visualDuration: 0.16, bounce: 0 }}
+                        >
+                            <div className="flex origin-top-left items-start" style={{ transform: `scale(${1 / viewport.scale})` }}>
+                                <svg width="16" height="20" viewBox="0 0 16 22">
+                                    <path d="M0 0 L0 18 L4.8 13.5 L8 20.5 L11 19.2 L7.9 12.4 L14.3 12.2 Z" fill={colors[p.id]} stroke="white" strokeWidth="1.4" strokeLinejoin="round" />
+                                </svg>
+                                <span className="mt-[18px] whitespace-nowrap rounded-md px-1.5 py-0.5 text-[11.5px] font-semibold text-white shadow-chrome" style={{ backgroundColor: colors[p.id] }}>
+                                    {p.name}
+                                </span>
+                            </div>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+            </div>
         </div>
     );
 }
@@ -63,7 +73,9 @@ function Avatar({ color, label, className, children }: { color: string; label: s
 export function PresenceStack() {
     const me = usePresence((s) => s.me);
     const rename = usePresence((s) => s.rename);
-    const peers = Object.values(usePresence((s) => s.peers));
+    const peerMap = usePresence((s) => s.peers);
+    const peers = Object.values(peerMap);
+    const colors = assignColors(me, peers);
     const connection = useBoard((s) => s.connection);
     const error = useBoard((s) => s.connectionError);
     const { activity, now } = useAiActivityClock(8000);
@@ -84,12 +96,12 @@ export function PresenceStack() {
             <div className="flex items-center">
                 <AnimatePresence initial={false}>
                     {aiHere && (
-                        <Avatar key="ai" color="hsl(var(--claude))" label={`${activity!.name} (AI)`}>
+                        <Avatar key="ai" color="hsl(var(--claude))" label={`${activity!.name} (AI)`} className={cn(now - activity!.at < 2500 && 'ai-ping')}>
                             <Sparkles className="h-3.5 w-3.5" strokeWidth={2.2} />
                         </Avatar>
                     )}
                     {shown.map((p) => (
-                        <Avatar key={p.id} color={p.color} label={p.name}>
+                        <Avatar key={p.id} color={colors[p.id]} label={p.name}>
                             {initials(p.name)}
                         </Avatar>
                     ))}

@@ -15,7 +15,7 @@ import { useTheme } from '@/lib/theme';
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /** The AI's cursor: visits each shape it touches in turn, then fades out. */
-function AiCursor({ targets, name, color, scale, batch }: { targets: { x: number; y: number }[]; name: string; color: string; scale: number; batch: string }) {
+function AiCursor({ targets, name, color, scale, batch, at }: { targets: { x: number; y: number }[]; name: string; color: string; scale: number; batch: string; at: number }) {
     const ref = useRef<Konva.Group>(null);
     const label = useRef<Konva.Text>(null);
     const bg = useRef<Konva.Rect>(null);
@@ -66,6 +66,16 @@ function AiCursor({ targets, name, color, scale, batch }: { targets: { x: number
         };
         if (!moving.current) next();
     }, [targets.length, batch]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Whatever happened to the glide, the cursor leaves shortly after the AI goes quiet.
+    useEffect(() => {
+        if (!at) return;
+        const t = setTimeout(() => {
+            moving.current = false;
+            ref.current?.to({ opacity: 0, duration: 0.35 });
+        }, 3000);
+        return () => clearTimeout(t);
+    }, [at]);
 
     useEffect(() => () => clearTimeout(hide.current), []);
     const k = 1 / scale;
@@ -717,7 +727,7 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
             }
             if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+' || e.key === '-' || e.key === '0')) {
                 e.preventDefault();
-                const vp = state.viewport;
+                const vp = state.viewportTarget ?? state.viewport;
                 const scale = e.key === '0' ? 1 : Math.min(MAX_SCALE, Math.max(MIN_SCALE, vp.scale * (e.key === '-' ? 1 / 1.2 : 1.2)));
                 const cx = window.innerWidth / 2;
                 const cy = window.innerHeight / 2;
@@ -820,7 +830,7 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
                         boundBoxFunc={(oldBox, newBox) => (Math.abs(newBox.width) < 5 || Math.abs(newBox.height) < 5 ? oldBox : newBox)}
                     />
                     <AiHalo box={aiBox} color={AI_COLOR[theme]} scale={viewport.scale} batch={aiActivity?.at ?? 0} />
-                    <AiCursor targets={aiTargets} name={aiActivity?.name ?? ''} color={AI_COLOR[theme]} scale={viewport.scale} batch={aiBatch} />
+                    <AiCursor targets={aiTargets} name={aiActivity?.name ?? ''} color={AI_COLOR[theme]} scale={viewport.scale} batch={aiBatch} at={aiActivity?.at ?? 0} />
                     {marquee && (
                         <Rect
                             x={marquee.x}

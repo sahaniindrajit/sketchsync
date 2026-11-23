@@ -20,6 +20,7 @@ export interface AiActivity {
     /** Ops that revert this batch of AI edits, oldest first. */
     undo: Op[];
     added: number;
+    connectors: number;
 }
 
 /** `text`/`math` edit a shape, `label` edits a box/line label, `new-text`/`new-math` place a new shape. */
@@ -35,6 +36,8 @@ export interface BoardState {
     fontSize: number;
     selectedIds: string[];
     viewport: Viewport;
+    /** Where the camera is gliding to, while it glides. */
+    viewportTarget: Viewport | null;
     connection: ConnectionStatus;
     connectionError: string | null;
     aiActivity: AiActivity | null;
@@ -56,6 +59,7 @@ const initialDefaults = {
     shapes: new Map<string, Shape>(),
     selectedIds: [] as string[],
     viewport: { x: 0, y: 0, scale: 1 },
+    viewportTarget: null as Viewport | null,
     connection: 'connecting' as ConnectionStatus,
     connectionError: null,
     aiActivity: null,
@@ -113,23 +117,27 @@ export function animateViewport(target: Viewport, ms = 320) {
     const start = useBoard.getState().viewport;
     cancelAnimationFrame(viewportAnim);
     if (typeof window === 'undefined' || window.matchMedia('(prefers-reduced-motion: reduce)').matches || ms <= 0) {
-        useBoard.getState().setViewport(target);
+        useBoard.setState({ viewport: target, viewportTarget: null });
         return;
     }
+    useBoard.setState({ viewportTarget: target });
     const t0 = performance.now();
     let last = start;
     const ease = (t: number) => 1 - Math.pow(1 - t, 3);
     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
     const step = (now: number) => {
         const current = useBoard.getState().viewport;
-        if (current !== last) return; // someone else moved the camera
+        if (current !== last) {
+            useBoard.setState({ viewportTarget: null }); // someone else moved the camera
+            return;
+        }
         const t = Math.min(1, (now - t0) / ms);
         const k = ease(t);
         // Interpolate scale geometrically so zooming feels even.
         const scale = start.scale * Math.pow(target.scale / start.scale, k);
         last = { scale, x: lerp(start.x, target.x, k), y: lerp(start.y, target.y, k) };
         if (t >= 1) last = target;
-        useBoard.getState().setViewport(last);
+        useBoard.setState(t >= 1 ? { viewport: last, viewportTarget: null } : { viewport: last });
         if (t < 1) viewportAnim = requestAnimationFrame(step);
     };
     viewportAnim = requestAnimationFrame(step);

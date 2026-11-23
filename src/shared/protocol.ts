@@ -193,6 +193,9 @@ export interface PresenceUpdate {
     color: string;
     x: number | null;
     y: number | null;
+    /** The board's name as this client knows it, and when it was last set (ms). Newest wins. */
+    title?: string;
+    titleAt?: number;
 }
 
 /** Server → other members of the room. `id` is the sender's client id. */
@@ -202,9 +205,12 @@ export interface PresenceBroadcast {
     color: string;
     x: number | null;
     y: number | null;
+    title?: string;
+    titleAt?: number;
 }
 
 export const PRESENCE_NAME_MAX = 32;
+export const BOARD_TITLE_MAX = 60;
 
 /** Validates a presence update; returns the cleaned value or null. */
 export function cleanPresence(p: unknown): Omit<PresenceUpdate, 'roomId'> | null {
@@ -217,7 +223,12 @@ export function cleanPresence(p: unknown): Omit<PresenceUpdate, 'roomId'> | null
     const x = coord(v.x);
     const y = coord(v.y);
     if (x === undefined || y === undefined) return null;
-    return { name, color: v.color, x, y };
+    const out: Omit<PresenceUpdate, 'roomId'> = { name, color: v.color, x, y };
+    if (typeof v.title === 'string' && typeof v.titleAt === 'number' && Number.isFinite(v.titleAt)) {
+        out.title = v.title.trim().slice(0, BOARD_TITLE_MAX);
+        out.titleAt = v.titleAt;
+    }
+    return out;
 }
 
 export interface JoinPayload {

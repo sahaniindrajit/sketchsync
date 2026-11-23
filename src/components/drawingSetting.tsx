@@ -125,7 +125,7 @@ function removeSelected() {
     if (state.selectedIds.length) state.dispatch({ kind: 'delete', ids: state.selectedIds });
 }
 
-function ActionButton({ label, hint, onClick, children, danger }: { label: string; hint?: string; onClick: () => void; children: React.ReactNode; danger?: boolean }) {
+function ActionButton({ label, short, hint, onClick, children, danger }: { label: string; short: string; hint?: string; onClick: () => void; children: React.ReactNode; danger?: boolean }) {
     return (
         <Tooltip>
             <TooltipTrigger asChild>
@@ -134,11 +134,12 @@ function ActionButton({ label, hint, onClick, children, danger }: { label: strin
                     aria-label={label}
                     onClick={onClick}
                     className={cn(
-                        'flex h-8 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors active:scale-95',
+                        'flex h-12 flex-col items-center justify-center gap-1 rounded-lg bg-secondary text-[10.5px] font-medium text-muted-foreground transition-colors active:scale-95',
                         danger ? 'hover:bg-destructive/10 hover:text-destructive' : 'hover:bg-secondary/60 hover:text-foreground',
                     )}
                 >
                     {children}
+                    <span aria-hidden>{short}</span>
                 </button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
@@ -224,15 +225,24 @@ export const DrawingSettings = React.memo(function DrawingSettings() {
         const first = s.selectedIds[0] && s.shapes.get(s.selectedIds[0]);
         return first ? first.opacity : 1;
     });
-    const [open, setOpen] = useState(() => window.innerWidth >= 768);
+    // The panel opens by itself for a selection (on wider screens). For a drawing tool it stays a
+    // small style chip until you open it; either choice is remembered for this session.
+    const [toolOpen, setToolOpen] = useState(false);
+    const [selOpen, setSelOpen] = useState(() => window.innerWidth >= 768);
     const [picker, setPicker] = useState<'strokeColor' | 'fillColor' | null>(null);
     const [hex, setHex] = useState('#f08c00');
     const hexValid = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex);
     const relevant = keys.size > 0 || selectedCount > 0;
+    const open = selectedCount > 0 ? selOpen : toolOpen;
+    const setOpen = (v: boolean) => (selectedCount > 0 ? setSelOpen(v) : setToolOpen(v));
 
     // On phones, opening the app menu tucks the panel away so the two don't stack.
     React.useEffect(() => {
-        const close = () => window.innerWidth < 768 && setOpen(false);
+        const close = () => {
+            if (window.innerWidth >= 768) return;
+            setSelOpen(false);
+            setToolOpen(false);
+        };
         window.addEventListener('sketchsync:menu-open', close);
         return () => window.removeEventListener('sketchsync:menu-open', close);
     }, []);
@@ -265,7 +275,7 @@ export const DrawingSettings = React.memo(function DrawingSettings() {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.97, y: -4, transition: { duration: 0.12 } }}
                         style={{ transformOrigin: 'top right' }}
-                        className="chrome w-[232px] space-y-4 rounded-2xl p-3.5"
+                        className="chrome chrome-solid w-[232px] space-y-4 rounded-2xl p-3.5"
                         data-testid="style-panel"
                         layout
                     >
@@ -370,16 +380,16 @@ export const DrawingSettings = React.memo(function DrawingSettings() {
                                 </Section>
                                 <Section title="Actions">
                                     <div className="grid grid-cols-4 gap-1">
-                                        <ActionButton label="Bring to front" onClick={() => reorder('front')}>
+                                        <ActionButton label="Bring to front" short="Front" onClick={() => reorder('front')}>
                                             <BringToFront className="h-4 w-4" strokeWidth={1.75} />
                                         </ActionButton>
-                                        <ActionButton label="Send to back" onClick={() => reorder('back')}>
+                                        <ActionButton label="Send to back" short="Back" onClick={() => reorder('back')}>
                                             <SendToBack className="h-4 w-4" strokeWidth={1.75} />
                                         </ActionButton>
-                                        <ActionButton label="Duplicate" onClick={duplicate}>
+                                        <ActionButton label="Duplicate" short="Copy" onClick={duplicate}>
                                             <Copy className="h-4 w-4" strokeWidth={1.75} />
                                         </ActionButton>
-                                        <ActionButton label="Delete" hint="Del" onClick={removeSelected} danger>
+                                        <ActionButton label="Delete" short="Delete" hint="Del" onClick={removeSelected} danger>
                                             <Trash2 className="h-4 w-4" strokeWidth={1.75} />
                                         </ActionButton>
                                     </div>

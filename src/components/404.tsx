@@ -27,7 +27,7 @@ export default function NotFound() {
                     <div className="dot-grid relative aspect-[5/4] w-full overflow-hidden rounded-2xl border border-border bg-card">
                         <svg viewBox="0 0 500 400" className="absolute inset-0 h-full w-full text-foreground" aria-hidden>
                             <motion.path
-                                d="M60 300 C 120 200, 190 330, 250 230 S 360 140, 440 200"
+                                d="M82 290 C 130 210, 190 330, 250 230 S 360 140, 440 200"
                                 fill="none"
                                 stroke="currentColor"
                                 strokeWidth="3"
@@ -37,7 +37,7 @@ export default function NotFound() {
                                 transition={{ duration: 1.4, ease: 'easeInOut' }}
                             />
                             <motion.path d="M424 186 L442 202 L420 210" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" initial={{ opacity: reduced ? 1 : 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.35 }} />
-                            <text x="440" y="236" textAnchor="middle" fontSize="13" className="fill-muted-foreground" fontFamily="Inter, sans-serif">
+                            <text x="462" y="196" fontSize="22" fontWeight="600" className="fill-muted-foreground" fontFamily="Inter, sans-serif">
                                 ?
                             </text>
                             <rect x="40" y="280" width="40" height="40" rx="9" fill="none" stroke="currentColor" strokeWidth="2.5" />

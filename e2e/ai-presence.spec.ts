@@ -73,3 +73,15 @@ test('people on the same board see each other’s cursors and avatars', async ({
     await other.close();
     await expect(page.getByLabel(otherName, { exact: true })).toBeHidden({ timeout: 5000 });
 });
+
+test('renaming the board updates everyone on it', async ({ page, browser }) => {
+    const roomId = await openNewBoard(page);
+    const other = await (await browser.newContext({ viewport: { width: 1400, height: 900 } })).newPage();
+    await other.goto(`/board/${roomId}`);
+    await other.getByTestId('connection-status').and(other.locator('[data-status="online"]')).waitFor();
+    await page.getByRole('button', { name: 'Untitled board' }).click();
+    await page.getByLabel('Board name').fill('Q3 planning');
+    await page.keyboard.press('Enter');
+    await expect(other.getByRole('button', { name: 'Q3 planning' })).toBeVisible({ timeout: 6000 });
+    await other.close();
+});

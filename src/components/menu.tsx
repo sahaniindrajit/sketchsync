@@ -70,7 +70,7 @@ export const AppMenu = React.memo(function AppMenu({ actions, onClose, viaKeyboa
             ref={ref}
             onKeyDown={onKeyDown}
             tabIndex={-1}
-            className="chrome absolute left-0 top-full z-50 mt-2 w-60 rounded-xl p-1.5 outline-none"
+            className="chrome chrome-solid absolute left-0 top-full z-50 mt-2 w-60 rounded-xl p-1.5 outline-none"
             role="menu"
             aria-label="Board actions"
         >

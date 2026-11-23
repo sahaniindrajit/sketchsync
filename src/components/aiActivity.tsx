@@ -46,7 +46,12 @@ export function AiActivityToast({ onJump }: { onJump: (box: Box) => void }) {
     const active = visible && now - activity!.at < ACTIVE_MS;
     const count = activity?.shapeIds.length ?? 0;
     const added = activity?.added ?? 0;
-    const done = added > 0 ? `added ${added} ${added === 1 ? 'shape' : 'shapes'}` : `edited ${count} ${count === 1 ? 'shape' : 'shapes'}`;
+    const connectors = activity?.connectors ?? 0;
+    const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+    const done =
+        added || connectors
+            ? `added ${[added && plural(added, 'shape', 'shapes'), connectors && plural(connectors, 'connector', 'connectors')].filter(Boolean).join(' and ')}`
+            : `edited ${plural(count, 'shape', 'shapes')}`;
     return (
         <div className="pointer-events-none fixed left-1/2 top-[calc(max(12px,env(safe-area-inset-top))+56px)] z-40 -translate-x-1/2 lg:top-[max(14px,env(safe-area-inset-top))]">
             <AnimatePresence>

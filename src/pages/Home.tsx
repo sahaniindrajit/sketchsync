@@ -27,18 +27,15 @@ function Hero() {
     return (
         <section className="relative">
             <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))] pb-8 pt-10 sm:pt-14">
-                <motion.a
-                    href="#mcp"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="group inline-flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-3 text-[12.5px] text-muted-foreground shadow-[0_1px_2px_hsl(0_0%_0%/0.04)] transition-colors hover:text-foreground"
+                <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.4 }}
+                    className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.08em] text-muted-foreground"
                 >
-                    <span className="flex items-center gap-1 rounded-full bg-claude/15 px-2 py-0.5 font-mono text-[11px] font-medium text-claude">
-                        <Sparkles className="h-3 w-3" /> MCP
-                    </span>
-                    Works with Claude, Cursor and VS Code
-                    <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-                </motion.a>
+                    <span className="h-1.5 w-1.5 rounded-full bg-claude" />
+                    Realtime whiteboard · MCP server built in
+                </motion.p>
 
                 <h1 className="mt-5 max-w-[15ch] text-balance text-[clamp(40px,7.4vw,84px)] font-semibold leading-[0.95] tracking-display" aria-label={HEADLINE.join(' ')}>
                     {HEADLINE.map((w, i) => (
@@ -48,15 +45,27 @@ function Hero() {
                             className="mr-[0.22em] inline-block last:mr-0"
                             initial={reduced ? { opacity: 0 } : { opacity: 0, y: '0.35em', filter: 'blur(8px)' }}
                             animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0, filter: 'blur(0px)' }}
-                            transition={{ type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.08 + i * 0.06 }}
+                            transition={reduced ? { duration: 0.15 } : { type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.08 + i * 0.06 }}
                         >
                             {w === 'AI' ? (
-                                <span className="text-claude">AI</span>
+                                <span className="relative text-claude">
+                                    AI
+                                    <svg viewBox="0 0 120 20" preserveAspectRatio="none" className="absolute -bottom-[0.12em] left-[-6%] h-[0.22em] w-[112%] overflow-visible" aria-hidden>
+                                        <motion.path
+                                            d="M3 13 C 30 5, 70 4, 117 9"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="5"
+                                            strokeLinecap="round"
+                                            vectorEffect="non-scaling-stroke"
+                                            initial={{ pathLength: reduced ? 1 : 0 }}
+                                            animate={{ pathLength: 1 }}
+                                            transition={{ duration: 0.7, ease: [0.65, 0, 0.35, 1], delay: reduced ? 0 : 0.75 }}
+                                        />
+                                    </svg>
+                                </span>
                             ) : w === 'on.' ? (
-                                <>
-                                    on
-                                    <span className="ml-[0.1em] inline-block h-[0.78em] w-[0.07em] translate-y-[0.04em] animate-blink rounded-full bg-claude" />
-                                </>
+                                'on'
                             ) : (
                                 w
                             )}
@@ -67,7 +76,7 @@ function Hero() {
                 <motion.p
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.5 }}
+                    transition={reduced ? { duration: 0.15 } : { type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.5 }}
                     className="mt-6 max-w-[54ch] text-pretty text-[17px] leading-relaxed text-muted-foreground sm:text-[18px]"
                 >
                     Sketch with your team in real time. Connect Claude or any MCP client and watch it add flowcharts, diagrams and math to the same board.
@@ -75,7 +84,7 @@ function Hero() {
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.6 }}
+                    transition={reduced ? { duration: 0.15 } : { type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.6 }}
                     className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-3"
                 >
                     <div className="flex flex-wrap gap-2.5">
@@ -98,7 +107,7 @@ function Hero() {
             <motion.div
                 initial={{ opacity: 0, y: 40, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ type: 'spring', visualDuration: 0.9, bounce: 0.1, delay: 0.45 }}
+                transition={reduced ? { duration: 0.15 } : { type: 'spring', visualDuration: 0.9, bounce: 0.1, delay: 0.45 }}
                 className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]"
             >
                 <HeroBoard />
@@ -180,13 +189,14 @@ function Cta() {
             <Reveal>
                 <div className="relative overflow-hidden rounded-3xl border border-border bg-card">
                     <div className="dot-grid absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_at_center,#000,transparent_75%)]" />
-                    <div className="pointer-events-none absolute -top-40 left-1/2 h-80 w-[640px] max-w-full -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,hsl(var(--claude)/0.18),transparent)]" />
-                    <div className="relative flex flex-col items-center px-6 py-20 text-center">
-                        <LogoMark className="h-12 w-12" />
-                        <h2 className="mt-6 max-w-[18ch] text-balance text-[clamp(30px,4.5vw,52px)] font-semibold leading-[1.02] tracking-[-0.04em]">Start a board. Invite a teammate. Or an AI.</h2>
-                        <p className="mt-4 max-w-md text-[16px] text-muted-foreground">A new board takes one click and lives at its own link.</p>
+                    <div className="pointer-events-none absolute -top-48 left-1/2 h-[28rem] w-[760px] max-w-full -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,hsl(var(--claude)/0.22),transparent)]" />
+                    <div className="pointer-events-none absolute -bottom-56 left-1/2 h-[26rem] w-[700px] max-w-full -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,hsl(var(--accent)/0.12),transparent)]" />
+                    <div className="relative flex flex-col items-center px-6 py-24 text-center sm:py-32">
+                        <LogoMark className="h-14 w-14" />
+                        <h2 className="mt-7 max-w-[16ch] text-balance text-[clamp(34px,6vw,68px)] font-semibold leading-[0.98] tracking-[-0.045em]">Start a board. Invite a teammate. Or an AI.</h2>
+                        <p className="mt-5 max-w-md text-[17px] text-muted-foreground">A new board takes one click and lives at its own link. No account needed.</p>
                         <div className="relative mt-8">
-                            <Link to="/board" className="group relative z-10 inline-flex h-12 items-center gap-2 rounded-xl bg-primary px-6 text-[15px] font-medium text-primary-foreground transition-transform active:scale-[0.97]">
+                            <Link to="/board" className="group relative z-10 inline-flex h-14 items-center gap-2 rounded-2xl bg-primary px-7 text-[16px] font-medium text-primary-foreground shadow-[0_12px_32px_-12px_hsl(225_20%_10%/0.6)] transition-transform active:scale-[0.97]">
                                 Open a board
                                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                             </Link>
@@ -207,14 +217,12 @@ export default function Home() {
         <div className="min-h-screen overflow-x-clip bg-background">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[720px] dot-grid opacity-70 [mask-image:linear-gradient(to_bottom,#000,transparent)]" />
             <Navbar />
-            <main className="relative space-y-28 pb-28 sm:space-y-36">
+            <main className="relative space-y-28 pb-28 sm:space-y-40">
                 <div>
                     <Hero />
                     <WorksWith />
                 </div>
-                <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
-                    <McpSection />
-                </div>
+                <McpSection />
                 <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
                     <Bento />
                 </div>

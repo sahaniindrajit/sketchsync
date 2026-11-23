@@ -130,6 +130,8 @@ export class RoomSync {
         socket.on(EVENTS.presence, (p: PresenceBroadcast) => {
             if (!p || typeof p.id !== 'string' || this.stopped) return;
             usePresence.setState((s) => ({ peers: { ...s.peers, [p.id]: { ...p, at: Date.now() } } }));
+            const mine = usePresence.getState();
+            if (typeof p.title === 'string' && typeof p.titleAt === 'number' && p.titleAt > mine.titleAt) mine.setTitle(p.title, p.titleAt);
         });
         socket.on(EVENTS.presenceLeave, (p: { id: string }) => {
             usePresence.setState((s) => {
@@ -153,11 +155,13 @@ export class RoomSync {
             this.sendQueued = null;
             if (!this.joined || !this.socket) return;
             this.lastSentAt = Date.now();
-            const { me } = usePresence.getState();
-            this.socket.emit(EVENTS.presence, { roomId: this.roomId, name: me.name, color: me.color, ...this.lastPointer });
+            const { me, title, titleAt } = usePresence.getState();
+            this.socket.emit(EVENTS.presence, { roomId: this.roomId, name: me.name, color: me.color, ...this.lastPointer, ...(titleAt ? { title, titleAt } : {}) });
         };
+        usePresence.getState().loadTitle(this.roomId);
         usePresence.setState({
             peers: {},
+            announce: () => emit(),
             send: (x, y) => {
                 this.lastPointer = { x, y };
                 if (this.sendQueued) return;
@@ -181,7 +185,7 @@ export class RoomSync {
         window.removeEventListener('pagehide', this.saveNow);
         for (const timer of [this.flushTimer, this.saveTimer, this.joinTimer, this.sendQueued]) if (timer) clearTimeout(timer);
         if (this.presenceTimer) clearInterval(this.presenceTimer);
-        usePresence.setState({ peers: {}, send: () => {} });
+        usePresence.setState({ peers: {}, send: () => {}, announce: () => {} });
         this.socket?.removeAllListeners();
         this.socket?.disconnect();
         this.socket = null;
@@ -374,6 +378,8 @@ export class RoomSync {
     private onServerOp(payload: OpBroadcast) {
         if (payload.roomId !== this.roomId || !this.joined) return;
         const aiInverse = payload.origin.startsWith('ai:') ? inverseOf(payload.op, this.confirmed) : null;
+        // Record AI activity first so shapes it adds can animate in as they mount.
+        this.trackAi(payload, aiInverse);
         this.confirmed = applyOp(this.confirmed, payload.op);
         const index = this.pending.findIndex((p) => p.opId === payload.opId);
         if (index === 0) {
@@ -391,7 +397,6 @@ export class RoomSync {
             this.rebuildView();
         }
         this.scheduleSave();
-        this.trackAi(payload, aiInverse);
     }
 
     /** A remote op commutes with pending ops when they touch different shapes (and nothing pending deletes). */
@@ -422,7 +427,8 @@ export class RoomSync {
         if (!payload.origin.startsWith('ai:')) return;
         const op = payload.op;
         const ids = op.kind === 'add' ? op.shapes.map((s) => s.id) : op.kind === 'update' ? op.patches.map((p) => p.id) : [];
-        const added = op.kind === 'add' ? op.shapes.length : 0;
+        const added = op.kind === 'add' ? op.shapes.filter((x) => x.type !== 'arrow' && x.type !== 'line').length : 0;
+        const connectors = op.kind === 'add' ? op.shapes.length - added : 0;
         const name = payload.origin.slice(3) || 'AI';
         const prev = useBoard.getState().aiActivity;
         const sameBatch = prev && prev.name === name && Date.now() - prev.at < 4000;
@@ -433,6 +439,7 @@ export class RoomSync {
                 at: Date.now(),
                 undo: [...(sameBatch ? prev.undo : []), ...(inverse ? [inverse] : [])],
                 added: (sameBatch ? prev.added : 0) + added,
+                connectors: (sameBatch ? prev.connectors : 0) + connectors,
             },
         });
     }

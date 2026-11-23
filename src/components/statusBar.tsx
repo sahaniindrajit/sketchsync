@@ -7,6 +7,7 @@ import { MOD } from '@/lib/platform';
 import { animateViewport, redoLast, undoLast, useBoard } from '@/board/store';
 import { useHistory } from '@/board/history';
 import { cn } from '@/lib/utils';
+import { useMedia } from '@/lib/useMedia';
 import { useAiActivityClock } from './aiActivity';
 import { PresenceStack } from './presence';
 
@@ -103,16 +104,36 @@ function ZoomButton({ label, hint, onClick, children, disabled }: { label: strin
 
 export function ZoomControls({ onFit }: { onFit: () => void }) {
     const viewport = useBoard((s) => s.viewport);
+    const target = useBoard((s) => s.viewportTarget);
+    const compact = useMedia('(max-width: 639px)');
     const canUndo = useHistory((s) => s.undo.length > 0);
     const canRedo = useHistory((s) => s.redo.length > 0);
     const zoom = (factor: number | null) => {
         const state = useBoard.getState();
-        const vp = state.viewport;
+        // Build on where the camera is heading, so quick repeated presses compound.
+        const vp = state.viewportTarget ?? state.viewport;
         const scale = factor === null ? 1 : Math.min(8, Math.max(0.1, vp.scale * factor));
         const cx = window.innerWidth / 2;
         const cy = window.innerHeight / 2;
         animateViewport({ scale, x: cx - ((cx - vp.x) / vp.scale) * scale, y: cy - ((cy - vp.y) / vp.scale) * scale }, 220);
     };
+    if (compact) {
+        // Phones: a small cluster under the top bar; pinch to zoom, tap the % to reset.
+        return (
+            <div className="chrome fixed left-[max(12px,env(safe-area-inset-left))] top-[calc(max(12px,env(safe-area-inset-top))+52px)] z-10 flex items-center gap-0.5 rounded-xl p-0.5">
+                <ZoomButton label="Undo" onClick={undoLast} disabled={!canUndo}>
+                    <Undo2 className="h-4 w-4" strokeWidth={1.75} />
+                </ZoomButton>
+                <ZoomButton label="Redo" onClick={redoLast} disabled={!canRedo}>
+                    <Redo2 className="h-4 w-4" strokeWidth={1.75} />
+                </ZoomButton>
+                <div className="mx-0.5 h-4 w-px bg-border" />
+                <button type="button" className="h-8 min-w-[48px] rounded-lg px-1 text-center font-mono text-xs text-muted-foreground" onClick={() => zoom(null)} data-testid="zoom-level">
+                    <RollingNumber value={Math.round((target ?? viewport).scale * 100)} suffix="%" />
+                </button>
+            </div>
+        );
+    }
     return (
         <div className="chrome fixed bottom-[calc(max(12px,env(safe-area-inset-bottom))+64px)] left-[max(12px,env(safe-area-inset-left))] z-10 flex items-center gap-0.5 rounded-xl p-0.5 xl:bottom-[max(12px,env(safe-area-inset-bottom))]">
             <ZoomButton label="Undo" hint={<><Kbd>{MOD}</Kbd><Kbd>Z</Kbd></>} onClick={undoLast} disabled={!canUndo}>
@@ -132,7 +153,7 @@ export function ZoomControls({ onFit }: { onFit: () => void }) {
                 title="Reset zoom"
                 data-testid="zoom-level"
             >
-                <RollingNumber value={Math.round(viewport.scale * 100)} suffix="%" />
+                <RollingNumber value={Math.round((target ?? viewport).scale * 100)} suffix="%" />
             </button>
             <ZoomButton label="Zoom in" hint={<><Kbd>{MOD}</Kbd><Kbd>+</Kbd></>} onClick={() => zoom(1.2)}>
                 <Plus className="h-4 w-4" strokeWidth={1.75} />

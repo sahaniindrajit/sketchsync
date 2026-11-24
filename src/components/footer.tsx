@@ -21,7 +21,7 @@ const groups = [
     {
         title: 'Maker',
         links: [
-            ['Indrajit Sahani', 'https://www.indrajitsahani.com/'],
+            ['Indrajit Sahani', 'https://indrajitsahani.com/'],
             ['X / Twitter', 'https://x.com/sahani_indrajit'],
         ],
     },

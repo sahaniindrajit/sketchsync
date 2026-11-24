@@ -148,10 +148,8 @@ export class RoomSync {
                 this.applyRole(p.role);
                 return;
             }
-            // Access was removed (sharing changed or the board was deleted).
-            this.joined = false;
-            this.dropPending();
-            useBoard.setState({ access: 'removed', connection: 'error', connectionError: 'You no longer have access to this board.' });
+            // Access was removed (sharing changed or the board was deleted). Stay disconnected.
+            this.lockOut('removed', 'You no longer have access to this board.');
         });
         socket.on(EVENTS.title, (p: TitleBroadcast) => {
             if (!p || p.roomId !== this.roomId || this.stopped) return;
@@ -215,6 +213,15 @@ export class RoomSync {
         this.socket = null;
         this.releaseTabLock();
         useBoard.setState({ dispatch: () => {} });
+    }
+
+    /** No access: drop unsent edits and stop reconnecting (a reconnect must not re-upload a board we can't open). */
+    private lockOut(access: 'auth_required' | 'forbidden' | 'removed', message: string) {
+        this.joined = false;
+        this.dropPending();
+        this.socket?.io?.reconnection(false);
+        this.socket?.disconnect();
+        useBoard.setState({ access, connection: 'error', connectionError: message });
     }
 
     /** Viewers keep looking but stop editing: unsent edits are dropped. */
@@ -366,9 +373,9 @@ export class RoomSync {
                 }
                 if (!ack.ok) {
                     this.joined = false;
-                    if (ack.code === 'auth_required' || (ack.code === 'forbidden' && /access/i.test(ack.error))) {
-                        // Private board: show the sign-in / request-access screen instead of retrying.
-                        useBoard.setState({ access: ack.code === 'auth_required' ? 'auth_required' : 'forbidden', connection: 'error', connectionError: ack.error });
+                    if (ack.code === 'auth_required' || ack.code === 'not_found' || (ack.code === 'forbidden' && /access/i.test(ack.error))) {
+                        // Private or deleted board: show the gate instead of retrying.
+                        this.lockOut(ack.code === 'auth_required' ? 'auth_required' : ack.code === 'not_found' ? 'removed' : 'forbidden', ack.error);
                         return;
                     }
                     useBoard.setState({ connection: ack.code === 'protocol' ? 'error' : 'offline', connectionError: ack.error });

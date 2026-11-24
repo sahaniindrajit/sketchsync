@@ -23,6 +23,7 @@ const groups = [
         links: [
             ['Indrajit Sahani', 'https://indrajitsahani.com/'],
             ['X / Twitter', 'https://x.com/sahani_indrajit'],
+            ['LinkedIn', 'https://www.linkedin.com/in/indrajitsahani'],
         ],
     },
 ] as const;

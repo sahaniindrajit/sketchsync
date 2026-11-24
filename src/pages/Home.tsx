@@ -294,7 +294,7 @@ export default function Home() {
 
                             <Panel index={1} onActive={setStop} id="boards">
                                 <H2>Every board, in one place.</H2>
-                                <P>Sign in with Google or GitHub and your boards live on the server, not in one browser. Boards you drew before signing in come with you. Search them, rename them, and jump between them without leaving the canvas.</P>
+                                <P>Sign in and your boards live on the server, not in one browser. Boards you drew before signing in come with you. Search them, rename them, and jump between them without leaving the canvas.</P>
                             </Panel>
 
                             <Panel index={2} onActive={setStop} id="connect">

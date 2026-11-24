@@ -83,7 +83,10 @@ export default function SignIn() {
                 </div>
             ) : (
                 <div className="mt-6 space-y-2.5">
-                    {(['google', 'github'] as const).map((p) => {
+                    {(['google', 'github'] as const)
+                        // Only providers this server has set up.
+                        .filter((p) => providers?.[p])
+                        .map((p) => {
                         const on = providers?.[p];
                         return (
                             <button
@@ -103,6 +106,9 @@ export default function SignIn() {
                         );
                     })}
 
+                    {!providers?.google && !providers?.github && !providers?.dev && (
+                        <p className="text-[13px] text-muted-foreground">Sign-in isn't set up on this server yet.</p>
+                    )}
                     {providers?.dev && (
                         <form
                             className="mt-5 space-y-2 border-t border-dashed border-border pt-5"

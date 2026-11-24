@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Eye, Lock } from 'lucide-react';
 import { Board, type BoardHandle } from '@/board/Board';
 import { createBoard, getLastBoardId } from '@/board/persistence';
+import { api, ensureAccount, useAccount, type BoardInfo } from '@/lib/account';
+import { AccountMenu } from '@/components/account';
 import { resetBoardState, useBoard } from '@/board/store';
 import { RoomSync } from '@/board/sync';
 import { AnimatePresence, motion } from 'motion/react';
@@ -19,7 +22,8 @@ import { Toolbar } from '@/components/toolBar';
 import { TopBar } from '@/components/topBar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/components/404';
-import { isValidRoomId } from '@/shared/protocol';
+import { isValidRoomId, PRESENCE_NAME_MAX } from '@/shared/protocol';
+import { usePresence } from '@/board/presence';
 import { getShapeBounds, unionBoxes } from '@/shared/geometry';
 import { browserMeasurer } from '@/board/measure';
 
@@ -32,11 +36,106 @@ const downloadDataUrl = (dataUrl: string, name: string) => {
     document.body.removeChild(link);
 };
 
-/** `/board` → the last board created in this browser, or a new one. */
+/**
+ * `/board`: signed in → your boards (or a new saved board when coming from the landing page with a request);
+ * otherwise the last board created in this browser, or a new one.
+ */
 export function BoardRedirect() {
-    const roomId = useMemo(() => getLastBoardId() ?? createBoard(), []);
+    const status = useAccount((s) => s.status);
     const { search } = useLocation();
+    const navigate = useNavigate();
+    useEffect(() => {
+        void ensureAccount();
+    }, []);
+    useEffect(() => {
+        if (status !== 'signed-in' || !search) return;
+        let cancelled = false;
+        api<{ board: { id: string } }>('/boards', { method: 'POST', body: {} })
+            .then(({ board }) => !cancelled && navigate(`/board/${board.id}${search}`, { replace: true }))
+            .catch(() => !cancelled && navigate(`/board/${createBoard()}${search}`, { replace: true }));
+        return () => {
+            cancelled = true;
+        };
+    }, [status, search, navigate]);
+    if (status === 'unknown' || (status === 'signed-in' && search)) return <div className="min-h-screen bg-background" />;
+    if (status === 'signed-in') return <Navigate to="/boards" replace />;
+    return <LocalBoardRedirect search={search} />;
+}
+
+function LocalBoardRedirect({ search }: { search: string }) {
+    const roomId = useMemo(() => getLastBoardId() ?? createBoard(), []);
     return <Navigate to={`/board/${roomId}${search}`} replace />;
+}
+
+/** Shown instead of the board when it's private, not shared with you, or gone. */
+function AccessGate({ roomId }: { roomId: string }) {
+    const access = useBoard((s) => s.access);
+    const user = useAccount((s) => s.user);
+    const signOut = useAccount((s) => s.signOut);
+    const navigate = useNavigate();
+    if (access === 'ok') return null;
+    const next = encodeURIComponent(`/board/${roomId}`);
+    const copy = {
+        auth_required: { title: 'This board is private', body: 'Sign in with an account it has been shared with to open it.' },
+        forbidden: { title: "You don't have access", body: `Ask the owner to add ${user?.email ?? 'your email'} as a collaborator, then reload this page.` },
+        removed: { title: 'This board is no longer available', body: 'The owner deleted it or changed who can open it.' },
+    }[access];
+    return (
+        <div className="dot-grid fixed inset-0 z-[90] flex items-center justify-center bg-background px-4" role="alertdialog" aria-labelledby="gate-title">
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full max-w-[380px] rounded-2xl border border-border bg-card p-7 text-center shadow-lift"
+            >
+                <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+                    <Lock className="h-5 w-5" />
+                </span>
+                <h1 id="gate-title" className="mt-4 text-[19px] font-semibold tracking-tightish">
+                    {copy.title}
+                </h1>
+                <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">{copy.body}</p>
+                <div className="mt-6 flex flex-col gap-2">
+                    {access === 'auth_required' && (
+                        <Link to={`/signin?reason=board&next=${next}`} className="flex h-10 items-center justify-center rounded-lg bg-primary text-[14px] font-medium text-primary-foreground">
+                            Sign in
+                        </Link>
+                    )}
+                    {access === 'forbidden' && (
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                await signOut();
+                                navigate(`/signin?reason=board&next=${next}`);
+                            }}
+                            className="flex h-10 items-center justify-center rounded-lg border border-border text-[14px] font-medium transition-colors hover:bg-secondary"
+                        >
+                            Use another account
+                        </button>
+                    )}
+                    <Link to={user ? '/boards' : '/'} className="flex h-10 items-center justify-center rounded-lg text-[14px] font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
+                        {user ? 'Back to your boards' : 'Go home'}
+                    </Link>
+                </div>
+            </motion.div>
+        </div>
+    );
+}
+
+/** Small reminder that you're looking, not editing. */
+function ViewOnlyBadge() {
+    return (
+        <div className="pointer-events-none fixed inset-x-0 bottom-[max(16px,env(safe-area-inset-bottom))] z-30 flex justify-center">
+            <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="chrome flex h-10 items-center gap-2 rounded-xl px-3.5 text-[13px] font-medium text-muted-foreground"
+                data-testid="view-only"
+            >
+                <Eye className="h-4 w-4" />
+                View only
+            </motion.div>
+        </div>
+    );
 }
 
 /** Old share links: `/live?roomId=<id>`. */
@@ -66,6 +165,31 @@ function BoardScreen({ roomId }: { roomId: string }) {
     const [palette, setPalette] = useState(false);
     const isEmpty = useBoard((s) => s.shapes.size === 0);
     const hasEditor = useBoard((s) => s.editing !== null);
+    const viewer = useBoard((s) => s.role === 'viewer');
+    const connection = useBoard((s) => s.connection);
+    const accountStatus = useAccount((s) => s.status);
+    const accountsEnabled = useAccount((s) => s.enabled);
+    const [board, setBoard] = useState<BoardInfo | null>(null);
+    const accountName = useAccount((s) => s.user?.name);
+
+    // Signed in: collaborators see your account name instead of a random one.
+    useEffect(() => {
+        if (!accountName) return;
+        usePresence.setState((s) => ({ me: { ...s.me, name: accountName.slice(0, PRESENCE_NAME_MAX) } }));
+        usePresence.getState().announce();
+    }, [accountName]);
+
+    // Saved-board details (owner, link setting) once connected, and again whenever sharing opens.
+    useEffect(() => {
+        if (!accountsEnabled || connection !== 'online') return;
+        let cancelled = false;
+        api<{ board: BoardInfo }>(`/boards/${roomId}`)
+            .then((r) => !cancelled && setBoard(r.board))
+            .catch(() => undefined);
+        return () => {
+            cancelled = true;
+        };
+    }, [roomId, accountsEnabled, connection, share, accountStatus]);
 
     useEffect(() => {
         resetBoardState(roomId, new Map());
@@ -139,7 +263,18 @@ function BoardScreen({ roomId }: { roomId: string }) {
             onFit,
             onShare: () => setShare('collaborate'),
             onConnectAi: () => setShare('ai'),
-            onNewBoard: () => navigate(`/board/${createBoard()}`),
+            onNewBoard: async () => {
+                if (useAccount.getState().status === 'signed-in') {
+                    try {
+                        const { board } = await api<{ board: { id: string } }>('/boards', { method: 'POST', body: {} });
+                        navigate(`/board/${board.id}`);
+                        return;
+                    } catch {
+                        /* fall back to a board in this browser */
+                    }
+                }
+                navigate(`/board/${createBoard()}`);
+            },
             onReset: () => {
                 if (useBoard.getState().shapes.size && window.confirm('Clear the whole board for everyone?')) {
                     useBoard.getState().dispatch({ kind: 'clear' });
@@ -154,11 +289,17 @@ function BoardScreen({ roomId }: { roomId: string }) {
             <div className="fixed inset-0 overflow-hidden bg-background">
                 <Board onReady={onReady} />
                 <PeerCursors />
-                <AnimatePresence>{isEmpty && !hasEditor && <EmptyState />}</AnimatePresence>
+                <AnimatePresence>{isEmpty && !hasEditor && !viewer && <EmptyState />}</AnimatePresence>
                 <TopBar actions={actions} onCommand={() => setPalette(true)} />
-                <ConnectionBadge onShare={() => setShare('collaborate')} onConnectAi={() => setShare('ai')} />
-                <DrawingSettings />
-                <Toolbar onImage={onImage} onDownload={onDownload} />
+                <ConnectionBadge onShare={() => setShare('collaborate')} onConnectAi={() => setShare('ai')} account={accountStatus === 'signed-in' ? <AccountMenu /> : null} />
+                {viewer ? (
+                    <ViewOnlyBadge />
+                ) : (
+                    <>
+                        <DrawingSettings />
+                        <Toolbar onImage={onImage} onDownload={onDownload} />
+                    </>
+                )}
                 <ZoomControls onFit={onFit} />
                 <NoticeToast />
                 <AiActivityToast onJump={(box) => handle.current?.zoomToFit(box)} />
@@ -171,10 +312,13 @@ function BoardScreen({ roomId }: { roomId: string }) {
                             tab={share}
                             onTab={setShare}
                             onClose={() => setShare(null)}
-                            aiPanel={<ConnectAiPanel roomId={roomId} ask={ask} />}
+                            board={board}
+                            onBoardChange={setBoard}
+                            aiPanel={<ConnectAiPanel roomId={roomId} ask={ask} personal={accountStatus === 'signed-in' && !!board} />}
                         />
                     )}
                 </AnimatePresence>
+                <AccessGate roomId={roomId} />
             </div>
         </TooltipProvider>
     );

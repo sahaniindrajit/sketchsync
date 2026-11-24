@@ -8,10 +8,12 @@ import { MOD } from '@/lib/platform';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePresence } from '@/board/presence';
 import { useHistory } from '@/board/history';
-import { redoLast, undoLast, useCanUndo } from '@/board/store';
+import { redoLast, undoLast, useBoard, useCanUndo } from '@/board/store';
 import { cn } from '@/lib/utils';
 import { useMedia } from '@/lib/useMedia';
 import { AppMenu, type MenuActions } from './menu';
+import { BoardSwitcher } from './boardSwitcher';
+import { useAccount } from '@/lib/account';
 
 function IconButton({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
     return (
@@ -35,6 +37,7 @@ export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand
     const [viaKeyboard, setViaKeyboard] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
+    const signedIn = useAccount((s) => s.status === 'signed-in');
 
     useEffect(() => {
         if (!showMenu) return;
@@ -71,7 +74,7 @@ export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand
                 >
                     <Menu className="h-[18px] w-[18px]" strokeWidth={1.75} />
                 </button>
-                <Link to="/" className="hidden items-center rounded-lg px-1.5 py-1 transition-colors hover:bg-secondary sm:flex" title="SketchSync home">
+                <Link to={signedIn ? '/boards' : '/'} className="hidden items-center rounded-lg px-1.5 py-1 transition-colors hover:bg-secondary sm:flex" title={signedIn ? 'Your boards' : 'SketchSync home'}>
                     <LogoMark className="h-5 w-5" />
                 </Link>
                 {compact && (
@@ -85,6 +88,7 @@ export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand
                 </div>
                 )}
                 <BoardTitle />
+                {signedIn && <BoardSwitcher />}
                 <div className="mx-1 hidden h-5 w-px bg-border sm:block" />
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -132,6 +136,7 @@ export function TopBar({ actions, onCommand }: { actions: MenuActions; onCommand
 /** The board's name. Editing it updates everyone on the board. */
 function BoardTitle() {
     const title = usePresence((s) => s.title);
+    const viewer = useBoard((s) => s.role === 'viewer');
     const [editing, setEditing] = useState(false);
     useEffect(() => {
         const start = () => setEditing(true);
@@ -149,6 +154,9 @@ function BoardTitle() {
         usePresence.getState().setTitle(value);
         usePresence.getState().announce();
     };
+    if (viewer) {
+        return <span className={cn('hidden h-8 max-w-[220px] truncate px-2 text-[13px] font-medium leading-8 sm:block', !title && 'text-muted-foreground')}>{title || 'Untitled board'}</span>;
+    }
     if (editing) {
         return (
             <input

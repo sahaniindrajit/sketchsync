@@ -1,8 +1,9 @@
 import { ShieldAlert, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
-import { mcpUrl } from '@/config';
+import { mcpUrl, personalMcpUrl } from '@/config';
 import { useBoard } from '@/board/store';
+import { usePresence } from '@/board/presence';
 import { cn } from '@/lib/utils';
 import { CopyField } from './shareDialog';
 
@@ -55,16 +56,22 @@ const CLIENTS = [
     },
 ] as const;
 
-export function ConnectAiPanel({ roomId, ask }: { roomId: string; ask?: string }) {
-    const url = mcpUrl(roomId);
+export function ConnectAiPanel({ roomId, ask, personal }: { roomId: string; ask?: string; personal?: boolean }) {
+    // Signed in: one connector for every board. Otherwise a URL for just this board.
+    const url = personal ? personalMcpUrl() : mcpUrl(roomId);
+    const boardTitle = usePresence((s) => s.title);
     const [client, setClient] = useState<(typeof CLIENTS)[number]['id']>('claude');
     const selected = CLIENTS.find((c) => c.id === client)!;
 
     return (
         <div className="space-y-4" data-testid="connect-ai">
             <div className="space-y-1">
-                <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tightish">Let an AI draw on this board</h2>
-                <p className="text-[13px] leading-relaxed text-muted-foreground">Claude, Cursor or any MCP client can read and edit this board live, next to you.</p>
+                <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tightish">{personal ? 'Connect your AI to all your boards' : 'Let an AI draw on this board'}</h2>
+                <p className="text-[13px] leading-relaxed text-muted-foreground">
+                    {personal
+                        ? 'One connector for every board you can edit. Add it once, sign in when your app asks, then name the board in your request.'
+                        : 'Claude, Cursor or any MCP client can read and edit this board live, next to you.'}
+                </p>
             </div>
 
             <CopyField value={url} label="MCP server URL" testId="mcp-url" icon={<Sparkles className="h-3.5 w-3.5 text-claude" />} />
@@ -100,12 +107,19 @@ export function ConnectAiPanel({ roomId, ask }: { roomId: string; ask?: string }
 
             <div className="space-y-2 rounded-xl bg-secondary/60 p-3 text-xs text-muted-foreground">
                 <p>
-                    Then try: <span className="text-foreground">“{ask || 'Draw a flowchart of our signup flow.'}”</span>
+                    Then try: <span className="text-foreground">“{ask || (personal ? `On my “${boardTitle || 'Untitled board'}” board, draw a flowchart of our signup flow.` : 'Draw a flowchart of our signup flow.')}”</span>
                 </p>
-                <p className="flex items-start gap-1.5">
-                    <ShieldAlert className="mt-px h-3.5 w-3.5 shrink-0 text-warning" />
-                    Anyone with this URL can edit the board. Boards live in server memory, so keep a tab open on it while the AI works.
-                </p>
+                {personal ? (
+                    <p className="flex items-start gap-1.5">
+                        <ShieldAlert className="mt-px h-3.5 w-3.5 shrink-0 text-success" />
+                        Your app signs in as you, so it can only reach boards you can. Disconnect it any time from your boards page.
+                    </p>
+                ) : (
+                    <p className="flex items-start gap-1.5">
+                        <ShieldAlert className="mt-px h-3.5 w-3.5 shrink-0 text-warning" />
+                        Anyone with this URL can edit the board while its link allows editing.
+                    </p>
+                )}
             </div>
         </div>
     );

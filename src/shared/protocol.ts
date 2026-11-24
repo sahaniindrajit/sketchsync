@@ -184,7 +184,25 @@ export const EVENTS = {
     /** Live cursors and names. Relayed to the room as-is; never stored. */
     presence: 'presence',
     presenceLeave: 'presence:leave',
+    /** Server → client: your role on this board changed (null: you no longer have access). */
+    access: 'room:access',
+    /** Server → client: the board was renamed. */
+    title: 'room:title',
 } as const;
+
+/** What someone may do on a board. Boards without an account system are always 'editor'. */
+export type BoardRole = 'owner' | 'editor' | 'viewer';
+
+export interface AccessBroadcast {
+    roomId: string;
+    role: BoardRole | null;
+}
+
+export interface TitleBroadcast {
+    roomId: string;
+    title: string;
+    titleAt: number;
+}
 
 /** Client → server: where this person's pointer is on the board (board coordinates), or null when it left the canvas. */
 export interface PresenceUpdate {
@@ -253,6 +271,11 @@ export type JoinAck =
           fresh: boolean;
           /** Pending op ids the server already processed (applied or permanently rejected). */
           appliedOpIds: string[];
+          /** What this person may do. Viewers' ops are refused. */
+          role?: BoardRole;
+          /** Saved board name (servers with accounts). */
+          title?: string;
+          titleAt?: number;
       }
     | { ok: false; error: string; code: ErrorCode };
 
@@ -270,12 +293,23 @@ export interface OpPayload {
  * - invalid / limit: permanently rejected (the op is consumed; don't retry)
  * - unavailable / rate_limited / out_of_order / not_joined: not processed; retry later, in order
  */
-export type ErrorCode = 'invalid' | 'limit' | 'unavailable' | 'rate_limited' | 'out_of_order' | 'not_joined' | 'forbidden' | 'protocol' | 'not_found';
+export type ErrorCode =
+    | 'invalid'
+    | 'limit'
+    | 'unavailable'
+    | 'rate_limited'
+    | 'out_of_order'
+    | 'not_joined'
+    | 'forbidden'
+    | 'protocol'
+    | 'not_found'
+    /** Joining needs a signed-in account (the board isn't shared by link). */
+    | 'auth_required';
 
 export type OpAck = { ok: true; seq: number; duplicate?: boolean } | { ok: false; error: string; code: ErrorCode };
 
 export function isPermanentError(code: ErrorCode): boolean {
-    return code === 'invalid' || code === 'limit' || code === 'forbidden' || code === 'not_found' || code === 'protocol';
+    return code === 'invalid' || code === 'limit' || code === 'forbidden' || code === 'not_found' || code === 'protocol' || code === 'auth_required';
 }
 
 /** Parses "<clientId>:<n>". */

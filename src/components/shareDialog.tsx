@@ -6,6 +6,9 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { boardUrl } from '@/config';
 import { cn } from '@/lib/utils';
+import { Link } from 'react-router-dom';
+import { api, useAccount, type BoardInfo } from '@/lib/account';
+import { Collaborators } from './collaborators';
 
 export type ShareTab = 'collaborate' | 'ai';
 
@@ -125,7 +128,81 @@ const tabs = [
     ['ai', 'Connect your AI', Sparkles],
 ] as const;
 
-export function ShareDialog({ roomId, tab, onTab, onClose, aiPanel }: { roomId: string; tab: ShareTab; onTab: (tab: ShareTab) => void; onClose: () => void; aiPanel?: React.ReactNode }) {
+const LINK_COPY = {
+    edit: 'Anyone with the link can view and edit in real time. No account needed.',
+    view: 'Anyone with the link can view. Only people you add can edit.',
+    off: 'Only people you add can open this board.',
+} as const;
+
+/** Collaborate tab: the link, who has access, and (for saved boards) sharing settings. */
+function CollaboratePanel({ roomId, board, onBoardChange }: { roomId: string; board?: BoardInfo | null; onBoardChange?: (b: BoardInfo) => void }) {
+    const status = useAccount((s) => s.status);
+    const enabled = useAccount((s) => s.enabled);
+    const [saving, setSaving] = useState(false);
+    const saved = !!board?.owner;
+    return (
+        <div className="space-y-4">
+            <div className="space-y-1">
+                <h2 className="text-[15px] font-semibold tracking-tightish">Share this board</h2>
+                <p className="text-[13px] leading-relaxed text-muted-foreground">{LINK_COPY[board?.linkAccess ?? 'edit']}</p>
+            </div>
+            <CopyField value={boardUrl(roomId)} label="Board link" testId="board-link" icon={<Link2 className="h-3.5 w-3.5" />} />
+            {board && saved && onBoardChange ? (
+                <Collaborators board={board} onChange={onBoardChange} />
+            ) : enabled && board && !saved ? (
+                <div className="flex items-center gap-3 rounded-xl bg-secondary/60 p-3 text-[12.5px] text-muted-foreground">
+                    <span className="flex-1">
+                        {status === 'signed-in' ? 'Save it to your account to invite people by email and choose who can edit.' : 'Sign in to save this board, invite people by email and choose who can edit.'}
+                    </span>
+                    {status === 'signed-in' ? (
+                        <button
+                            type="button"
+                            disabled={saving}
+                            onClick={async () => {
+                                setSaving(true);
+                                try {
+                                    await api('/boards/import', { method: 'POST', body: { ids: [roomId] } });
+                                    const r = await api<{ board: BoardInfo }>(`/boards/${roomId}`);
+                                    onBoardChange?.(r.board);
+                                } catch {
+                                    useBoard.getState().notify('Could not save this board', 'error');
+                                } finally {
+                                    setSaving(false);
+                                }
+                            }}
+                            className="h-8 shrink-0 rounded-md bg-primary px-3 text-[12.5px] font-medium text-primary-foreground"
+                        >
+                            {saving ? 'Saving…' : 'Save board'}
+                        </button>
+                    ) : (
+                        <Link to={`/signin?next=${encodeURIComponent(`/board/${roomId}`)}`} className="h-8 shrink-0 rounded-md bg-primary px-3 text-[12.5px] font-medium leading-8 text-primary-foreground">
+                            Sign in
+                        </Link>
+                    )}
+                </div>
+            ) : null}
+            <PeopleHere />
+        </div>
+    );
+}
+
+export function ShareDialog({
+    roomId,
+    tab,
+    onTab,
+    onClose,
+    aiPanel,
+    board,
+    onBoardChange,
+}: {
+    roomId: string;
+    tab: ShareTab;
+    onTab: (tab: ShareTab) => void;
+    onClose: () => void;
+    aiPanel?: React.ReactNode;
+    board?: BoardInfo | null;
+    onBoardChange?: (b: BoardInfo) => void;
+}) {
     return (
         <Dialog.Root open onOpenChange={(o) => !o && onClose()}>
             <Dialog.Portal forceMount>
@@ -203,14 +280,7 @@ export function ShareDialog({ roomId, tab, onTab, onClose, aiPanel }: { roomId: 
                                     aria-labelledby={`share-tab-${tab}`}
                                 >
                                     {tab === 'collaborate' ? (
-                                        <div className="space-y-4">
-                                            <div className="space-y-1">
-                                                <h2 className="text-[15px] font-semibold tracking-tightish">Invite people to this board</h2>
-                                                <p className="text-[13px] leading-relaxed text-muted-foreground">Anyone with the link can view and edit in real time. No account needed.</p>
-                                            </div>
-                                            <CopyField value={boardUrl(roomId)} label="Board link" testId="board-link" icon={<Link2 className="h-3.5 w-3.5" />} />
-                                            <PeopleHere />
-                                        </div>
+                                        <CollaboratePanel roomId={roomId} board={board} onBoardChange={onBoardChange} />
                                     ) : (
                                         aiPanel
                                     )}

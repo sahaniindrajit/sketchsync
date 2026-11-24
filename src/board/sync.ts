@@ -5,6 +5,8 @@ import { applyOp, applyOps, sortByZ, splitOp } from '@/shared/ops';
 import {
     EVENTS,
     isPermanentError,
+    type AccessBroadcast,
+    type TitleBroadcast,
     parseOpId,
     PROTOCOL_VERSION,
     type ErrorCode,
@@ -14,10 +16,12 @@ import {
     type OpBroadcast,
     type PresenceBroadcast,
     type Shape,
+    type BoardRole,
 } from '@/shared/protocol';
 import { canMerge, isUrgent, mergeOps } from './opQueue';
 import { adoptOrphanPending, holdTabLock, loadBoard, saveBoard, savePending } from './persistence';
-import { agentName, setShapes, useBoard } from './store';
+import { agentName, setRole, setShapes, useBoard } from './store';
+import { useAccount } from '@/lib/account';
 import { inverseOf, recordOp } from './history';
 import { usePresence } from './presence';
 
@@ -119,7 +123,10 @@ export class RoomSync {
 
     private connect() {
         const url = this.options.backendUrl ?? BACKEND_URL;
-        const socket = this.options.socketFactory ? this.options.socketFactory(url) : io(url, { transports: ['websocket', 'polling'] });
+        // The sign-in token is read on every (re)connect, so signing in or out takes effect on the next connection.
+        const socket = this.options.socketFactory
+            ? this.options.socketFactory(url)
+            : io(url, { transports: ['websocket', 'polling'], auth: (cb) => cb(useAccount.getState().token ? { token: useAccount.getState().token } : {}) });
         this.socket = socket;
         socket.on('connect', () => this.join());
         socket.on('disconnect', () => this.onDisconnect());
@@ -134,6 +141,21 @@ export class RoomSync {
             usePresence.setState((s) => ({ peers: { ...s.peers, [p.id]: { ...p, at: Date.now() } } }));
             const mine = usePresence.getState();
             if (typeof p.title === 'string' && typeof p.titleAt === 'number' && p.titleAt > mine.titleAt) mine.setTitle(p.title, p.titleAt);
+        });
+        socket.on(EVENTS.access, (p: AccessBroadcast) => {
+            if (!p || p.roomId !== this.roomId || this.stopped) return;
+            if (p.role) {
+                this.applyRole(p.role);
+                return;
+            }
+            // Access was removed (sharing changed or the board was deleted).
+            this.joined = false;
+            this.dropPending();
+            useBoard.setState({ access: 'removed', connection: 'error', connectionError: 'You no longer have access to this board.' });
+        });
+        socket.on(EVENTS.title, (p: TitleBroadcast) => {
+            if (!p || p.roomId !== this.roomId || this.stopped) return;
+            if (p.titleAt > usePresence.getState().titleAt) usePresence.getState().setTitle(p.title, p.titleAt);
         });
         socket.on(EVENTS.presenceLeave, (p: { id: string }) => {
             usePresence.setState((s) => {
@@ -195,8 +217,26 @@ export class RoomSync {
         useBoard.setState({ dispatch: () => {} });
     }
 
+    /** Viewers keep looking but stop editing: unsent edits are dropped. */
+    private applyRole(role: BoardRole) {
+        setRole(role);
+        if (role === 'viewer') this.dropPending();
+    }
+
+    private dropPending() {
+        if (!this.pending.length) return;
+        this.pending = [];
+        this.epoch++;
+        this.rebuildView();
+        this.scheduleSave();
+    }
+
     /** Applies an op locally right away and queues it for the server. */
     dispatch(op: Op) {
+        if (useBoard.getState().role === 'viewer') {
+            useBoard.getState().notify('You can only view this board');
+            return;
+        }
         recordOp(op, useBoard.getState().shapes);
         for (const part of splitOp(op)) {
             const last = this.pending[this.pending.length - 1];
@@ -256,6 +296,11 @@ export class RoomSync {
 
     private onOpError(p: Pending, code: ErrorCode, message: string, epoch: number) {
         if (epoch !== this.epoch || !this.pending.includes(p)) return;
+        // A viewer's edits are refused for good; otherwise re-join (the client id may have been retired).
+        if (code === 'forbidden' && useBoard.getState().role === 'viewer') {
+            this.dropPending();
+            return;
+        }
         if (code === 'not_joined' || code === 'forbidden' || code === 'not_found') {
             this.rejoin();
             return;
@@ -321,10 +366,20 @@ export class RoomSync {
                 }
                 if (!ack.ok) {
                     this.joined = false;
+                    if (ack.code === 'auth_required' || (ack.code === 'forbidden' && /access/i.test(ack.error))) {
+                        // Private board: show the sign-in / request-access screen instead of retrying.
+                        useBoard.setState({ access: ack.code === 'auth_required' ? 'auth_required' : 'forbidden', connection: 'error', connectionError: ack.error });
+                        return;
+                    }
                     useBoard.setState({ connection: ack.code === 'protocol' ? 'error' : 'offline', connectionError: ack.error });
                     if (ack.code !== 'protocol') this.retryJoin();
                     return;
                 }
+                if (ack.role) this.applyRole(ack.role);
+                if (typeof ack.title === 'string' && typeof ack.titleAt === 'number' && ack.titleAt > usePresence.getState().titleAt) {
+                    usePresence.getState().setTitle(ack.title, ack.titleAt);
+                }
+                useBoard.setState({ access: 'ok' });
                 this.onJoined(joinClientId, retire, ack.shapes, ack.fresh, ack.appliedOpIds);
             },
         );
@@ -341,7 +396,7 @@ export class RoomSync {
         const applied = new Set(appliedOpIds);
         const remaining = this.pending.filter((p) => !applied.has(p.opId));
         const seed: Pending[] =
-            fresh && this.confirmed.size > 0
+            fresh && this.confirmed.size > 0 && useBoard.getState().role !== 'viewer'
                 ? // The server lost this room (restart/eviction): upload our last known copy first.
                   splitOp({ kind: 'add', shapes: sortByZ(this.confirmed.values()) }).map((op) => ({ opId: '', op, sent: false, dispatched: false, seed: true }))
                 : [];

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Logo } from '@/components/logo';
 import { useTheme } from '@/lib/theme';
+import { useAccount } from '@/lib/account';
+import { AccountMenu } from '@/components/account';
 import { cn } from '@/lib/utils';
 
 export default function Navbar() {
@@ -12,6 +14,8 @@ export default function Navbar() {
     useMotionValueEvent(scrollY, 'change', (v) => setScrolled(v > 8));
     const theme = useTheme((s) => s.resolved);
     const toggle = useTheme((s) => s.toggle);
+    const status = useAccount((s) => s.status);
+    const enabled = useAccount((s) => s.enabled);
 
     return (
         <header className="sticky top-0 z-50 px-[max(16px,env(safe-area-inset-left))] pt-[env(safe-area-inset-top)]">
@@ -35,10 +39,23 @@ export default function Navbar() {
                             {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" strokeWidth={1.75} /> : <Moon className="h-[18px] w-[18px]" strokeWidth={1.75} />}
                         </motion.span>
                     </button>
-                    <Link to="/board" className="group ml-1 flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-[13.5px] font-medium text-primary-foreground transition-transform active:scale-[0.97]">
-                        Open a board
+                    {status === 'signed-out' && enabled && (
+                        <Link to="/signin" className="hidden rounded-lg px-3 py-1.5 transition-colors hover:text-foreground sm:block">
+                            Sign in
+                        </Link>
+                    )}
+                    <Link
+                        to={status === 'signed-in' ? '/boards' : '/board'}
+                        className="group ml-1 flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-[13.5px] font-medium text-primary-foreground transition-transform active:scale-[0.97]"
+                    >
+                        {status === 'signed-in' ? 'Your boards' : 'Open a board'}
                         <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                     </Link>
+                    {status === 'signed-in' && (
+                        <span className="ml-1">
+                            <AccountMenu />
+                        </span>
+                    )}
                 </div>
             </motion.nav>
         </header>

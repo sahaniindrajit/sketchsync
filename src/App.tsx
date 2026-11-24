@@ -8,6 +8,10 @@ const BoardPage = lazy(() => import('./pages/BoardPage'));
 const BoardRedirect = lazy(() => import('./pages/BoardPage').then((m) => ({ default: m.BoardRedirect })));
 const LegacyLiveRedirect = lazy(() => import('./pages/BoardPage').then((m) => ({ default: m.LegacyLiveRedirect })));
 const NotFound = lazy(() => import('./components/404'));
+const SignIn = lazy(() => import('./pages/SignIn'));
+const AuthCallback = lazy(() => import('./pages/SignIn').then((m) => ({ default: m.AuthCallback })));
+const Boards = lazy(() => import('./pages/Boards'));
+const Authorize = lazy(() => import('./pages/Authorize'));
 
 function App() {
     return (
@@ -18,6 +22,10 @@ function App() {
                     <Route path="/board" element={<BoardRedirect />} />
                     <Route path="/board/:roomId" element={<BoardPage />} />
                     <Route path="/live" element={<LegacyLiveRedirect />} />
+                    <Route path="/signin" element={<SignIn />} />
+                    <Route path="/auth/callback" element={<AuthCallback />} />
+                    <Route path="/boards" element={<Boards />} />
+                    <Route path="/authorize" element={<Authorize />} />
                     <Route path="*" element={<NotFound />} />
                 </Routes>
             </Suspense>

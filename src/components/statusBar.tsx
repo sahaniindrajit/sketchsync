@@ -14,7 +14,7 @@ import { PresenceStack } from './presence';
 const AI_ACTIVE_MS = 2500;
 
 /** Top-right cluster: AI agent status and Share. */
-export function ConnectionBadge({ onShare, onConnectAi }: { onShare: () => void; onConnectAi: () => void }) {
+export function ConnectionBadge({ onShare, onConnectAi, account }: { onShare: () => void; onConnectAi: () => void; account?: React.ReactNode }) {
     const { activity, now } = useAiActivityClock(AI_ACTIVE_MS);
     const working = !!activity && now - activity.at < AI_ACTIVE_MS;
     return (
@@ -54,6 +54,7 @@ export function ConnectionBadge({ onShare, onConnectAi }: { onShare: () => void;
                 <Share2 className="h-4 w-4" strokeWidth={2} />
                 Share
             </button>
+            {account && <div className="chrome flex h-11 w-11 items-center justify-center rounded-xl max-sm:hidden">{account}</div>}
         </motion.div>
     );
 }

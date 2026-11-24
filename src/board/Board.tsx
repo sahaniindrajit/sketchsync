@@ -573,6 +573,7 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
     const onDblClick = useCallback(
         (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
             const state = useBoard.getState();
+            if (state.role === 'viewer') return;
             if (state.tool !== 'select' && state.tool !== 'text' && state.tool !== 'math') return;
             const [a, b] = recentDowns.current;
             if (!a || !b || Math.hypot(a.x - b.x, a.y - b.y) > 8 || b.t - a.t > 500) return;

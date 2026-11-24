@@ -22,7 +22,17 @@ export default defineConfig({
             command: PROD ? 'npm run build && node dist/index.js' : `node --import tsx src/index.ts`,
             cwd: '../sketchsync-Backend',
             url: `http://127.0.0.1:${BACKEND_PORT}/ping`,
-            env: { PORT: String(BACKEND_PORT), CORS_ORIGINS: `http://localhost:${FRONTEND_PORT}`, FRONTEND_URL: `http://localhost:${FRONTEND_PORT}` },
+            // E2E_DATABASE_URL turns on accounts (and the accounts tests); the database should be a throwaway one.
+            env: {
+                PORT: String(BACKEND_PORT),
+                CORS_ORIGINS: `http://localhost:${FRONTEND_PORT}`,
+                FRONTEND_URL: `http://localhost:${FRONTEND_PORT}`,
+                PUBLIC_URL: `http://127.0.0.1:${BACKEND_PORT}`,
+                DATABASE_URL: process.env.E2E_DATABASE_URL ?? '',
+                DEV_LOGIN: process.env.E2E_DATABASE_URL ? '1' : '',
+                SNAPSHOT_INTERVAL_MS: '300',
+                API_REQUESTS_PER_SECOND: '1000',
+            },
             reuseExistingServer: false,
             timeout: 90_000,
         },

@@ -29,8 +29,8 @@ export default function Navbar() {
                     <Logo />
                 </Link>
                 <div className="flex items-center gap-1 text-[13.5px] text-muted-foreground">
-                    <a href="#features" className="hidden rounded-lg px-3 py-1.5 transition-colors hover:text-foreground md:block">Features</a>
-                    <a href="#mcp" className="hidden rounded-lg px-3 py-1.5 transition-colors hover:text-foreground md:block">Connect AI</a>
+                    <a href="/#everything" className="hidden rounded-lg px-3 py-1.5 transition-colors hover:text-foreground md:block">Features</a>
+                    <a href="/#connect" className="hidden rounded-lg px-3 py-1.5 transition-colors hover:text-foreground md:block">Connect AI</a>
                     <a href="https://github.com/sahaniindrajit/sketchsync" target="_blank" rel="noreferrer" aria-label="GitHub" className="hidden h-9 w-9 sm:flex items-center justify-center rounded-lg transition-colors hover:bg-secondary hover:text-foreground">
                         <Github className="h-[18px] w-[18px]" strokeWidth={1.75} />
                     </a>

@@ -202,3 +202,30 @@ test('one personal MCP connector reaches every board after OAuth consent', async
     await expect(connector).toContainText('None yet');
     await client.close().catch(() => undefined);
 });
+
+test('a deleted board stays deleted, even for tabs that still have it open', async ({ page, browser }) => {
+    await signIn(page, 'deleter', 'Dee Deleter');
+    await page.waitForURL('**/boards');
+    const id = await createBoard(page, 'Temporary');
+    await selectTool(page, 'rect');
+    await drag(page, [500, 400], [700, 520]);
+    await waitForShapes(page, (s) => s.length === 1);
+
+    const guest = await newPage(browser);
+    await guest.goto(`/board/${id}`);
+    await waitOnline(guest);
+    await waitForShapes(guest, (s) => s.length === 1);
+
+    await page.goto('/boards');
+    page.once('dialog', (d) => d.accept());
+    await page.getByRole('button', { name: 'More actions for Temporary' }).click();
+    await page.getByRole('button', { name: 'Delete board' }).click();
+    await expect(page.getByTestId('board-card').filter({ hasText: 'Temporary' })).toHaveCount(0);
+
+    await expect(guest.getByRole('alertdialog')).toContainText('no longer available');
+    // Reloading (with the board still cached in this browser) doesn't bring it back.
+    await guest.reload();
+    await expect(guest.getByRole('alertdialog')).toContainText('no longer available');
+    await page.reload();
+    await expect(page.getByTestId('board-card').filter({ hasText: 'Temporary' })).toHaveCount(0);
+});

@@ -1,393 +1,336 @@
-import { ArrowRight, Code2, Github, MousePointer2, Sparkles, SquareTerminal, Wind, Zap } from 'lucide-react';
-import { AnimatePresence, motion, useInView, useReducedMotion } from 'motion/react';
-import { displayFill, useTheme } from '@/lib/theme';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import '@fontsource-variable/bricolage-grotesque';
+import { ArrowRight, Eraser, Hand, MousePointer2, Pencil, Square, Undo2 } from 'lucide-react';
+import { AnimatePresence, motion, useInView } from 'motion/react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { animateViewport, undoLast, useBoard, useCanUndo, type Tool } from '@/board/store';
+import { AiActivityToast } from '@/components/aiActivity';
 import Footer from '@/components/footer';
 import Navbar from '@/components/navbar';
-import { Bento } from '@/components/landing/Bento';
-import { HeroBoard } from '@/components/landing/HeroBoard';
-import { McpSection } from '@/components/landing/McpSection';
-import { Reveal } from '@/components/landing/Reveal';
-import { Frame, Note } from '@/components/landing/Canvas';
-import { Shortcuts } from '@/components/landing/Shortcuts';
+import { CopyButton } from '@/components/shareDialog';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { fitRegion, goToStop, heroScript, mcpScript, resetMcpStop, resetTogetherStop, startDemoBoard, stopDemoBoard, togetherScript } from '@/components/landing/demo';
+import { useAccount } from '@/lib/account';
+import { useMedia } from '@/lib/useMedia';
+import { cn } from '@/lib/utils';
 
-const HEADLINE = ['The', 'whiteboard', 'your', 'AI', 'can', 'draw', 'on.'];
-const CLIENTS = [
-    { name: 'Claude', icon: Sparkles },
-    { name: 'Claude Code', icon: SquareTerminal },
-    { name: 'Cursor', icon: MousePointer2 },
-    { name: 'VS Code', icon: Code2 },
-    { name: 'Windsurf', icon: Wind },
-    { name: 'Zed', icon: Zap },
-];
+/**
+ * The landing page is one live board. The canvas stays pinned while short panels scroll past;
+ * each panel moves the camera to another part of the same board. The canvas, cursors, AI
+ * outline and Undo toast are the real app components running on a local board.
+ */
 
-function Hero() {
-    const reduced = useReducedMotion();
+const HEADLINE = 'The whiteboard your AI can draw on.';
+const LiveCanvas = lazy(() => import('@/components/landing/LiveCanvas'));
+
+function Panel({ index, onActive, id, children, className }: { index: number; onActive: (i: number) => void; id?: string; children: React.ReactNode; className?: string }) {
+    const ref = useRef<HTMLDivElement>(null);
+    // Active while its text crosses the middle of the screen; the camera stays put in between.
+    const active = useInView(ref, { margin: '-45% 0px -45% 0px' });
+    useEffect(() => {
+        if (active) onActive(index);
+    }, [active, index, onActive]);
     return (
-        <section className="relative">
-            <div className="relative mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))] pb-7 pt-8 sm:pt-10">
-                <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.4 }}
-                    className="flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.08em] text-muted-foreground"
-                >
-                    <span className="h-1.5 w-1.5 rounded-full bg-claude" />
-                    <span className="hidden sm:inline">Realtime whiteboard · </span>MCP server built in
-                </motion.p>
-
-                <Note author="Maya" color="yellow" rotate={-2} arrow="down-right" className="absolute right-[300px] top-[318px] hidden xl:block">
-                    Watch Claude's tool calls land here.
-                </Note>
-                <h1 className="mt-4 max-w-[16ch] text-balance text-[clamp(40px,6.2vw,76px)] font-semibold leading-[0.95] tracking-display" aria-label={HEADLINE.join(' ')}>
-                    {HEADLINE.map((w, i) => (
-                        <motion.span
-                            key={i}
-                            aria-hidden
-                            className="mr-[0.22em] inline-block last:mr-0"
-                            initial={reduced ? { opacity: 0 } : { opacity: 0, y: '0.35em', filter: 'blur(8px)' }}
-                            animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0, filter: 'blur(0px)' }}
-                            transition={reduced ? { duration: 0.15 } : { type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.08 + i * 0.06 }}
-                        >
-                            {w === 'AI' ? (
-                                <span className="relative text-claude">
-                                    AI
-                                    <svg viewBox="0 0 120 20" preserveAspectRatio="none" className="absolute -bottom-[0.12em] left-[-6%] h-[0.22em] w-[112%] overflow-visible" aria-hidden>
-                                        <motion.path
-                                            d="M3 13 C 30 5, 70 4, 117 9"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="5"
-                                            strokeLinecap="round"
-                                            vectorEffect="non-scaling-stroke"
-                                            initial={reduced ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 0 }}
-                                            animate={{ pathLength: 1, opacity: 1 }}
-                                            transition={{ pathLength: { duration: 0.7, ease: [0.65, 0, 0.35, 1], delay: reduced ? 0 : 0.75 }, opacity: { duration: 0.01, delay: reduced ? 0 : 0.75 } }}
-                                        />
-                                    </svg>
-                                </span>
-                            ) : w === 'on.' ? (
-                                'on'
-                            ) : (
-                                w
-                            )}
-                        </motion.span>
-                    ))}
-                </h1>
-
-                <motion.p
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={reduced ? { duration: 0.15 } : { type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.5 }}
-                    className="mt-5 max-w-[60ch] text-pretty text-[17px] leading-relaxed text-muted-foreground"
-                >
-                    Sketch with your team in real time. Connect Claude or any MCP client and watch it add flowcharts, diagrams and math to the same board.
-                </motion.p>
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={reduced ? { duration: 0.15 } : { type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.6 }}
-                    className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3"
-                >
-                    <div className="flex flex-wrap gap-2.5">
-                        <Link
-                            to="/board"
-                            className="group relative inline-flex h-12 items-center gap-2 overflow-hidden rounded-xl bg-primary px-5 text-[15px] font-medium text-primary-foreground shadow-[inset_0_1px_0_hsl(0_0%_100%/0.15),0_8px_24px_-8px_hsl(225_20%_10%/0.5)] transition-transform active:scale-[0.97]"
-                        >
-                            <span className="relative">Open a board</span>
-                            <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                        </Link>
-                        <a href="#mcp" className="inline-flex h-12 items-center gap-2 rounded-xl border border-border bg-card px-5 text-[15px] font-medium transition-colors hover:bg-secondary">
-                            Connect your AI
-                        </a>
-                    </div>
-                    <p className="font-mono text-[12px] text-muted-foreground">Free · no sign-up · open source</p>
-                </motion.div>
-            </div>
-
-            <motion.div
-                initial={{ opacity: 0, y: 40, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={reduced ? { duration: 0.15 } : { type: 'spring', visualDuration: 0.9, bounce: 0.1, delay: 0.45 }}
-                className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]"
+        <div id={id} className="pointer-events-none flex min-h-[100svh] scroll-mt-0 items-end px-[max(16px,env(safe-area-inset-left))] pb-[max(20px,env(safe-area-inset-bottom))] lg:items-center lg:pb-0">
+            <div
+                ref={ref}
+                className={cn(
+                    'pointer-events-auto w-full max-w-[470px] rounded-2xl border border-border/80 bg-[hsl(var(--background)/0.94)] p-4 shadow-chrome sm:p-5 backdrop-blur-xl lg:ml-[max(8px,4vw)] lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none',
+                    className,
+                )}
             >
-                <HeroBoard />
-            </motion.div>
-        </section>
-    );
-}
-
-function WorksWith() {
-    return (
-        <section className="mx-auto mt-10 max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
-            <Reveal className="flex flex-col gap-4 border-y border-border/70 py-6 md:flex-row md:items-center md:gap-10">
-                <p className="shrink-0 font-mono text-[11.5px] uppercase tracking-[0.08em] text-muted-foreground">Draws with any MCP client</p>
-                <ul className="flex flex-1 flex-wrap gap-x-6 gap-y-3 xl:flex-nowrap">
-                    {CLIENTS.map((c) => (
-                        <li key={c.name} className="flex items-center gap-2.5 whitespace-nowrap text-[16px] font-semibold tracking-tightish text-foreground/75">
-                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-foreground/70" aria-hidden>
-                                <c.icon className="h-3.5 w-3.5" strokeWidth={2} />
-                            </span>
-                            {c.name}
-                        </li>
-                    ))}
-                </ul>
-                <a
-                    href="https://github.com/sahaniindrajit/sketchsync"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-[13px] font-medium transition-colors hover:bg-secondary"
-                >
-                    <Github className="h-4 w-4" strokeWidth={1.75} />
-                    Open source
-                </a>
-            </Reveal>
-        </section>
-    );
-}
-
-const PROMPTS = ['Draw our signup flow', 'Sketch the system architecture', 'Solve ∫ x² dx step by step', 'Turn my scribble into a diagram'];
-
-type Mark = { d?: string; text?: string; x?: number; y?: number; fill?: string; size?: number };
-/** What the mini board draws for each example request, stroke by stroke. */
-const SKETCHES: Mark[][] = [
-    [
-        { d: 'M20 96 h92 a10 10 0 0 1 10 10 v28 a10 10 0 0 1 -10 10 h-92 a10 10 0 0 1 -10 -10 v-28 a10 10 0 0 1 10 -10 z', fill: '#f1eee8' },
-        { text: 'Sign up', x: 66, y: 125 },
-        { d: 'M122 120 H 150 M144 114 L151 120 L144 126' },
-        { d: 'M200 84 L248 120 L200 156 L152 120 Z', fill: '#f6dccf' },
-        { text: 'Valid?', x: 200, y: 125 },
-        { d: 'M248 120 H 272 M266 114 L273 120 L266 126' },
-        { d: 'M284 96 h56 a10 10 0 0 1 10 10 v28 a10 10 0 0 1 -10 10 h-56 a10 10 0 0 1 -10 -10 v-28 a10 10 0 0 1 10 -10 z', fill: '#dbe7f5' },
-        { text: 'Done', x: 312, y: 125 },
-    ],
-    [
-        { d: 'M20 100 h80 v40 h-80 z', fill: '#f1eee8' },
-        { text: 'Browser', x: 60, y: 125 },
-        { d: 'M100 120 H 140 M134 114 L141 120 L134 126' },
-        { d: 'M142 100 h70 v40 h-70 z', fill: '#f6dccf' },
-        { text: 'API', x: 177, y: 125 },
-        { d: 'M212 112 C 236 104, 240 72, 262 70 M255 64 L263 70 L256 77' },
-        { d: 'M212 128 C 236 136, 240 168, 262 170 M256 163 L263 170 L255 176' },
-        { d: 'M264 52 h76 v36 h-76 z', fill: '#dbe7f5' },
-        { text: 'Cache', x: 302, y: 75 },
-        { d: 'M264 152 h76 v36 h-76 z', fill: '#dbe7f5' },
-        { text: 'Postgres', x: 302, y: 175 },
-    ],
-    [
-        { text: '∫ x² dx', x: 180, y: 96, size: 30 },
-        { text: '= x³/3 + C', x: 180, y: 144, size: 28 },
-        { text: 'power rule: xⁿ → xⁿ⁺¹/(n+1)', x: 180, y: 184, size: 13 },
-    ],
-    [
-        { d: 'M30 140 C 20 100, 60 70, 90 92 C 120 110, 140 70, 120 150 C 100 190, 50 180, 30 140' },
-        { d: 'M150 120 H 196 M189 113 L197 120 L189 127' },
-        { d: 'M214 84 h110 a12 12 0 0 1 12 12 v48 a12 12 0 0 1 -12 12 h-110 a12 12 0 0 1 -12 -12 v-48 a12 12 0 0 1 12 -12 z', fill: '#f6dccf' },
-        { text: 'Idea', x: 274, y: 125 },
-    ],
-];
-
-/** A board that sketches whatever the prompt is asking for, as it is typed. */
-function SketchBoard({ index, progress, typed }: { index: number; progress: number; typed: string }) {
-    const theme = useTheme((s) => s.resolved);
-    const marks = SKETCHES[index];
-    const ready = progress < 0;
-    const shown = ready ? 0 : progress * marks.length;
-    const lastShown = Math.max(0, Math.min(marks.length - 1, Math.ceil(shown) - 1));
-    const cursorAt = marks[lastShown];
-    const [rx, ry] = cursorAt.text ? [cursorAt.x! + 30, cursorAt.y! + 6] : cursorAt.d ? cursorEnd(cursorAt.d) : [280, 180];
-    const cx = Math.min(rx, 290);
-    const cy = Math.min(ry, 178);
-    return (
-        <div className="dot-grid relative overflow-hidden rounded-2xl border border-border bg-background shadow-lift">
-            {ready && (
-                <span className="absolute inset-0 flex items-center justify-center text-[14px] text-muted-foreground">
-                    <span className="max-w-[80%] -rotate-1 rounded-[3px] bg-[#fff3bf] px-4 py-3 text-[14px] leading-snug text-[#3d3200] shadow-[0_10px_24px_-12px_rgba(0,0,0,0.35)] dark:bg-[#e9dca0] dark:text-[#2d2500]">
-                        <span className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold opacity-70">
-                            <Sparkles className="h-3 w-3 text-claude" /> For Claude
-                        </span>
-                        {typed.trim() ? typed : 'Type what you want drawn…'}
-                    </span>
-                </span>
-            )}
-            <svg viewBox="0 36 360 172" className="block h-auto w-full text-foreground" role="img" aria-label={`A board sketching: ${PROMPTS[index]}`}>
-                <AnimatePresence mode="popLayout">
-                    <motion.g key={index} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.25 } }}>
-                        {marks.map((m, i) => {
-                            const on = Math.min(1, Math.max(0, shown - i));
-                            return m.text ? (
-                                <motion.text key={i} x={m.x} y={m.y} textAnchor="middle" fontSize={m.size ?? 14} fill="currentColor" fontFamily={index === 2 && i < 2 ? '"Latin Modern Math", "STIX Two Math", "Cambria Math", Georgia, serif' : 'Inter, sans-serif'} fontStyle={index === 2 && i < 2 ? 'italic' : undefined} animate={{ opacity: on }} initial={{ opacity: 0 }}>
-                                    {m.text}
-                                </motion.text>
-                            ) : (
-                                <g key={i}>
-                                    {m.fill && <motion.path d={m.d} fill={displayFill(m.fill, theme)} stroke="none" initial={{ opacity: 0 }} animate={{ opacity: on >= 1 ? 1 : 0 }} />}
-                                    <motion.path d={m.d} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: on, opacity: on > 0 ? 1 : 0 }} transition={{ duration: 0.25 }} />
-                                </g>
-                            );
-                        })}
-                    </motion.g>
-                </AnimatePresence>
-                <motion.g initial={false} animate={{ x: cx, y: cy, opacity: progress > 0 && progress < 1 ? 1 : 0.0 }} transition={{ type: 'spring', visualDuration: 0.35, bounce: 0.1 }}>
-                    <path d="M0 0 L0 16 L4.4 12 L7.3 18.4 L10 17.3 L7.2 11.1 L13 10.9 Z" style={{ fill: 'hsl(var(--claude))' }} stroke="white" strokeWidth="1.2" />
-                    <rect x="12" y="18" width="50" height="18" rx="6" style={{ fill: 'hsl(var(--claude))' }} />
-                    <text x="19" y="31" fontSize="10.5" fontWeight="600" fill="white" fontFamily="Geist Variable, sans-serif">
-                        Claude
-                    </text>
-                </motion.g>
-            </svg>
+                {children}
+            </div>
         </div>
     );
 }
 
-/** Where a path's last segment ends: good enough for parking the cursor. */
-function cursorEnd(d: string): [number, number] {
-    const nums = d.match(/-?\d+(\.\d+)?/g)?.map(Number) ?? [];
-    if (d.includes('h') || nums.length < 2) return [nums[0] ?? 0, nums[1] ?? 0];
-    return [nums[nums.length - 2], nums[nums.length - 1]];
-}
+const H2 = ({ children }: { children: React.ReactNode }) => (
+    <h2 className="font-display text-[length:clamp(26px,3.6vw,46px)] font-semibold leading-[1.02] tracking-[-0.035em] text-foreground">{children}</h2>
+);
+const P = ({ children }: { children: React.ReactNode }) => <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground lg:mt-4 lg:text-[17px]">{children}</p>;
 
-/** Type what you want an AI to draw; it opens a board with Connect your AI and your request ready. */
-function PromptBox({ onDemo }: { onDemo: (index: number, progress: number, typed: string) => void }) {
-    const reduced = useReducedMotion();
-    const navigate = useNavigate();
-    const ref = useRef<HTMLFormElement>(null);
-    const inView = useInView(ref, { amount: 0.6 });
-    const [value, setValue] = useState('');
-    const [focused, setFocused] = useState(false);
-    const [i, setI] = useState(0);
-    const [n, setN] = useState(reduced ? PROMPTS[0].length : 0);
-    const demo = !value && !focused;
-    useEffect(() => {
-        // While you type your own request, the board waits for it instead of showing an example.
-        onDemo(i, demo ? n / PROMPTS[i].length : -1, value);
-    }, [i, n, demo, value, onDemo]);
-    useEffect(() => {
-        if (!inView || reduced || !demo) return;
-        const text = PROMPTS[i];
-        if (n < text.length) {
-            const t = setTimeout(() => setN(n + 1), 55);
-            return () => clearTimeout(t);
-        }
-        const t = setTimeout(() => {
-            setI((i + 1) % PROMPTS.length);
-            setN(0);
-        }, 2200);
-        return () => clearTimeout(t);
-    }, [inView, reduced, demo, i, n]);
+const TOOLS: { tool: Tool; label: string; icon: typeof Pencil }[] = [
+    { tool: 'pencil', label: 'Pencil', icon: Pencil },
+    { tool: 'rect', label: 'Rectangle', icon: Square },
+    { tool: 'select', label: 'Select', icon: MousePointer2 },
+    { tool: 'hand', label: 'Pan', icon: Hand },
+    { tool: 'eraser', label: 'Eraser', icon: Eraser },
+];
+
+/** A few of the board's own tools, so the hero canvas can be drawn on. */
+function DemoDock({ show }: { show: boolean }) {
+    const tool = useBoard((s) => s.tool);
+    const setTool = useBoard((s) => s.setTool);
+    const canUndo = useCanUndo();
     return (
-        <form
-            ref={ref}
-            className="w-full max-w-[600px]"
-            onSubmit={(e) => {
-                e.preventDefault();
-                const ask = value.trim() || PROMPTS[i];
-                navigate(`/board?connect=ai&ask=${encodeURIComponent(ask)}`);
-            }}
-        >
-            <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-background p-2 pl-4 text-left shadow-lift transition-[border-color,box-shadow] focus-within:border-ring focus-within:shadow-[0_0_0_4px_hsl(var(--ring)/0.15)] max-[440px]:pr-4">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-claude text-white">
-                    <Sparkles className="h-3.5 w-3.5" />
-                </span>
-                <div className="relative min-w-[200px] flex-[1_1_260px]">
-                    <input
-                        value={value}
-                        onChange={(e) => setValue(e.target.value)}
-                        onFocus={() => setFocused(true)}
-                        onBlur={() => setFocused(false)}
-                        aria-label="What should your AI draw?"
-                        placeholder={focused ? 'Describe a diagram, a flow or a sketch…' : undefined}
-                        className="h-10 w-full bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
-                    />
-                    {demo && (
-                        <span className="pointer-events-none absolute inset-0 flex items-center overflow-hidden whitespace-nowrap text-[15px] text-muted-foreground" aria-hidden>
-                            {PROMPTS[i].slice(0, n)}
-                            <span className="ml-px inline-block h-[1.05em] w-[1.5px] shrink-0 animate-blink bg-foreground" />
-                        </span>
-                    )}
-                </div>
-                <button type="submit" className="group inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-[14.5px] font-medium text-primary-foreground transition-transform active:scale-[0.97] max-[440px]:mb-2 max-[440px]:w-full sm:px-5">
-                    Open a board
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </button>
-            </div>
-            <p className="mt-4 text-balance text-[13.5px] text-muted-foreground">You'll get a fresh board, the steps to connect your AI, and your request ready to paste.</p>
-        </form>
+        <AnimatePresence>
+            {show && (
+                <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 12, transition: { duration: 0.15 } }}
+                    className="absolute bottom-6 left-[72%] z-20 -translate-x-1/2 max-lg:hidden"
+                >
+                    <div className="chrome flex items-center gap-0.5 rounded-xl p-1" role="toolbar" aria-label="Drawing tools">
+                        {TOOLS.map((t) => (
+                            <button
+                                key={t.tool}
+                                type="button"
+                                aria-label={t.label}
+                                aria-pressed={tool === t.tool}
+                                onClick={() => setTool(t.tool)}
+                                className={cn('flex h-9 w-9 items-center justify-center rounded-lg transition-colors', tool === t.tool ? 'bg-accent/12 text-accent' : 'text-muted-foreground hover:bg-secondary hover:text-foreground')}
+                            >
+                                <t.icon className="h-[17px] w-[17px]" strokeWidth={1.75} />
+                            </button>
+                        ))}
+                        <div className="mx-1 h-5 w-px bg-border" />
+                        <button type="button" aria-label="Undo" disabled={!canUndo} onClick={undoLast} className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-35">
+                            <Undo2 className="h-[17px] w-[17px]" strokeWidth={1.75} />
+                        </button>
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 }
 
-function Cta() {
-    const [demo, setDemo] = useState({ index: 0, progress: 0, typed: '' });
-    const onDemo = useCallback((index: number, progress: number, typed: string) => setDemo({ index, progress, typed }), []);
+/** The MCP stop's transcript: one request, the real tool calls, two boards changed. */
+const CALLS: { tool: string; args: string; result: string }[] = [
+    { tool: 'list_boards', args: '', result: '6 boards' },
+    { tool: 'get_board', args: '"Q3 planning"', result: '5 shapes' },
+    { tool: 'add_shapes', args: 'board: "Q3 planning", 5 shapes', result: 'added' },
+    { tool: 'get_board', args: '"Onboarding"', result: '9 shapes' },
+    { tool: 'update_shapes', args: 'board: "Onboarding", 4 moves', result: 'updated' },
+];
+
+function Transcript({ step }: { step: number }) {
     return (
-        <section className="relative mx-auto max-w-6xl overflow-hidden px-[max(16px,env(safe-area-inset-left))]">
-            <Frame name="Start" className="!p-0">
-            <div className="dot-grid relative overflow-hidden rounded-[4px] bg-card dark:bg-[hsl(228_9%_10%)]">
-            <div className="relative grid items-center gap-12 px-5 py-16 sm:px-12 sm:py-20 lg:grid-cols-[1fr_1fr]">
-                <Reveal className="space-y-6">
-                    <h2 className="max-w-[13ch] text-balance text-[clamp(36px,5vw,60px)] font-semibold leading-[0.98] tracking-[-0.045em]">Invite a teammate. Or an AI.</h2>
-                    <p className="max-w-md text-[17px] leading-relaxed text-muted-foreground">Start a board in one click, no account. Tell your AI what to draw and watch it land.</p>
-                    <PromptBox onDemo={onDemo} />
-                </Reveal>
-                <Reveal delay={0.1}>
-                    <SketchBoard index={demo.index} progress={demo.progress} typed={demo.typed} />
-                </Reveal>
+        <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card text-[13px] shadow-chrome lg:mt-6" aria-live="polite">
+            <div className="border-b border-border/70 px-4 py-3">
+                <p className="text-[12px] text-muted-foreground">You</p>
+                <p className="mt-0.5 text-foreground">Add a risks section to Q3 planning, then tidy up Onboarding.</p>
             </div>
+            <ol className="space-y-1 px-4 py-3 font-mono text-[11px] sm:space-y-1.5 sm:text-[12px]">
+                {CALLS.map((c, i) => (
+                    <li key={i} className={cn('flex items-baseline gap-2 transition-opacity duration-300', step > i ? 'opacity-100' : 'opacity-25')}>
+                        <span className={cn('h-1.5 w-1.5 shrink-0 translate-y-[-1px] rounded-full', step > i ? 'bg-claude' : 'bg-border')} />
+                        <span className="min-w-0 flex-1 truncate">
+                            <span className="text-foreground">{c.tool}</span>
+                            <span className="text-muted-foreground">({c.args})</span>
+                        </span>
+                        <span className="shrink-0 text-muted-foreground">{step > i ? c.result : ''}</span>
+                    </li>
+                ))}
+            </ol>
+            <div className={cn('border-t border-border/70 px-4 py-3 transition-opacity duration-500', step >= 6 ? 'opacity-100' : 'opacity-0')}>
+                <p className="text-[12px] text-claude">Claude</p>
+                <p className="mt-0.5 text-foreground">Done. Q3 planning has a Risks section, and the Onboarding steps are in order.</p>
             </div>
-            </Frame>
+        </div>
+    );
+}
+
+function Start() {
+    const signedIn = useAccount((s) => s.status === 'signed-in');
+    const install = 'git clone https://github.com/sahaniindrajit/sketchsync-Backend\ncd sketchsync-Backend\nnpm install && npm run dev';
+    return (
+        <section id="start" className="relative z-10 border-t border-border bg-background">
+            <div className="mx-auto grid max-w-6xl gap-10 px-[max(16px,env(safe-area-inset-left))] py-24 lg:grid-cols-[1.2fr_1fr] lg:items-end lg:py-32">
+                <div>
+                    <h2 className="font-display text-[length:clamp(40px,6vw,80px)] font-semibold leading-[0.95] tracking-[-0.045em]">
+                        Open a board.
+                        <br />
+                        <span className="text-muted-foreground">Pick up the pencil.</span>
+                    </h2>
+                    <div className="mt-8 flex flex-wrap gap-3">
+                        <Link to={signedIn ? '/boards' : '/board'} className="group inline-flex h-12 items-center gap-2 rounded-xl bg-primary px-5 text-[15px] font-medium text-primary-foreground transition-transform active:scale-[0.98]">
+                            {signedIn ? 'Go to your boards' : 'Open a board'}
+                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                        </Link>
+                        {!signedIn && (
+                            <Link to="/signin" className="inline-flex h-12 items-center rounded-xl border border-border bg-card px-5 text-[15px] font-medium transition-colors hover:bg-secondary">
+                                Sign in to keep your boards
+                            </Link>
+                        )}
+                    </div>
+                    <p className="mt-4 text-[14px] text-muted-foreground">Free and open source. Drawing needs no account.</p>
+                </div>
+                <div>
+                    <p className="text-[14px] font-medium">Or run your own</p>
+                    <p className="mt-1 text-[14px] text-muted-foreground">Node 20+. Add DATABASE_URL for accounts and saved boards.</p>
+                    <div className="mt-3 flex items-start gap-2 rounded-xl border border-border bg-card p-3">
+                        <pre className="min-w-0 flex-1 overflow-x-auto font-mono text-[12.5px] leading-relaxed text-foreground">{install}</pre>
+                        <CopyButton value={install} label="Copy command" dense />
+                    </div>
+                </div>
+            </div>
         </section>
     );
-}
-
-/** Space between sections, where collaborators leave notes. */
-function Gutter({ children }: { children: React.ReactNode }) {
-    return <div className="mx-auto flex min-h-[56px] max-w-6xl flex-col justify-center px-[max(16px,env(safe-area-inset-left))] py-6 sm:min-h-[132px]">{children}</div>;
 }
 
 export default function Home() {
+    const [stop, setStop] = useState(0);
+    const [mcpStep, setMcpStep] = useState(0);
+    const coarse = useMedia('(pointer: coarse)');
+    const signedIn = useAccount((s) => s.status === 'signed-in');
+    const heroDone = useRef(false);
+    const stopRef = useRef(0);
+
     useEffect(() => {
         document.title = 'SketchSync · The whiteboard your AI can draw on';
+        startDemoBoard();
+        goToStop(0, 0);
+        const onResize = () => goToStop(stopRef.current, 0);
+        window.addEventListener('resize', onResize);
+        return () => {
+            window.removeEventListener('resize', onResize);
+            stopDemoBoard();
+        };
     }, []);
+
+    useEffect(() => {
+        stopRef.current = stop;
+        goToStop(stop);
+        // The AI toast belongs to the stop where the AI is working.
+        if (stop !== 0 && stop !== 2) useBoard.setState({ aiActivity: null });
+    }, [stop]);
+
+    // Hero: Claude adds to the board shortly after you draw, or after a few idle seconds.
+    useEffect(() => {
+        if (stop !== 0 || heroDone.current) return;
+        const startCount = useBoard.getState().shapes.size;
+        let cancel = () => {};
+        const fire = () => {
+            if (heroDone.current) return;
+            heroDone.current = true;
+            cancel = heroScript();
+        };
+        const idle = setTimeout(fire, 2600);
+        let soon: ReturnType<typeof setTimeout> | undefined;
+        const unsub = useBoard.subscribe((s) => {
+            if (!soon && s.shapes.size > startCount && !s.aiActivity) soon = setTimeout(fire, 1200);
+        });
+        return () => {
+            clearTimeout(idle);
+            if (soon) clearTimeout(soon);
+            unsub();
+            if (!heroDone.current) cancel();
+        };
+    }, [stop]);
+
+    // MCP stop: replay the request each time it comes into view.
+    useEffect(() => {
+        if (stop !== 2) return;
+        resetMcpStop();
+        setMcpStep(0);
+        return mcpScript(setMcpStep);
+    }, [stop]);
+
+    useEffect(() => {
+        if (stop !== 3) return;
+        resetTogetherStop();
+        const cancel = togetherScript();
+        return () => {
+            cancel();
+            resetTogetherStop();
+        };
+    }, [stop]);
+
     return (
-        <div className="min-h-screen overflow-x-clip bg-background">
-            {/* The whole page is one board. */}
-            <div className="dot-grid pointer-events-none absolute inset-0 opacity-60" />
-            <Navbar />
-            <main className="relative">
-                <Hero />
-                <WorksWith />
-                <Gutter>
-                    <Note author="Maya" color="blue" rotate={-2} arrow="down" className="ml-[8%]">
-                        How does Claude get onto our board?
-                    </Note>
-                </Gutter>
-                <McpSection />
-                <Gutter>
-                    <Note author="Claude" color="clay" rotate={2} arrow="down-left" ai className="ml-auto mr-[10%]">
-                        I can read what you sketch, too. Draw something rough and ask me about it.
-                    </Note>
-                </Gutter>
-                <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
-                    <Frame name="What's on the board">
-                        <Bento />
-                    </Frame>
-                </div>
-                <Gutter>
-                    <Note author="Maya" color="yellow" rotate={-3} arrow="down-right" className="ml-[4%]">
-                        And it's quick with a keyboard.
-                    </Note>
-                </Gutter>
-                <div className="mx-auto max-w-6xl px-[max(16px,env(safe-area-inset-left))]">
-                    <Frame name="Keyboard">
-                        <Shortcuts />
-                    </Frame>
-                </div>
-                <div className="h-24 sm:h-32" />
-                <Cta />
-                <div className="h-24 sm:h-32" />
-            </main>
-            <Footer />
-        </div>
+        <TooltipProvider>
+            <div className="min-h-screen bg-background text-foreground">
+                <Navbar />
+                <main className="-mt-[68px]" data-stop={stop}>
+                    <section className="relative" aria-label="SketchSync, shown on a live board">
+                        <div className={cn('sticky top-0 h-[100svh] overflow-hidden', coarse && 'pointer-events-none')}>
+                            <Suspense fallback={<div className="dot-grid absolute inset-0 bg-background" />}>
+                                <LiveCanvas />
+                            </Suspense>
+                            {/* Keeps the text column readable over the canvas on wide screens. */}
+                            <div className="pointer-events-none absolute inset-y-0 left-0 z-[7] w-[54%] bg-[linear-gradient(90deg,hsl(var(--background))_0%,hsl(var(--background))_66%,hsl(var(--background)/0)_100%)] max-lg:hidden" />
+                            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[7] h-1/2 bg-gradient-to-t from-background via-background/70 to-transparent lg:hidden" />
+                            <DemoDock show={stop === 0 && !coarse} />
+                            <div className="max-lg:hidden"><AiActivityToast placement="landing" onJump={(box) => animateViewport(fitRegion({ x: box.x - 60, y: box.y - 60, width: box.width + 120, height: box.height + 120 }))} /></div>
+                        </div>
+
+                        <div className="pointer-events-none relative z-10 -mt-[100svh]">
+                            <Panel index={0} onActive={setStop}>
+                                <h1 className="font-display text-[length:clamp(36px,5.6vw,78px)] font-semibold leading-[0.94] tracking-[-0.045em]" aria-label={HEADLINE}>
+                                    {['The whiteboard', 'your AI can', 'draw on.'].map((line, i) => (
+                                        <motion.span
+                                            key={line}
+                                            aria-hidden
+                                            className="block"
+                                            initial={{ opacity: 0, y: 18 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ type: 'spring', visualDuration: 0.7, bounce: 0, delay: 0.05 + i * 0.08 }}
+                                        >
+                                            {line}
+                                        </motion.span>
+                                    ))}
+                                </h1>
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35, duration: 0.5 }}>
+                                    <P>A realtime whiteboard with an MCP server built in. Keep your boards in one place, invite people to each one, and connect Claude once to work on any of them.</P>
+                                    <div className="mt-5 flex flex-wrap items-center gap-3 lg:mt-7">
+                                        <Link
+                                            to={signedIn ? '/boards' : '/board'}
+                                            className="group inline-flex h-12 items-center gap-2 rounded-xl bg-primary px-5 text-[15px] font-medium text-primary-foreground transition-transform active:scale-[0.98]"
+                                        >
+                                            {signedIn ? 'Your boards' : 'Open a board'}
+                                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                                        </Link>
+                                        <a href="#connect" className="hidden h-12 items-center rounded-xl px-4 sm:inline-flex text-[15px] font-medium text-muted-foreground transition-colors hover:text-foreground">
+                                            How the AI connects
+                                        </a>
+                                    </div>
+                                    <p className="mt-4 text-[13.5px] text-muted-foreground lg:mt-6">
+                                        <span className="max-lg:hidden">The board on the right is live. The pencil is ready.</span>
+                                        <span className="lg:hidden">This board is live. Open one to draw.</span>
+                                    </p>
+                                </motion.div>
+                            </Panel>
+
+                            <Panel index={1} onActive={setStop} id="boards">
+                                <H2>Every board, in one place.</H2>
+                                <P>Sign in and your boards live on the server, not in one browser. Boards you drew before signing in come with you. Search them, rename them, and jump between them without leaving the canvas.</P>
+                            </Panel>
+
+                            <Panel index={2} onActive={setStop} id="connect">
+                                <H2>One connector. Every board.</H2>
+                                <P>Add one MCP URL to Claude, Cursor or VS Code and sign in once. Your AI can then list your boards and change any of them by name, in the same conversation.</P>
+                                <Transcript step={mcpStep} />
+                            </Panel>
+
+                            <Panel index={3} onActive={setStop} id="together">
+                                <H2>Each board has its own people.</H2>
+                                <P>Invite people by email as editors or viewers, or share a link that edits, views, or opens nothing. Everyone sees changes as they happen, including the AI's, which carry its name and undo in one step.</P>
+                            </Panel>
+
+                            <Panel index={4} onActive={setStop} id="everything">
+                                <H2>Everything a whiteboard should do.</H2>
+                                <ul className="mt-5 divide-y divide-border/70 border-y border-border/70 text-[15px]">
+                                    {[
+                                        ['Shapes and arrows', 'that stay attached when you move things'],
+                                        ['LaTeX math', 'typeset right on the canvas'],
+                                        ['Images and PNG export', 'paste in, download out'],
+                                        ['Offline first', 'keeps drawing without a connection, syncs after'],
+                                        ['Keyboard first', 'every tool and action from ⌘K'],
+                                    ].map(([a, b]) => (
+                                        <li key={a} className="flex flex-wrap items-baseline gap-x-2 py-2.5">
+                                            <span className="font-medium text-foreground">{a}</span>
+                                            <span className="text-muted-foreground">{b}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </Panel>
+                        </div>
+                    </section>
+                    <Start />
+                </main>
+                <Footer />
+            </div>
+        </TooltipProvider>
     );
 }

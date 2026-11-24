@@ -8,7 +8,10 @@ SketchSync is a collaborative online whiteboard. Sketch, diagram and brainstorm 
 
 - **Drawing tools:** rectangles, ellipses, diamonds, arrows and lines that stick to shapes, freehand pencil, text, LaTeX math, images and an eraser. Includes select, move, resize and rotate, multi-select, pan and zoom.
 - **Real-time collaboration:** share a board link and everyone edits live. Edits made offline are kept and synced when you reconnect.
-- **Connect your AI (MCP):** every board has an MCP server URL. Add it to Claude, Claude Code, Cursor, VS Code or any MCP client. The AI can read the board, see a rendered image of it (including hand drawings), add and edit shapes, create auto-laid-out flowcharts and write worked solutions with real math.
+- **Accounts and boards home:** sign in with Google or GitHub to keep every board in one place (`/boards`), with previews, search and a board switcher. Boards drawn before signing in are added to your account.
+- **Sharing:** invite people to each board by email as editors or viewers, and choose whether its link edits, views or opens nothing.
+- **One AI connector for all your boards:** signed in, add `<backend>/mcp` once and sign in from your AI app (OAuth). It can list your boards and change any of them by name.
+- **Connect your AI to one board (MCP):** every board also has its own MCP server URL. Add it to Claude, Claude Code, Cursor, VS Code or any MCP client. The AI can read the board, see a rendered image of it (including hand drawings), add and edit shapes, create auto-laid-out flowcharts and write worked solutions with real math.
 - **Export:** download the board as a PNG.
 - Works on desktop and mobile. Boards are cached locally and survive reloads and server restarts.
 
@@ -20,7 +23,7 @@ cp .env.example .env.local   # point VITE_BACKEND_URL at your backend (defaults 
 npm run dev                  # http://localhost:5173
 ```
 
-Run the [backend](https://github.com/sahaniindrajit/sketchsync-Backend) next to it (`npm run dev` in `sketchsync-Backend`, port 3000).
+Run the [backend](https://github.com/sahaniindrajit/sketchsync-Backend) next to it (`npm run dev` in `sketchsync-Backend`, port 3000). Accounts, saved boards and sharing need the backend's `DATABASE_URL` (Postgres); for local development add `DEV_LOGIN=1` to sign in with any email.
 
 ### Connect an AI to a board
 
@@ -39,7 +42,7 @@ Then ask: *"Draw a flowchart of our signup process"* or *"Solve 2x² − 8x + 6 
 | `npm run dev` | Vite dev server |
 | `npm run build` | Type-check and build to `dist/` |
 | `npm test` | Unit tests plus sync integration tests against the real backend (needs `../sketchsync-Backend`) |
-| `npm run e2e` | Playwright end-to-end tests (starts the backend and frontend). `E2E_PROD=1 npm run e2e` runs against production builds |
+| `npm run e2e` | Playwright end-to-end tests (starts the backend and frontend). `E2E_PROD=1 npm run e2e` runs against production builds. `E2E_DATABASE_URL=postgres://…` turns on accounts and runs the accounts tests (use a throwaway database) |
 | `npm run sync-protocol` | Copy the shared protocol from `../sketchsync-Backend/src/shared` |
 | `npm run protocol:check` | Fail if `src/shared` is out of date (use in CI) |
 

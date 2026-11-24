@@ -11,6 +11,7 @@ export default {
                 sans: ['"Geist Variable"', ...defaultTheme.fontFamily.sans],
                 mono: ['"Geist Mono Variable"', ...defaultTheme.fontFamily.mono],
                 canvas: ['Inter', ...defaultTheme.fontFamily.sans],
+                display: ['"Bricolage Grotesque Variable"', '"Geist Variable"', ...defaultTheme.fontFamily.sans],
             },
             letterSpacing: {
                 display: '-0.045em',

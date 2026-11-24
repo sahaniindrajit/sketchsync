@@ -1,4 +1,7 @@
-import { FilePlus2, PenLine, Github, HelpCircle, ImageDown, Maximize, Moon, Sparkles, Sun, Trash2, Users } from 'lucide-react';
+import { FilePlus2, PenLine, Github, HelpCircle, ImageDown, LayoutGrid, LogIn, Maximize, Moon, Sparkles, Sun, Trash2, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAccount } from '@/lib/account';
+import { useBoard } from '@/board/store';
 import { motion } from 'motion/react';
 import React, { useEffect, useRef } from 'react';
 import { Kbd } from '@/components/ui/kbd';
@@ -43,7 +46,19 @@ export const AppMenu = React.memo(function AppMenu({ actions, onClose, viaKeyboa
     const open = (url: string) => window.open(url, '_blank', 'noopener');
     const theme = useTheme((s) => s.resolved);
     const toggleTheme = useTheme((s) => s.toggle);
+    const navigate = useNavigate();
+    const account = useAccount((s) => s.status);
+    const accountsOn = useAccount((s) => s.enabled);
+    const role = useBoard((s) => s.role);
+    const roomId = useBoard((s) => s.roomId);
+    const accountItems: Item[] =
+        account === 'signed-in'
+            ? [{ icon: LayoutGrid, label: 'Your boards', onClick: () => navigate('/boards') }]
+            : accountsOn
+              ? [{ icon: LogIn, label: 'Sign in to save boards', onClick: () => navigate(`/signin?next=${encodeURIComponent(roomId ? `/board/${roomId}` : '/boards')}`) }]
+              : [];
     const sections: Item[][] = [
+        ...(accountItems.length ? [accountItems] : []),
         [
             { icon: Users, label: 'Share & collaborate', onClick: actions.onShare },
             { icon: Sparkles, label: 'Connect your AI', onClick: actions.onConnectAi },
@@ -51,7 +66,7 @@ export const AppMenu = React.memo(function AppMenu({ actions, onClose, viaKeyboa
             ...(actions.onFit ? [{ icon: Maximize, label: 'Zoom to fit', onClick: actions.onFit }] : []),
         ],
         [
-            { icon: PenLine, label: 'Rename board', onClick: () => window.dispatchEvent(new Event('sketchsync:rename')) },
+            ...(role !== 'viewer' ? [{ icon: PenLine, label: 'Rename board', onClick: () => window.dispatchEvent(new Event('sketchsync:rename')) }] : []),
             { icon: FilePlus2, label: 'New board', onClick: actions.onNewBoard },
             { icon: theme === 'dark' ? Sun : Moon, label: theme === 'dark' ? 'Light mode' : 'Dark mode', onClick: toggleTheme, toggle: theme === 'dark' },
         ],
@@ -59,7 +74,7 @@ export const AppMenu = React.memo(function AppMenu({ actions, onClose, viaKeyboa
             { icon: HelpCircle, label: 'Help', onClick: () => open('https://github.com/sahaniindrajit/sketchsync/issues'), external: true },
             { icon: Github, label: 'GitHub', onClick: () => open('https://github.com/sahaniindrajit/sketchsync'), external: true },
         ],
-        [{ icon: Trash2, label: 'Reset the canvas', onClick: actions.onReset, danger: true }],
+        ...(role !== 'viewer' ? [[{ icon: Trash2, label: 'Reset the canvas', onClick: actions.onReset, danger: true }]] : []),
     ];
 
     return (

@@ -172,7 +172,11 @@ function findShapeId(target: Konva.Node | null): string | null {
     return null;
 }
 
-export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) {
+/**
+ * `demo`: embedded on the landing page. The page keeps scrolling over it (no wheel pan/zoom),
+ * global keyboard shortcuts are off, and the camera is driven by the page.
+ */
+export function Board({ onReady, demo = false }: { onReady?: (handle: BoardHandle) => void; demo?: boolean }) {
     const shapes = useBoard((s) => s.shapes);
     const tool = useBoard((s) => s.tool);
     const theme = useTheme((s) => s.resolved);
@@ -573,6 +577,7 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
     const onDblClick = useCallback(
         (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
             const state = useBoard.getState();
+            if (state.role === 'viewer') return;
             if (state.tool !== 'select' && state.tool !== 'text' && state.tool !== 'math') return;
             const [a, b] = recentDowns.current;
             if (!a || !b || Math.hypot(a.x - b.x, a.y - b.y) > 8 || b.t - a.t > 500) return;
@@ -592,6 +597,7 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
     );
 
     const onWheel = useCallback((e: Konva.KonvaEventObject<WheelEvent>) => {
+        if (demo) return;
         e.evt.preventDefault();
         const state = useBoard.getState();
         const vp = state.viewport;
@@ -604,7 +610,7 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
         } else {
             state.setViewport({ ...vp, x: vp.x - e.evt.deltaX, y: vp.y - e.evt.deltaY });
         }
-    }, []);
+    }, [demo]);
 
     /* ---------- dragging & transforming shapes ---------- */
 
@@ -697,6 +703,7 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
     useEffect(() => {
         const isTyping = (target: EventTarget | null) =>
             target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+        if (demo) return;
         const onKeyDown = (e: KeyboardEvent) => {
             if (isTyping(e.target)) return;
             const state = useBoard.getState();
@@ -757,7 +764,7 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
             window.removeEventListener('keydown', onKeyDown);
             window.removeEventListener('keyup', onKeyUp);
         };
-    }, [zoomToFit]);
+    }, [zoomToFit, demo]);
 
     /* ---------- render ---------- */
 
@@ -786,7 +793,7 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
         };
     }, []);
     useEffect(() => {
-        if (!aiBox || Date.now() - lastInput.current < 4000) return;
+        if (demo || !aiBox || Date.now() - lastInput.current < 4000) return;
         const vp = useBoard.getState().viewport;
         const left = aiBox.x * vp.scale + vp.x;
         const top = aiBox.y * vp.scale + vp.y;
@@ -801,7 +808,7 @@ export function Board({ onReady }: { onReady?: (handle: BoardHandle) => void }) 
     return (
         <div
             className="dot-grid absolute inset-0 overflow-hidden bg-background"
-            style={{ cursor, touchAction: 'none', backgroundSize: `${gridStep(viewport.scale)}px ${gridStep(viewport.scale)}px`, backgroundPosition: `${viewport.x}px ${viewport.y}px` }}
+            style={{ cursor, touchAction: demo ? 'pan-y' : 'none', backgroundSize: `${gridStep(viewport.scale)}px ${gridStep(viewport.scale)}px`, backgroundPosition: `${viewport.x}px ${viewport.y}px` }}
             data-testid="board"
             onPointerMove={(e) => {
                 if (e.pointerType === 'touch') return;

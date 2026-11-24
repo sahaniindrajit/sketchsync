@@ -1,12 +1,22 @@
 import { expect, test } from '@playwright/test';
-import { boardState, drag, openNewBoard, selectTool, waitForShapes } from './helpers';
+import { boardState, drag, openNewBoard, selectTool, shapes, waitForShapes } from './helpers';
 
 test('landing page leads with the AI pitch and opens a board', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toHaveAccessibleName('The whiteboard your AI can draw on.');
-    await expect(page.getByRole('img', { name: /Claude drawing a signup flowchart/ })).toBeVisible();
+    // The hero is a live board: draw on it, and Claude adds to it through the real board store.
+    const before = await shapes(page);
+    await drag(page, [1000, 420], [1150, 480]);
+    await expect.poll(async () => (await shapes(page)).length).toBeGreaterThan(before.length);
+    await expect.poll(async () => (await shapes(page)).some((s) => s.createdBy === 'ai:Claude'), { timeout: 8000 }).toBe(true);
+    // Scrolling moves the camera between stops; the MCP stop plays the real tool calls.
+    await page.locator('#connect').scrollIntoViewIfNeeded();
+    await page.evaluate(() => document.getElementById('connect')!.scrollIntoView({ block: 'start' }));
+    await expect(page.locator('main')).toHaveAttribute('data-stop', '2');
+    await expect(page.getByText('Done. Q3 planning has a Risks section')).toBeVisible({ timeout: 10_000 });
     // No claims for features the app doesn't have.
     await expect(page.getByText(/Live Commenting|PDF/i)).toHaveCount(0);
+    await page.evaluate(() => window.scrollTo(0, 0));
     await page.getByRole('link', { name: 'Open a board' }).first().click();
     await page.waitForURL(/\/board\/[0-9a-f-]{36}$/);
 });

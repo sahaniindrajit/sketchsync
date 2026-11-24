@@ -6,8 +6,8 @@ const groups = [
         title: 'Product',
         links: [
             ['Open a board', '/board'],
-            ['Connect your AI', '/#mcp'],
-            ['Features', '/#features'],
+            ['Connect your AI', '/#connect'],
+            ['Features', '/#everything'],
         ],
     },
     {

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { applyOp } from '@/shared/ops';
 import { asOneStep, redo, resetHistory, undo, useHistory } from './history';
-import { DEFAULTS, type Op, type Shape } from '@/shared/protocol';
+import { DEFAULTS, type BoardRole, type Op, type Shape } from '@/shared/protocol';
 
 export type Tool = 'select' | 'hand' | 'rect' | 'ellipse' | 'diamond' | 'arrow' | 'line' | 'pencil' | 'text' | 'math' | 'eraser';
 
@@ -28,8 +28,14 @@ export interface AiActivity {
 /** `text`/`math` edit a shape, `label` edits a box/line label, `new-text`/`new-math` place a new shape. */
 export type EditingState = { kind: 'text' | 'label' | 'math'; shapeId: string } | { kind: 'new-text' | 'new-math'; x: number; y: number };
 
+/** Why the board can't be shown: it needs a sign-in, the person has no access, or it was deleted. */
+export type BoardAccess = 'ok' | 'auth_required' | 'forbidden' | 'removed';
+
 export interface BoardState {
     roomId: string | null;
+    /** What this person may do here. Viewers can look around but not change anything. */
+    role: BoardRole;
+    access: BoardAccess;
     shapes: Map<string, Shape>;
     tool: Tool;
     strokeColor: string;
@@ -58,6 +64,8 @@ export interface BoardState {
 
 const initialDefaults = {
     roomId: null,
+    role: 'editor' as BoardRole,
+    access: 'ok' as BoardAccess,
     shapes: new Map<string, Shape>(),
     selectedIds: [] as string[],
     viewport: { x: 0, y: 0, scale: 1 },
@@ -78,13 +86,19 @@ export const useBoard = create<BoardState>()((set) => ({
     fontSize: DEFAULTS.fontSize,
     dispatch: () => {},
 
-    setTool: (tool) => set((s) => ({ tool, selectedIds: tool === 'select' ? s.selectedIds : [], editing: null })),
+    // Viewers only get the hand tool.
+    setTool: (tool) => set((s) => (s.role === 'viewer' && tool !== 'hand' ? {} : { tool, selectedIds: tool === 'select' ? s.selectedIds : [], editing: null })),
     setStyle: (style) => set(style),
     setSelection: (selectedIds) => set({ selectedIds }),
     setViewport: (viewport) => set({ viewport }),
     setEditing: (editing) => set({ editing }),
     notify: (text, kind = 'info') => set({ notice: { text, kind, at: Date.now() } }),
 }));
+
+/** Applies a role from the server; viewers drop to the hand tool. */
+export function setRole(role: BoardRole) {
+    useBoard.setState((s) => (role === 'viewer' ? { role, tool: 'hand', selectedIds: [], editing: null } : { role, tool: s.role === 'viewer' ? 'select' : s.tool }));
+}
 
 /** Applies an op to the local store only (no network). */
 export function applyToStore(op: Op) {
@@ -106,7 +120,7 @@ export function setShapes(shapes: Map<string, Shape>) {
 
 export function resetBoardState(roomId: string | null, shapes: Map<string, Shape>) {
     resetHistory();
-    useBoard.setState({ ...initialDefaults, roomId, shapes, selectedIds: [], viewport: { x: 0, y: 0, scale: 1 } });
+    useBoard.setState((s) => ({ ...initialDefaults, roomId, shapes, selectedIds: [], viewport: { x: 0, y: 0, scale: 1 }, tool: s.role === 'viewer' ? 'select' : s.tool }));
 }
 
 /** "claude-ai" → "Claude AI": a readable name for an MCP client. */

@@ -344,3 +344,22 @@ function migrateLegacyBoard(): Shape[] {
         return [];
     }
 }
+
+/** Boards this browser has a cached copy of (with something drawn on them), newest first. */
+export function localBoardIds(): string[] {
+    const prefix = 'sketchsync:board:';
+    const found: { id: string; savedAt: number }[] = [];
+    try {
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (!key?.startsWith(prefix)) continue;
+            const id = key.slice(prefix.length);
+            if (!isValidRoomId(id)) continue;
+            const raw = JSON.parse(localStorage.getItem(key) ?? 'null') as { confirmed?: unknown[]; savedAt?: number } | null;
+            if (raw && Array.isArray(raw.confirmed) && raw.confirmed.length) found.push({ id, savedAt: typeof raw.savedAt === 'number' ? raw.savedAt : 0 });
+        }
+    } catch {
+        /* storage unavailable */
+    }
+    return found.sort((a, b) => b.savedAt - a.savedAt).map((f) => f.id);
+}

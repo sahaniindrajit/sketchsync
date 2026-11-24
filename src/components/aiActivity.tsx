@@ -40,7 +40,8 @@ export function useAiActivityClock(windowMs: number) {
     return { activity, now };
 }
 
-export function AiActivityToast({ onJump }: { onJump: (box: Box) => void }) {
+/** `placement="landing"`: positioned inside the landing page's pinned canvas instead of the window. */
+export function AiActivityToast({ onJump, placement = 'board' }: { onJump: (box: Box) => void; placement?: 'board' | 'landing' }) {
     const { activity, now } = useAiActivityClock(VISIBLE_MS);
     const visible = !!activity && now - activity.at <= VISIBLE_MS;
     const active = visible && now - activity!.at < ACTIVE_MS;
@@ -53,7 +54,13 @@ export function AiActivityToast({ onJump }: { onJump: (box: Box) => void }) {
             ? `added ${[added && plural(added, 'shape', 'shapes'), connectors && plural(connectors, 'connector', 'connectors')].filter(Boolean).join(' and ')}`
             : `edited ${plural(count, 'shape', 'shapes')}`;
     return (
-        <div className="pointer-events-none fixed left-1/2 top-[calc(max(12px,env(safe-area-inset-top))+56px)] z-40 -translate-x-1/2 lg:top-[max(14px,env(safe-area-inset-top))]">
+        <div
+            className={
+                placement === 'landing'
+                    ? 'pointer-events-none absolute bottom-[calc(50%+12px)] left-1/2 z-40 -translate-x-1/2 lg:bottom-auto lg:left-[72%] lg:top-[96px]'
+                    : 'pointer-events-none fixed left-1/2 top-[calc(max(12px,env(safe-area-inset-top))+56px)] z-40 -translate-x-1/2 lg:top-[max(14px,env(safe-area-inset-top))]'
+            }
+        >
             <AnimatePresence>
                 {visible && (
                     <motion.div
